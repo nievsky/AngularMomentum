@@ -22,17 +22,21 @@ namespace OrbitalPanopticon.Gameplay
 
         [Header("Runtime Status")]
         [SerializeField] private ScrapItem currentTarget;
+        [SerializeField] private ScrapItem secondaryTarget;
         [SerializeField] private bool _isLocked = false;
         [SerializeField] private float graviFlashTimer = 0f;
 
         public ScrapItem CurrentTarget => currentTarget;
+        public ScrapItem SecondaryTarget => secondaryTarget;
         public bool IsLocked => _isLocked;
 
         private float _flashVisualTimer = 0f;
         private MeshRenderer _beamRenderer;
         private MaterialPropertyBlock _beamPropertyBlock;
+        private LineRenderer _secondaryBeamLine;
         private readonly Color _standardBeamColor = new Color(1f, 0.92f, 0.15f, 0.25f);
         private readonly Color _flashBeamColor = new Color(0.4f, 0.95f, 1f, 0.85f);
+        private readonly Color _magentaBeamColor = new Color(1f, 0.08f, 0.85f, 0.35f);
 
         private static UnityEngine.Mesh _sharedConeMesh;
 
@@ -279,6 +283,87 @@ namespace OrbitalPanopticon.Gameplay
             }
 
             UpdateGraviFlash(config);
+            UpdatePanopticonGrid(config);
+        }
+
+        private void UpdatePanopticonGrid(GameBalanceConfig config)
+        {
+            if (config != null && config.panopticonLaserGridUnlocked)
+            {
+                if (_flashVisualTimer <= 0f)
+                {
+                    SetBeamColor(_magentaBeamColor);
+                    if (spotLight != null)
+                    {
+                        spotLight.color = new Color(1f, 0.15f, 0.9f);
+                    }
+                }
+
+                SetupSecondaryBeamLine();
+
+                if (secondaryTarget == null || !IsTargetValid(secondaryTarget) || secondaryTarget == currentTarget)
+                {
+                    FindSecondaryTarget();
+                }
+
+                if (secondaryTarget != null && _secondaryBeamLine != null)
+                {
+                    Vector3 lensPos = lensTransform != null ? lensTransform.position : transform.position;
+                    _secondaryBeamLine.enabled = true;
+                    _secondaryBeamLine.SetPosition(0, lensPos);
+                    _secondaryBeamLine.SetPosition(1, secondaryTarget.transform.position);
+
+                    secondaryTarget.IsTargetedByCamera = true;
+                    if (!secondaryTarget.IsObserved)
+                    {
+                        secondaryTarget.SetObserved(true);
+                    }
+                }
+                else if (_secondaryBeamLine != null)
+                {
+                    _secondaryBeamLine.enabled = false;
+                }
+            }
+            else if (_secondaryBeamLine != null && _secondaryBeamLine.enabled)
+            {
+                _secondaryBeamLine.enabled = false;
+            }
+        }
+
+        private void SetupSecondaryBeamLine()
+        {
+            if (_secondaryBeamLine == null)
+            {
+                GameObject lineGo = new GameObject("SecondaryLaserBeam");
+                lineGo.transform.SetParent(transform, false);
+                _secondaryBeamLine = lineGo.AddComponent<LineRenderer>();
+                _secondaryBeamLine.positionCount = 2;
+                _secondaryBeamLine.startWidth = 0.16f;
+                _secondaryBeamLine.endWidth = 0.08f;
+                _secondaryBeamLine.useWorldSpace = true;
+                _secondaryBeamLine.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+
+                Material lineMat = new Material(Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Sprites/Default"));
+                lineMat.name = "M_PanopticonSecondaryLaser";
+                Color magenta = new Color(1f, 0.1f, 0.9f, 0.85f);
+                lineMat.SetColor("_BaseColor", magenta);
+                if (lineMat.HasProperty("_Color")) lineMat.SetColor("_Color", magenta);
+                _secondaryBeamLine.sharedMaterial = lineMat;
+                _secondaryBeamLine.enabled = false;
+            }
+        }
+
+        private void FindSecondaryTarget()
+        {
+            var simManager = ScrapSimulationManager.Instance;
+            if (simManager == null) return;
+
+            foreach (var scrap in simManager.ActiveScrap)
+            {
+                if (scrap == null || scrap == currentTarget || !IsTargetValid(scrap)) continue;
+                secondaryTarget = scrap;
+                break;
+            }
         }
 
         private void UpdateGraviFlash(GameBalanceConfig config)
@@ -336,14 +421,22 @@ namespace OrbitalPanopticon.Gameplay
                     scrap.TransitionToLaunched(toCenter * pushImpulse);
                 }
             }
+
+            if (secondaryTarget != null && secondaryTarget.CurrentState == ScrapState.Floating)
+            {
+                Vector3 toCenter = (center - secondaryTarget.transform.position).normalized;
+                secondaryTarget.TransitionToLaunched(toCenter * pushImpulse);
+            }
         }
 
         private void ResetBeamVisual()
         {
-            SetBeamColor(_standardBeamColor);
+            GameBalanceConfig config = GameManager.GameBalanceConfigInstance;
+            bool isMagenta = config != null && config.panopticonLaserGridUnlocked;
+            SetBeamColor(isMagenta ? _magentaBeamColor : _standardBeamColor);
             if (spotLight != null)
             {
-                spotLight.color = new Color(1f, 0.92f, 0.15f);
+                spotLight.color = isMagenta ? new Color(1f, 0.15f, 0.9f) : new Color(1f, 0.92f, 0.15f);
                 spotLight.intensity = 4f;
             }
         }

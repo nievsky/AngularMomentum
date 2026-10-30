@@ -1,8 +1,10 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.InputSystem;
 using TMPro;
 using OrbitalPanopticon.Gameplay;
+using OrbitalPanopticon.Player;
 
 namespace OrbitalPanopticon.Core
 {
@@ -14,9 +16,16 @@ namespace OrbitalPanopticon.Core
         [Header("Manager References")]
         [SerializeField] private QuotaAndScoreManager quotaManager;
         [SerializeField] private ArenaBoundaryManager arenaBoundaryManager;
+        [SerializeField] private DroneController droneController;
 
-        [Header("HUD Elements")]
+        [Header("Surveillance Monitor Overlay")]
+        [SerializeField] private GameObject surveillanceFramePanel;
         [SerializeField] private TextMeshProUGUI recStatusText;
+        [SerializeField] private TextMeshProUGUI sectorInfoText;
+        [SerializeField] private TextMeshProUGUI telemetryRightText;
+        [SerializeField] private TextMeshProUGUI controlHintsText;
+
+        [Header("HUD Core Elements")]
         [SerializeField] private TextMeshProUGUI quotaText;
         [SerializeField] private Image quotaFillImage;
         [SerializeField] private TextMeshProUGUI heatMultiplierText;
@@ -24,9 +33,21 @@ namespace OrbitalPanopticon.Core
 
         [Header("Crosshair Elements")]
         [SerializeField] private Image crosshairImage;
+        [SerializeField] private Image[] crosshairTickImages;
         [SerializeField] private Color crosshairNormalColor = new Color(1f, 1f, 1f, 0.45f);
-        [SerializeField] private Color crosshairTargetInRangeColor = new Color(0.2f, 1f, 0.5f, 0.95f);
+        [SerializeField] private Color crosshairTargetInRangeColor = new Color(0.2f, 0.95f, 1f, 0.95f); // Bright Cyan
+        [SerializeField] private Color crosshairObservedTargetColor = new Color(1.0f, 0.85f, 0.15f, 1f); // Rich Gold
         [SerializeField] private Color crosshairHoldingColor = new Color(0.15f, 0.85f, 1f, 0.95f);
+
+        [Header("Operator Start Screen")]
+        [SerializeField] private GameObject startOverlayPanel;
+        [SerializeField] private CanvasGroup startOverlayCanvasGroup;
+        [SerializeField] private TextMeshProUGUI startPromptText;
+
+        [Header("Quota Celebration Banner")]
+        [SerializeField] private GameObject quotaCelebrationPanel;
+        [SerializeField] private CanvasGroup quotaCelebrationCanvasGroup;
+        [SerializeField] private TextMeshProUGUI quotaCelebrationText;
 
         [Header("Boundary Warning Elements")]
         [SerializeField] private GameObject warningPanel;
@@ -52,8 +73,10 @@ namespace OrbitalPanopticon.Core
         [SerializeField] private Color heat16xColor = new Color(1f, 0.1f, 0.9f);
 
         private Coroutine _signalLostCoroutine;
+        private Coroutine _celebrationCoroutine;
         private bool _isWarningActive = false;
         private float _warningRemainingSeconds = 0f;
+        private bool _isOperatorConnected = false;
 
         private void Awake()
         {
@@ -70,6 +93,16 @@ namespace OrbitalPanopticon.Core
             if (arenaBoundaryManager == null)
             {
                 arenaBoundaryManager = UnityEngine.Object.FindAnyObjectByType<ArenaBoundaryManager>();
+            }
+
+            if (droneController == null)
+            {
+                droneController = UnityEngine.Object.FindAnyObjectByType<DroneController>();
+            }
+
+            if (quotaManager != null)
+            {
+                quotaManager.OnQuotaCompleted += HandleQuotaCelebration;
             }
 
             if (arenaBoundaryManager != null)
@@ -92,10 +125,48 @@ namespace OrbitalPanopticon.Core
             {
                 observedNoticePanel.SetActive(false);
             }
+
+            if (quotaCelebrationPanel != null)
+            {
+                quotaCelebrationPanel.SetActive(false);
+            }
+
+            // Auto-detect crosshair ticks if needed
+            if (crosshairImage == null)
+            {
+                var ch = GameObject.Find("Crosshair");
+                if (ch != null)
+                {
+                    crosshairImage = ch.GetComponent<Image>();
+                    crosshairTickImages = ch.GetComponentsInChildren<Image>(true);
+                }
+            }
+
+            // Setup Start Overlay
+            if (startOverlayPanel != null)
+            {
+                startOverlayPanel.SetActive(true);
+                if (startOverlayCanvasGroup != null)
+                {
+                    startOverlayCanvasGroup.alpha = 1f;
+                }
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
+                _isOperatorConnected = false;
+            }
+            else
+            {
+                _isOperatorConnected = true;
+            }
         }
 
         private void OnDestroy()
         {
+            if (quotaManager != null)
+            {
+                quotaManager.OnQuotaCompleted -= HandleQuotaCelebration;
+            }
+
             if (arenaBoundaryManager != null)
             {
                 arenaBoundaryManager.OnSignalLost -= HandleSignalLost;
@@ -105,9 +176,83 @@ namespace OrbitalPanopticon.Core
 
         private void Update()
         {
+            HandleStartOverlayInput();
             UpdateHUD();
             UpdateWarningHUD();
             UpdateObservedNotice();
+        }
+
+        private void HandleStartOverlayInput()
+        {
+            if (_isOperatorConnected) return;
+
+            // Pulse the click prompt
+            if (startPromptText != null)
+            {
+                float pulse = 0.5f + (Mathf.Sin(Time.unscaledTime * 5f) * 0.5f);
+                Color c = startPromptText.color;
+                c.a = Mathf.Lerp(0.35f, 1f, pulse);
+                startPromptText.color = c;
+            }
+
+            bool clicked = false;
+            if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
+            {
+                clicked = true;
+            }
+            else if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
+            {
+                clicked = true;
+            }
+
+            if (clicked)
+            {
+                ConnectOperator();
+            }
+        }
+
+        public void ConnectOperator()
+        {
+            if (_isOperatorConnected) return;
+            _isOperatorConnected = true;
+
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+
+            if (droneController != null)
+            {
+                droneController.SetControlEnabled(true);
+            }
+
+            if (startOverlayCanvasGroup != null)
+            {
+                StartCoroutine(FadeOutStartOverlayRoutine());
+            }
+            else if (startOverlayPanel != null)
+            {
+                startOverlayPanel.SetActive(false);
+            }
+        }
+
+        private IEnumerator FadeOutStartOverlayRoutine()
+        {
+            const float duration = 0.45f;
+            float elapsed = 0f;
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                if (startOverlayCanvasGroup != null)
+                {
+                    startOverlayCanvasGroup.alpha = Mathf.Lerp(1f, 0f, elapsed / duration);
+                }
+                yield return null;
+            }
+
+            if (startOverlayPanel != null)
+            {
+                startOverlayPanel.SetActive(false);
+            }
         }
 
         public void SetObservedNotice(bool show, string message = "OBSERVED TARGET GRABBED - x3 VALUE!")
@@ -173,11 +318,41 @@ namespace OrbitalPanopticon.Core
                 scrapCoinsText.text = $"SCRAP COINS: {quotaManager.ScrapCoins}";
             }
 
-            // 4. REC Status blinking
+            // 4. REC Status & Sector Telemetry (Top-Left)
             if (recStatusText != null)
             {
                 bool blink = (Time.time % 1.2f) < 0.8f;
-                recStatusText.text = blink ? "● REC | DRONE #001" : "  REC | DRONE #001";
+                recStatusText.text = blink
+                    ? "<color=#FF2233>●</color> REC | CAM_FEED: DRONE #001"
+                    : "<color=#551111>○</color> REC | CAM_FEED: DRONE #001";
+            }
+
+            if (sectorInfoText != null)
+            {
+                sectorInfoText.text = "SECTOR 7-G // ORBITAL PANOPTICON";
+            }
+
+            // 5. Telemetry (Top-Right)
+            if (telemetryRightText != null)
+            {
+                int activeBots = 0;
+                if (HelperDroneManager.Instance != null)
+                {
+                    activeBots = HelperDroneManager.Instance.ActiveBots.Count;
+                }
+                else
+                {
+                    GameBalanceConfig cfg = GameManager.GameBalanceConfigInstance;
+                    if (cfg != null) activeBots = cfg.activeHelperRobotsCount;
+                }
+
+                telemetryRightText.text = $"HULL INTEGRITY: 100%\nHELPER BOTS: {activeBots}";
+            }
+
+            // 6. Context Control Hints (Bottom-Left)
+            if (controlHintsText != null && string.IsNullOrEmpty(controlHintsText.text))
+            {
+                controlHintsText.text = "[RMB] Pull/Hold  |  [LMB] Launch/Punt  |  [SHIFT] Directional Dash  |  [X] Brake  |  [TAB] Upgrades";
             }
         }
 
@@ -219,23 +394,129 @@ namespace OrbitalPanopticon.Core
 
         public void SetCrosshairState(bool hasTargetInRange, bool isHolding)
         {
+            SetCrosshairState(hasTargetInRange, isHolding, false);
+        }
+
+        public void SetCrosshairState(bool hasTargetInRange, bool isHolding, bool isTargetObserved)
+        {
+            if (crosshairImage == null)
+            {
+                var ch = GameObject.Find("Crosshair");
+                if (ch != null)
+                {
+                    crosshairImage = ch.GetComponent<Image>();
+                    crosshairTickImages = ch.GetComponentsInChildren<Image>(true);
+                }
+            }
             if (crosshairImage == null) return;
+
+            Color targetColor;
+            float targetScale;
 
             if (isHolding)
             {
-                crosshairImage.color = crosshairHoldingColor;
-                crosshairImage.transform.localScale = new Vector3(1.15f, 1.15f, 1f);
+                targetColor = crosshairHoldingColor;
+                targetScale = 1.15f;
             }
             else if (hasTargetInRange)
             {
-                crosshairImage.color = crosshairTargetInRangeColor;
-                crosshairImage.transform.localScale = new Vector3(1.3f, 1.3f, 1f);
+                if (isTargetObserved)
+                {
+                    targetColor = crosshairObservedTargetColor;
+                    targetScale = 1.45f;
+                }
+                else
+                {
+                    targetColor = crosshairTargetInRangeColor;
+                    targetScale = 1.30f;
+                }
             }
             else
             {
-                crosshairImage.color = crosshairNormalColor;
-                crosshairImage.transform.localScale = Vector3.one;
+                targetColor = crosshairNormalColor;
+                targetScale = 1.0f;
             }
+
+            crosshairImage.color = targetColor;
+            crosshairImage.transform.localScale = new Vector3(targetScale, targetScale, 1f);
+
+            if (crosshairTickImages != null)
+            {
+                for (int i = 0; i < crosshairTickImages.Length; i++)
+                {
+                    if (crosshairTickImages[i] != null)
+                    {
+                        crosshairTickImages[i].color = targetColor;
+                    }
+                }
+            }
+        }
+
+        private void HandleQuotaCelebration(int quotaLevel, int rewardCoins)
+        {
+            if (quotaCelebrationPanel == null) return;
+
+            if (_celebrationCoroutine != null)
+            {
+                StopCoroutine(_celebrationCoroutine);
+            }
+            _celebrationCoroutine = StartCoroutine(ShowQuotaCelebrationRoutine(quotaLevel, rewardCoins));
+        }
+
+        private IEnumerator ShowQuotaCelebrationRoutine(int quotaLevel, int rewardCoins)
+        {
+            int speedBonus = quotaManager != null ? Mathf.CeilToInt(quotaManager.SpeedBonusPercent) : 0;
+            if (quotaCelebrationText != null)
+            {
+                quotaCelebrationText.text = $"<color=#00FFAA>QUOTA #{quotaLevel} COMPLETED!</color>\n<size=80%>+{rewardCoins} SCRAP COINS  <color=#FFD700>(SPEED BONUS +{speedBonus}%)</color></size>";
+            }
+
+            quotaCelebrationPanel.SetActive(true);
+            Transform bannerT = quotaCelebrationPanel.transform;
+
+            if (GameAudioManager.Instance != null)
+            {
+                GameAudioManager.Instance.PlayQuotaComplete();
+            }
+
+            // Animate In (Bounce Scale + Fade In)
+            const float inDuration = 0.35f;
+            float elapsed = 0f;
+            while (elapsed < inDuration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float t = elapsed / inDuration;
+                float scale = Mathf.Lerp(0.7f, 1.05f, Mathf.Sin(t * Mathf.PI * 0.5f));
+                bannerT.localScale = new Vector3(scale, scale, 1f);
+
+                if (quotaCelebrationCanvasGroup != null)
+                {
+                    quotaCelebrationCanvasGroup.alpha = Mathf.Clamp01(t * 1.5f);
+                }
+                yield return null;
+            }
+
+            bannerT.localScale = Vector3.one;
+            if (quotaCelebrationCanvasGroup != null) quotaCelebrationCanvasGroup.alpha = 1f;
+
+            // Hold on screen
+            yield return new WaitForSecondsRealtime(2.5f);
+
+            // Animate Out (Fade Out)
+            const float outDuration = 0.45f;
+            elapsed = 0f;
+            while (elapsed < outDuration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float alpha = Mathf.Lerp(1f, 0f, elapsed / outDuration);
+                if (quotaCelebrationCanvasGroup != null)
+                {
+                    quotaCelebrationCanvasGroup.alpha = alpha;
+                }
+                yield return null;
+            }
+
+            quotaCelebrationPanel.SetActive(false);
         }
 
         private Color GetHeatColor(int multiplier)

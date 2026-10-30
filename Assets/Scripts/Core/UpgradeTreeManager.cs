@@ -215,6 +215,7 @@ namespace OrbitalPanopticon.Core
                 case "player_wow":
                     config.puntLaunchImpulse *= 2.0f;
                     config.dashImpulse *= 2.0f;
+                    config.playerRelativisticOverdriveUnlocked = true;
                     break;
 
                 case "hole_heat_fill":
@@ -224,6 +225,7 @@ namespace OrbitalPanopticon.Core
 
                 case "hole_wow":
                     config.orbitalGuidanceStrength *= 2.0f;
+                    config.blackHoleHawkingPulseUnlocked = true;
                     break;
 
                 case "scrap_spawn_freq":
@@ -249,7 +251,8 @@ namespace OrbitalPanopticon.Core
                     break;
 
                 case "camera_wow":
-                    config.cameraObservedMultiplier = 6.0f;
+                    config.cameraObservedMultiplier = config.cameraWowChainLaserMultiplier > 0f ? config.cameraWowChainLaserMultiplier : 6.0f;
+                    config.panopticonLaserGridUnlocked = true;
                     break;
 
                 case "robot_trawl":

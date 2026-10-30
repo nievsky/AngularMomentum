@@ -22,6 +22,7 @@ namespace OrbitalPanopticon.Physics
         // Internal tracking
         private readonly List<GravityBody> _trackedBodies = new List<GravityBody>();
         private readonly HashSet<GravityBody> _consumingBodies = new HashSet<GravityBody>();
+        private float _hawkingPulseTimer = 0f;
 
         public int TrackedBodiesCount => _trackedBodies.Count;
 
@@ -33,6 +34,88 @@ namespace OrbitalPanopticon.Physics
         private void FixedUpdate()
         {
             ApplyBlackHoleForces();
+            UpdateHawkingPulse();
+        }
+
+        private void UpdateHawkingPulse()
+        {
+            GameBalanceConfig config = GameManager.GameBalanceConfigInstance;
+            if (config != null && config.blackHoleHawkingPulseUnlocked)
+            {
+                _hawkingPulseTimer += Time.fixedDeltaTime;
+                float interval = config.blackHoleWowPulseInterval > 0f ? config.blackHoleWowPulseInterval : 12f;
+                if (_hawkingPulseTimer >= interval)
+                {
+                    _hawkingPulseTimer = 0f;
+                    TriggerHawkingPulse(config);
+                }
+            }
+        }
+
+        private void TriggerHawkingPulse(GameBalanceConfig config)
+        {
+            Vector3 center = centerPoint != null ? centerPoint.position : transform.position;
+
+            StartCoroutine(HawkingShockwaveRoutine(center));
+
+            var simManager = OrbitalPanopticon.Gameplay.ScrapSimulationManager.Instance;
+            if (simManager == null) return;
+
+            var candidates = new List<(OrbitalPanopticon.Gameplay.ScrapItem scrap, float dist)>();
+            float threshold = config.accretionThresholdRadius;
+
+            foreach (var scrap in simManager.ActiveScrap)
+            {
+                if (scrap == null || !scrap.gameObject.activeInHierarchy || scrap.CurrentState != OrbitalPanopticon.Gameplay.ScrapState.Floating) continue;
+                float d = Vector3.Distance(scrap.transform.position, center);
+                if (d > threshold)
+                {
+                    candidates.Add((scrap, d));
+                }
+            }
+
+            candidates.Sort((a, b) => a.dist.CompareTo(b.dist));
+
+            int count = Mathf.Min(8, candidates.Count);
+            for (int i = 0; i < count; i++)
+            {
+                OrbitalPanopticon.Gameplay.ScrapItem scrap = candidates[i].scrap;
+                Vector3 toCenter = (center - scrap.transform.position).normalized;
+                scrap.TransitionToLaunched(toCenter * 26f);
+            }
+        }
+
+        private System.Collections.IEnumerator HawkingShockwaveRoutine(Vector3 center)
+        {
+            GameObject ring = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            ring.name = "HawkingPulseShockwave";
+            ring.transform.position = center;
+            Destroy(ring.GetComponent<Collider>());
+
+            Material pulseMat = new Material(Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Sprites/Default"));
+            Color c = new Color(0.2f, 0.85f, 1f, 0.5f);
+            pulseMat.SetColor("_BaseColor", c);
+            if (pulseMat.HasProperty("_Color")) pulseMat.SetColor("_Color", c);
+            ring.GetComponent<MeshRenderer>().sharedMaterial = pulseMat;
+
+            float elapsed = 0f;
+            const float duration = 0.65f;
+
+            while (elapsed < duration && ring != null)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+                float radius = Mathf.Lerp(4f, 42f, t);
+                ring.transform.localScale = new Vector3(radius, 0.1f, radius);
+
+                c.a = Mathf.Lerp(0.6f, 0f, t);
+                pulseMat.SetColor("_BaseColor", c);
+                if (pulseMat.HasProperty("_Color")) pulseMat.SetColor("_Color", c);
+
+                yield return null;
+            }
+
+            if (ring != null) Destroy(ring);
         }
 
         private void ApplyBlackHoleForces()

@@ -40,6 +40,8 @@ namespace OrbitalPanopticon.Core
         [SerializeField] private int currentHeatMultiplier = 1;
         [SerializeField] private int currentHeatStreak = 0;
         [SerializeField] private float lastConsumptionTime = -999f;
+        [SerializeField] private float totalMassConsumed = 0f;
+        [SerializeField] private int peakHeatMultiplier = 1;
 
         private readonly int[] _heatStages = new int[] { 1, 2, 4, 8, 16 };
         private int _currentStageIndex = 0;
@@ -56,6 +58,8 @@ namespace OrbitalPanopticon.Core
         public int CurrentQuotaLevel => currentQuotaLevel;
         public int CompletedQuotasCount => completedQuotasCount;
         public int CurrentHeatMultiplier => currentHeatMultiplier;
+        public float TotalMassConsumed => totalMassConsumed;
+        public int PeakHeatMultiplier => peakHeatMultiplier;
 
         public bool TrySpendScrapCoins(int amount)
         {
@@ -148,6 +152,28 @@ namespace OrbitalPanopticon.Core
                 }
             }
 
+            // Tier 4 Cosmic Anomaly instant heat boost
+            if (scrap != null && scrap.Tier == 4)
+            {
+                if (_currentStageIndex < _heatStages.Length - 1)
+                {
+                    _currentStageIndex++;
+                    currentHeatStreak = 0;
+                    currentHeatMultiplier = _heatStages[_currentStageIndex];
+                    OnHeatMultiplierChanged?.Invoke(currentHeatMultiplier);
+                }
+            }
+
+            if (currentHeatMultiplier > peakHeatMultiplier)
+            {
+                peakHeatMultiplier = currentHeatMultiplier;
+            }
+
+            if (scrap != null)
+            {
+                totalMassConsumed += scrap.Mass;
+            }
+
             // 2. Calculate Final Score
             float baseValue = 10f;
             float orbitalMultiplier = 1f;
@@ -183,6 +209,11 @@ namespace OrbitalPanopticon.Core
             {
                 CompleteCurrentQuota();
             }
+        }
+
+        public void ForceCompleteQuota()
+        {
+            CompleteCurrentQuota();
         }
 
         private void CompleteCurrentQuota()

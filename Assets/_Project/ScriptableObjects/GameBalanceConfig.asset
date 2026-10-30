@@ -81,3 +81,12 @@ MonoBehaviour:
   cameraGraviFlashInterval: 10
   kamikazeProtocolUnlocked: 0
   activeHelperRobotsCount: 0
+  quotasToTriggerFinale: 8
+  blackHoleScalePerQuota: 0.35
+  playerWowOverdriveDuration: 6
+  blackHoleWowPulseInterval: 12
+  cameraWowChainLaserMultiplier: 6
+  playerRelativisticOverdriveUnlocked: 0
+  blackHoleHawkingPulseUnlocked: 0
+  panopticonLaserGridUnlocked: 0
+  enableDebugShortcuts: 1

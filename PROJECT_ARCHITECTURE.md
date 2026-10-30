@@ -94,7 +94,11 @@ Assets/
 | **`GameBalanceConfig.cs`** | `OrbitalPanopticon.Core` | ScriptableObject defining all global simulation, pacing, black hole, drone, manipulator, scrap, camera, and economy parameters. | `globalSimulationSpeed`, `accretionThresholdRadius`, `cameraObservedMultiplier`, `mouseSensitivity` |
 | **`GameManager.cs`** | `OrbitalPanopticon.Core` | Central singleton manager coordinating game state and providing global static access to the active `GameBalanceConfig`. | `GameManager.Instance`, `GameManager.GameBalanceConfigInstance`, `SetBalanceConfig()` |
 | **`QuotaAndScoreManager.cs`** | `OrbitalPanopticon.Core` | Listens to `BlackHoleGravity.OnObjectConsumed`, computes multi-tier scores, manages heat multiplier combos (`1x`→`16x`), and tracks Scrap Coins. | `CurrentQuotaProgress`, `TargetQuota`, `CurrentHeatMultiplier`, `ScrapCoins`, `OnScoreAdded`, `OnQuotaCompleted` |
-| **`UIManager.cs`** | `OrbitalPanopticon.Core` | Drives cockpit HUD: REC indicator, Quota progress bar, Heat multiplier, Scrap Coins counter, Crosshair states, Boundary Warning, and Observed Scrap notice. | `Instance`, `SetCrosshairState()`, `SetObservedNotice()`, `HandleSignalLost()` |
+| **`UIManager.cs`** | `OrbitalPanopticon.Core` | Drives cockpit HUD: Surveillance monitor viewfinder frame, blinking REC indicator, Sector telemetry, active Helper Bot counter, Quota progress bar, Heat multiplier, Scrap Coins counter, dynamic Reticle (Cyan in range, Gold on x3 observed target), Operator Start Overlay, Quota Celebration Banner, Boundary Warning, and Observed Scrap notice. | `Instance`, `SetCrosshairState()`, `SetObservedNotice()`, `HandleSignalLost()`, `ConnectOperator()` |
+| **`UpgradeTreeManager.cs`** | `OrbitalPanopticon.Core` | Radial 5-branch upgrade tree UI toggled via TAB with game pause (`Time.timeScale = 0`). Manages 20 upgrade nodes, WOW capstone perks, and runtime balance cloning (`RuntimeConfig`). | `Instance`, `ToggleTree()`, `PurchaseNode()`, `IsNodeUnlocked()` |
+| **`AudioConfig.cs`** | `OrbitalPanopticon.Core` | ScriptableObject defining categorized audio clips for drone flight, gravity gun, black hole dynamics, surveillance cameras, UI, and endgame finale. | `AudioConfig.asset` |
+| **`GameAudioManager.cs`** | `OrbitalPanopticon.Core` | Central audio singleton managing sound sources, pitch jitter, ambient loops, and convenient one-shot audio triggers. | `Instance`, `PlayOneShot()`, `PlayPunt()`, `PlayGrab()`, `PlayQuotaComplete()`, `PlayConsume()` |
+| **`DesignerDebugTools.cs`** | `OrbitalPanopticon.Core` | Live developer shortcuts toggled by `GameBalanceConfig.enableDebugShortcuts`. Enables `F1` (+500 Coins), `F2` (Skip Quota), `F3` (Spawn Robot), and `F4` (Trigger Singularity Finale) with on-screen HUD legend. | `Instance` |
 
 ### 3.2 `Player/`
 | Script | Namespace | Key Responsibilities | Key Public API |
@@ -117,8 +121,11 @@ Assets/
 | **`ScrapData.cs`** | `OrbitalPanopticon.Gameplay` | ScriptableObject defining scrap tier, base value, physics mass, and visual scale. | `ScrapName`, `Tier`, `BaseValue`, `Mass`, `BaseScale` |
 | **`ScrapItem.cs`** | `OrbitalPanopticon.Gameplay` | Lightweight data container for scrap instances. Stores `ScrapState`, mass, observation flag, orbital bonus multiplier, and material property blocks. Has no `Update()` loop! | `CurrentState`, `IsObserved`, `OrbitalBonusMultiplier`, `SetState()`, `SetObserved()`, `ResetToFloating()` |
 | **`ScrapSimulationManager.cs`** | `OrbitalPanopticon.Gameplay` | Data-oriented pool and simulation manager. Drives pooled recycling, batched movement/fade updates, and circular orbit spawning. | `Instance`, `ActiveScrap`, `SpawnScrap()`, `ReturnToPool()`, `CalculateTotalWeight()` |
-| **`DynamicSurveillanceCamera.cs`** | `OrbitalPanopticon.Gameplay` | Autonomous surveillance cameras located on the sphere boundary. Targets calm Outer Zone scrap, aims volumetric procedural spotlight cone mesh (double-sided tapered cone: tip 0.08m, base 1.0m, unlit translucent yellow `M_CameraBeamYellow.mat`, no collider), zero-lag `LateUpdate` tracking (lock speed 25f, search 4f), awards x3 observation bonus. | `CurrentTarget`, `ReleaseTarget()` |
-| **`CorporateOverseerEye.cs`** | `OrbitalPanopticon.Gameplay` | Massive celestial overseer orbiting the outer boundary. Undulating inclination orbit, smooth slow `Quaternion.Slerp` tracking of player drone, pulsing pupil light. | — |
+| **`DynamicSurveillanceCamera.cs`** | `OrbitalPanopticon.Gameplay` | Autonomous surveillance cameras located on the sphere boundary. Targets calm Outer Zone scrap, aims volumetric procedural spotlight cone mesh (double-sided tapered cone: tip 0.08m, base 1.0m, unlit translucent yellow `M_CameraBeamYellow.mat`, no collider), zero-lag `LateUpdate` tracking (lock speed 25f, search 4f), awards x3 observation bonus (x6 with Panopticon Laser Grid), tracks dual targets simultaneously, executes periodic Gravi-Flash shockwaves. | `CurrentTarget`, `ReleaseTarget()` |
+| **`HelperDroneBot.cs`** | `OrbitalPanopticon.Gameplay` | Autonomous helper salvager with state machine (`Seek`, `Deliver`, `Release`, `Kamikaze`, `Respawning`). Drags Outer Zone debris to accretion disk; executes high-speed Kamikaze dives into singularity for x2.5 value when unlocked. | `CurrentState`, `SeekTarget()` |
+| **`HelperDroneManager.cs`** | `OrbitalPanopticon.Gameplay` | Singleton spawning, coordinating, and managing fleet of active autonomous helper bots. | `Instance`, `SpawnHelperBot()`, `ActiveBots` |
+| **`EndgameFinaleController.cs`** | `OrbitalPanopticon.Gameplay` | Controls Black Hole visual and physical scaling per quota completion (`blackHoleScalePerQuota`), orchestrates 4-phase cinematic Sector Collapse finale upon reaching critical quota count, manages camera shake, HUD sirens, and displays victory summary panel. | `TriggerEndgameFinale()`, `OnQuotaCompleted()` |
+| **`CorporateOverseerEye.cs`** | `OrbitalPanopticon.Gameplay` | Massive celestial overseer orbiting the outer boundary. Undulating inclination orbit, smooth slow `Quaternion.Slerp` tracking of player drone, pulsing pupil light. Possesses `isConsumedOrCollapsing` flag for finale sequence. | `isConsumedOrCollapsing` |
 | **`ArenaBoundaryManager.cs`** | `OrbitalPanopticon.Gameplay` | Monitors drone distance from arena center `(0,0,0)`. Triggers warning countdown (`safeRadius=42f`), non-destructive immediate respawn with dummy wreckage spawn for black hole spaghettification (`maxRadius=48f`), and 1.2s input lock. | `Instance`, `OnSignalLost`, `OnBoundaryWarningChanged`, `OnPlayerConsumedByBlackHole()` |
 
 ---
@@ -254,11 +261,45 @@ To eliminate chaotic slingshots and prevent un-thrown scrap from prematurely fal
 * **Visual Flash**: Spotlight flashes cyan with intensity spike (12f) and the procedural cone beam flashes white/cyan for 0.25 seconds.
 * **Dynamic Impulse**: Pushes the current target and all nearby scrap inside a 6m cone directly into the accretion threshold (`TransitionToLaunched(dirToCenter * 26f)`).
 
+### 5.5 Black Hole Evolution, WOW-Perks & Sector Collapse Finale
+* **Progressive Black Hole Growth**:
+  * With every completed quota, `EndgameFinaleController` scales up `BlackHoleSystem/VisualRoot` and expands `eventHorizonRadius` by `config.blackHoleScalePerQuota` (`+0.35m` per quota).
+  * The singularity becomes visually and physically more threatening as the shift progresses.
+* **Four Red "ВАУ-перки" (WOW Capstones)**:
+  1. **Player WOW — Relativistic Overdrive (`player_wow`)**:
+     * Instant 6m auto-magnetization into `HoldPoint` with zero drone recoil or deceleration (`PerformRelativisticAutoMagnet`).
+     * Doubles punt impulse (`impulse * 2.0f`).
+     * Activates an emissive magenta/cyan hyperspace `TrailRenderer` on the player drone during dashes.
+  2. **Black Hole WOW — Hawking Singularity Pulse (`hole_wow`)**:
+     * Accretion orbital bonus multiplier growth rate is doubled (`1.0x/s` instead of `0.5x/s`).
+     * Every 12 seconds, a cylindrical shockwave ring expands outward from the singularity, capturing the 8 nearest Outer Zone floating debris items and launching them inward.
+  3. **Cameras WOW — Panopticon Laser Grid (`camera_wow`)**:
+     * Beam visuals and searchlights shift to bright neon magenta, elevating observation multiplier to `x6.0` (`config.cameraWowChainLaserMultiplier`).
+     * Cameras acquire and track two targets simultaneously (`secondaryTarget`, `_secondaryBeamLine`), observing and gravi-flashing both debris items.
+  4. **Scrap WOW — Singularity Resonance (`scrap_wow`)**:
+     * Consuming Tier 4 "Космическая аномалия" items instantly advances the Heat Multiplier combo stage by a full tier (`+1.0x` stage jump).
+* **Endgame Sector Collapse Finale**:
+  * Triggered upon reaching `completedQuotasCount >= config.quotasToTriggerFinale` (default: 8 quotas).
+  * Plays red emergency siren HUD warning: *"CRITICAL MASS REACHED! SINGULARITY OVERFLOW — INITIATING SECTOR COLLAPSE!"*.
+  * **Phase 1 (0–4s)**: Singularity vacuum pulls all remaining scrap and autonomous helper bots into the event horizon.
+  * **Phase 2 (4–8s)**: Detaches all surveillance camera turrets from the outer arena shell via dynamic `GravityBody` physics, consuming them for `+5,000` bonus points each.
+  * **Phase 3 (8–12s)**: Overrides Corporate Overseer Eye orbital trajectory (`isConsumedOrCollapsing = true`), pulling the cyclopean eye into the black hole with intense camera shake for `+25,000` bonus points.
+  * **Phase 4**: Displays the Shift Complete Victory Summary Panel (Total Time, Total Mass Consumed, Peak Heat Multiplier, Final Scrap Coins, `[CONTINUE ENDLESS MODE]` and `[RESTART SHIFT]`).
+
 ---
 
 ## 6. Current Project Status & Future Roadmap
 
 ### 6.1 Completed Systems `[x]`
+- [x] **Surveillance Monitor HUD Overlay & Operator Start Terminal**: Non-blocking `SurveillanceMonitorFrame` overlay with 4 corner viewfinder brackets (`┌ ┐ └ ┘`), animated blinking REC status, `SECTOR 7-G` telemetry, active Helper Bot counter (`"HELPER BOTS: X"`), contextual keybind hints, dynamic Crosshair reticle (Cyan when scrap is in grab range, Gold when aiming at x3 Observed targets), Operator Start Screen (`Panel_OperatorStart`) with smooth click-to-connect fade out, and celebratory Quota Completed banner (`Panel_QuotaCelebration`).
+- [x] **Game Designer Live Debug & Cheat Shortcuts (`DesignerDebugTools`)**: Function key shortcuts toggled via `enableDebugShortcuts` in `GameBalanceConfig`: `F1` (+500 Scrap Coins), `F2` (Instantly complete Quota), `F3` (Spawn 1 Helper Bot), `F4` (Trigger Singularity Sector Collapse Finale), and on-screen HUD developer legend.
+- [x] **Centralized Game Audio Architecture (`GameAudioManager` & `AudioConfig`)**: `AudioConfig.asset` ScriptableObject defining categorized clips for thrusters, gravity manipulator, black hole accretion, surveillance cameras, UI fanfare, and endgame finale with pitch-jittered one-shot triggers on `GameAudioManager`.
+- [x] **Black Hole Evolution & Sector Collapse Finale**: `EndgameFinaleController` scaling singularity on quota completion, 4-phase cinematic arena collapse (scrap/bots vacuum -> camera turret detachment -> Corporate Overseer Eye consumption), camera shake, and interactive Shift Complete Victory Summary Panel with Endless Mode continuation.
+- [x] **Complete Red "ВАУ-перки" (WOW Capstone Perks)**:
+  - *Player WOW*: 6m relativistic auto-magnetization, double punt impulse, emissive dash hyperspace trail.
+  - *Black Hole WOW*: 2x orbital heat multiplier rate + 12s expanding Hawking shockwave ring flinging 8 outer zone debris items inward.
+  - *Cameras WOW*: Panopticon Laser Grid (neon magenta beams, x6 observation multiplier, simultaneous dual-target tracking and dual gravi-flash).
+  - *Scrap WOW*: Tier 4 Anomaly consumption instantly advances Heat Multiplier combo stage by +1.0x.
 - [x] **Autonomous Helper Robots & Kamikaze Protocol**: Procedural `HelperDroneBot.prefab` (spherical body, cyan visor, engine trail, tether `LineRenderer`), autonomous state machine (`Seek`, `Deliver`, `Release`, `Kamikaze`, `Respawning`), +100% fixed-cost purchase in Skill Tree, and x2.5 Kamikaze Event Horizon score bonus.
 - [x] **Camera Gravi-Flash Pulse**: 10-second timer on `DynamicSurveillanceCamera`, white/cyan cone flash, and physical impulse pushing targeted Outer Zone scrap straight into the Black Hole accretion vortex.
 - [x] **Tier 4 Scrap "Космическая аномалия" & Gated Spawning**: `SO_Scrap_Tier4_Anomaly.asset` (baseValue = 600, mass = 15) and monolithic golden torus prefab `Scrap_Tier4_Anomaly.prefab`. Dynamic pool filtering in `ScrapSimulationManager` & `ScrapSpawner` strictly enforcing `tier <= config.unlockedScrapTier`.
@@ -279,12 +320,70 @@ To eliminate chaotic slingshots and prevent un-thrown scrap from prematurely fal
 - [x] **Centralized Balance Configuration**: `GameBalanceConfig` scriptable object powering real-time inspector tuning.
 
 ### 6.2 Upcoming Development Roadmap `[ ]`
-- [ ] **Phase 1: 3D Art Asset Polish**
-  - Replace prototype cylinders on `RoboArmVisual` with high-detail cockpit mechanical arm mesh.
-  - Replace greybox sphere on `BlackHoleSphere` with animated accretion disc shader (event horizon distortion / gravitational lensing).
-  - Replace boundary wireframe sphere with holographic boundary grid shader.
-- [ ] **Phase 2: Audio-Visual Juice & Feedback**
-  - Thruster hum and boost burst SFX.
-  - Black hole low-frequency rumble and event horizon consumption crunch.
-  - Surveillance camera mechanical servo tracking whine.
-  - Particle effects: thruster plumes, accretion disc sparkles, suction vortex trails.
+- [ ] **Phase 1: 3D Art Asset Production**
+  - Integrate production FBX meshes using the `VisualRoot` pattern.
+  - Custom event horizon distortion / gravitational lensing shader on `BlackHoleSphere`.
+  - Holographic arena boundary grid shader.
+- [ ] **Phase 2: Audio Clip Integration**
+  - Populate `AudioConfig.asset` with custom sound effects and ambient hums.
+
+---
+
+## 7. 3D & Audio Asset Replacement Guide
+
+This section is dedicated to 3D Artists and Sound Designers joining the project.
+
+### 7.1 Guide for 3D Artists (The `VisualRoot` Workflow)
+Every physical entity in **Orbital Panopticon** strictly isolates physics and scripts on the GameObject root, while all visual representations live under a child transform named **`VisualRoot`**. 
+
+**Strict Rules for 3D Artists:**
+1. **Never touch root components**: Do NOT add, remove, or modify `Rigidbody`, `Collider`, or gameplay scripts on root GameObjects.
+2. **Drop meshes inside `VisualRoot`**: To replace prototype greybox meshes with production `.fbx` or `.obj` models, place your model directly inside `VisualRoot` and delete the old primitive children.
+3. **Pivots and Scale**: Ensure FBX models are exported with uniform scale (`1, 1, 1`) and the pivot point centered at `(0, 0, 0)`.
+
+| Entity | Scene / Prefab Location | Where to Drop FBX Models | Notes |
+| :--- | :--- | :--- | :--- |
+| **Player Drone** | `PlayerDrone` in `OutdoorsScene.unity` | `PlayerDrone/VisualRoot` | Visible in reflections or external cameras. Cockpit view disables these renderers so your camera view remains unobstructed. |
+| **FPV Cockpit Robo-Arm** | `PlayerDrone/MainCamera/RoboArmVisual` | `RoboArmVisual` | Source-engine style manipulator viewmodel. Claws point along local `+Z`. |
+| **Scrap Items (Tiers 1–3)** | `Assets/_Project/Prefabs/Scrap_TierX.prefab` | `Scrap_TierX/VisualRoot` | Can be mechanical debris, broken solar panels, satellite hulls. Root collider bounds must approximate the mesh. |
+| **Tier 4 Anomaly** | `Assets/_Project/Prefabs/Scrap_Tier4_Anomaly.prefab` | `Scrap_Tier4_Anomaly/VisualRoot` | Monolithic ancient alien artifact or glowing hyper-dense relic. |
+| **Helper Robot** | `Assets/_Project/Prefabs/HelperDroneBot.prefab` | `HelperDroneBot/VisualRoot` | Small autonomous salvage worker with cyan visor/light. Tether connects at bot center. |
+| **Surveillance Camera** | `DynamicSurveillanceCamera` instances | `DynamicSurveillanceCamera/VisualRoot` | Heavy industrial panopticon turret mounted on outer shell. Forward vector is local `+Z`. |
+| **Corporate Overseer Eye** | `CorporateOverseerEye` in `OutdoorsScene` | `CorporateOverseerEye/VisualRoot` | Cyclopean celestial eye observing the arena. Front pupil looks along local `+Z`. |
+| **Black Hole System** | `BlackHoleSystem` in `OutdoorsScene` | `BlackHoleSystem/VisualRoot` | Singularity core and accretion disk visual geometry. |
+
+### 7.2 Guide for Sound Designers (`AudioConfig.asset`)
+All gameplay sound effects and ambient sound loops are managed centrally via [`AudioConfig.asset`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/ScriptableObjects/AudioConfig.asset) and played via [`GameAudioManager.Instance`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/GameAudioManager.cs).
+
+**Instructions for Sound Designers:**
+1. Open [`Assets/_Project/ScriptableObjects/AudioConfig.asset`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/ScriptableObjects/AudioConfig.asset) (or the mirror in `Assets/ScriptableObjects/`) in the Unity Inspector.
+2. Drag and drop your `.wav` or `.ogg` audio clips into the appropriate serialized slots:
+   * **1. Drone Flight & Thrusters**:
+     * `thrusterLoop`: Looping low hum for active flight.
+     * `dashBoostSfx`: Punchy burst sound for directional dash (`Left Shift`).
+     * `brakeSfx`: Retro-thruster hiss for active braking (`X`).
+   * **2. Gravity Manipulator (Gravity Gun)**:
+     * `magnetPullLoop`: Electric tractor beam loop when holding `RMB`.
+     * `grabLatchSfx`: Satisfying mechanical clamp/latch when scrap snaps into the claw.
+     * `puntLaunchSfx`: Half-Life 2 style pneumatic launch blast (`LMB`).
+     * `dryPuntSfx`: Dry shockwave blast when clicking `LMB` with no held cargo.
+     * `observedGrabChimeSfx`: High-value reward chime when grabbing a Camera-Observed (`x3`) target.
+   * **3. Black Hole & Accretion Dynamics**:
+     * `blackHoleAmbientLoop`: Deep sub-bass cosmic rumble for the singularity.
+     * `accretionSwirlLoop`: High-velocity rotational whoosh for the accretion disk.
+     * `eventHorizonCrunchSfx`: Gravitational crunch / spaghettification when debris is consumed.
+     * `hawkingPulseSfx`: Gravitational shockwave explosion sound for Hawking Pulse.
+   * **4. Surveillance Panopticon & Cameras**:
+     * `cameraLockBeepSfx`: Mechanical servo lock chirp when a camera acquires a target.
+     * `cameraGraviFlashSfx`: Intense gravimetric burst sound for camera Gravi-Flash.
+     * `boundaryWarningSirenSfx`: Pulsing siren when approaching the 42m arena boundary.
+   * **5. Quota & UI Feedback**:
+     * `quotaCompleteFanfareSfx`: Rewarding corporate fanfare played when a quota is completed.
+     * `upgradePurchasedSfx`: High-tech interface chime when purchasing an upgrade in the Skill Tree (`TAB`).
+     * `coinEarnedSfx`: Digital coin acquisition sound.
+     * `buttonClickSfx`: Standard UI interaction click.
+   * **6. Endgame Finale**:
+     * `sectorCollapseAlarmSfx`: Urgent red alert klaxon for Singularity Sector Collapse.
+     * `overseerDestructionSfx`: Cataclysmic explosion/implosion when Corporate Overseer Eye is consumed.
+     * `victoryChimeSfx`: Triumphant victory summary sound on Shift Complete screen.
+3. **Automatic Hookup**: All events (grabbing, punting, completing quotas, dashing, consumption) already invoke `GameAudioManager.Instance` methods in code; once clips are assigned to the asset, they play immediately in-game with natural pitch jitter.

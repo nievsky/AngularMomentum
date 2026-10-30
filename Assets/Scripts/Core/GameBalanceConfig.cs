@@ -311,6 +311,41 @@ namespace OrbitalPanopticon.Core
         [Tooltip("Active count of purchased helper robots in the arena.")]
         public int activeHelperRobotsCount = 0;
 
+        // =========================================================================
+        // 7. Black Hole Evolution & Finale
+        // =========================================================================
+        [Header("7. Black Hole Evolution & Finale")]
+        [Tooltip("Number of completed quotas required to reach critical mass and trigger the endgame sequence.")]
+        public int quotasToTriggerFinale = 8;
+
+        [Tooltip("How much the Black Hole VisualRoot and eventHorizonRadius grow per completed quota.")]
+        public float blackHoleScalePerQuota = 0.35f;
+
+        [Tooltip("Duration of the player relativistic overdrive dash/burst.")]
+        public float playerWowOverdriveDuration = 6.0f;
+
+        [Tooltip("Interval in seconds between Black Hole gravitational shockwave pulses.")]
+        public float blackHoleWowPulseInterval = 12.0f;
+
+        [Tooltip("Laser observation multiplier under the Panopticon Laser Grid WOW perk.")]
+        public float cameraWowChainLaserMultiplier = 6.0f;
+
+        [Tooltip("Whether the Relativistic Overdrive (Player WOW-Perk) is unlocked.")]
+        public bool playerRelativisticOverdriveUnlocked = false;
+
+        [Tooltip("Whether the Hawking Singularity Pulse (Black Hole WOW-Perk) is unlocked.")]
+        public bool blackHoleHawkingPulseUnlocked = false;
+
+        [Tooltip("Whether the Panopticon Laser Grid (Cameras WOW-Perk) is unlocked.")]
+        public bool panopticonLaserGridUnlocked = false;
+
+        // =========================================================================
+        // 8. Debug & Designer Tools
+        // =========================================================================
+        [Header("8. Debug & Designer Tools")]
+        [Tooltip("Enable designer function key shortcuts (F1-F4) for rapid playtesting.")]
+        public bool enableDebugShortcuts = true;
+
         private void OnEnable()
         {
             _instance = this;

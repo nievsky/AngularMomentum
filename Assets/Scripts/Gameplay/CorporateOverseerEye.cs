@@ -22,6 +22,9 @@ namespace OrbitalPanopticon.Gameplay
         // Internal orbit progress
         private float _orbitAngle = 0f;
 
+        [Header("Finale Status")]
+        public bool isConsumedOrCollapsing = false;
+
         private void Awake()
         {
             if (targetDrone == null)
@@ -48,7 +51,10 @@ namespace OrbitalPanopticon.Gameplay
 
         private void Update()
         {
-            UpdateOrbitalPosition();
+            if (!isConsumedOrCollapsing)
+            {
+                UpdateOrbitalPosition();
+            }
             TrackPlayerDrone();
             AnimatePupilGlow();
         }

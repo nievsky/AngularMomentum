@@ -242,6 +242,44 @@ namespace OrbitalPanopticon.Player
                 }
                 _currentPullTarget = null;
             }
+
+            // Relativistic Auto-Magnetization (Player WOW-Perk)
+            if (config != null && config.playerRelativisticOverdriveUnlocked && !_requireRmbRelease)
+            {
+                PerformRelativisticAutoMagnet(config, holdTargetPos);
+            }
+        }
+
+        private void PerformRelativisticAutoMagnet(GameBalanceConfig config, Vector3 holdTargetPos)
+        {
+            if (_heldItems.Count >= config.maxHeldObjects) return;
+
+            Vector3 origin = mainCamera != null ? mainCamera.transform.position : transform.position;
+            Collider[] hits = UnityEngine.Physics.OverlapSphere(origin, 6.0f, ~0, QueryTriggerInteraction.Ignore);
+
+            for (int i = 0; i < hits.Length; i++)
+            {
+                if (hits[i] == null) continue;
+                ScrapItem scrap = hits[i].GetComponentInParent<ScrapItem>();
+                if (scrap == null || _heldItems.Contains(scrap) || scrap.IsPullImmune) continue;
+                if (scrap.CurrentState != ScrapState.Floating && scrap.CurrentState != ScrapState.Launched) continue;
+
+                float distToHold = Vector3.Distance(scrap.transform.position, holdTargetPos);
+                if (distToHold <= 1.4f)
+                {
+                    AttachHeldItem(scrap);
+                    if (_heldItems.Count >= config.maxHeldObjects) break;
+                }
+                else
+                {
+                    // Instant attraction without applying reaction impulse to player drone
+                    Vector3 pullDir = (holdTargetPos - scrap.transform.position).normalized;
+                    if (scrap.Rigidbody != null)
+                    {
+                        scrap.Rigidbody.linearVelocity = Vector3.Lerp(scrap.Rigidbody.linearVelocity, pullDir * 20f, Time.deltaTime * 10f);
+                    }
+                }
+            }
         }
 
         private Ray GetAimRay()
@@ -724,15 +762,35 @@ namespace OrbitalPanopticon.Player
             if (config == null || UIManager.Instance == null) return;
 
             bool hasTarget = false;
+            bool isAimTargetObserved = false;
             int maxHeld = config.maxHeldObjects;
 
             if (_heldItems.Count >= maxHeld)
             {
                 hasTarget = true;
+                for (int i = 0; i < _heldItems.Count; i++)
+                {
+                    if (_heldItems[i] != null && _heldItems[i].IsObserved)
+                    {
+                        isAimTargetObserved = true;
+                        break;
+                    }
+                }
             }
             else
             {
-                if (_heldItems.Count > 0) hasTarget = true;
+                if (_heldItems.Count > 0)
+                {
+                    hasTarget = true;
+                    for (int i = 0; i < _heldItems.Count; i++)
+                    {
+                        if (_heldItems[i] != null && _heldItems[i].IsObserved)
+                        {
+                            isAimTargetObserved = true;
+                            break;
+                        }
+                    }
+                }
 
                 Ray aimRay = GetAimRay();
                 Vector3 dronePos = droneRb != null ? droneRb.position : transform.position;
@@ -751,6 +809,7 @@ namespace OrbitalPanopticon.Player
                         if (angle <= maxAngle)
                         {
                             hasTarget = true;
+                            if (scrap.IsObserved) isAimTargetObserved = true;
                             break;
                         }
                     }
@@ -769,7 +828,7 @@ namespace OrbitalPanopticon.Player
 
             if (UIManager.Instance != null)
             {
-                UIManager.Instance.SetCrosshairState(hasTarget, _heldItems.Count > 0);
+                UIManager.Instance.SetCrosshairState(hasTarget, _heldItems.Count > 0, isAimTargetObserved);
                 UIManager.Instance.SetObservedNotice(isHoldingObserved, "OBSERVED TARGET GRABBED - x3 VALUE!");
             }
         }

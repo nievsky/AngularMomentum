@@ -202,7 +202,9 @@ namespace OrbitalPanopticon.Gameplay
             // When launched into the accretion disk, build bonus multiplier over time
             if (currentState == ScrapState.Launched && isInAccretionZone)
             {
-                orbitalBonusMultiplier += rate * dt;
+                OrbitalPanopticon.Core.GameBalanceConfig config = OrbitalPanopticon.Core.GameManager.GameBalanceConfigInstance;
+                float wowMultiplier = (config != null && config.blackHoleHawkingPulseUnlocked) ? 2.0f : 1.0f;
+                orbitalBonusMultiplier += rate * wowMultiplier * dt;
                 UpdateVisualHeat();
             }
         }

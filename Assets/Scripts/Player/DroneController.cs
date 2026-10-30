@@ -29,6 +29,7 @@ namespace OrbitalPanopticon.Player
         private float _verticalInput;
         private float _dashTimer = 0f;
         private float _lastDashTime = -999f;
+        private TrailRenderer _dashTrail;
 
         public float CurrentCargoMass
         {
@@ -111,6 +112,37 @@ namespace OrbitalPanopticon.Player
             {
                 mainCamera = Camera.main;
             }
+
+            SetupDashTrail();
+        }
+
+        private void SetupDashTrail()
+        {
+            if (_dashTrail == null)
+            {
+                GameObject trailGo = new GameObject("OverdriveDashTrail");
+                trailGo.transform.SetParent(transform, false);
+                trailGo.transform.localPosition = new Vector3(0f, -0.2f, -0.5f);
+                _dashTrail = trailGo.AddComponent<TrailRenderer>();
+                _dashTrail.time = 0.55f;
+                _dashTrail.startWidth = 0.45f;
+                _dashTrail.endWidth = 0.05f;
+                _dashTrail.emitting = false;
+
+                Material trailMat = new Material(Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Sprites/Default"));
+                trailMat.name = "M_OverdriveDashTrail";
+                Color c = new Color(1f, 0.2f, 0.8f, 0.85f);
+                trailMat.SetColor("_BaseColor", c);
+                if (trailMat.HasProperty("_Color")) trailMat.SetColor("_Color", c);
+                _dashTrail.sharedMaterial = trailMat;
+
+                Gradient grad = new Gradient();
+                grad.SetKeys(
+                    new GradientColorKey[] { new GradientColorKey(new Color(1f, 0.2f, 0.85f), 0f), new GradientColorKey(new Color(0.2f, 0.9f, 1f), 1f) },
+                    new GradientAlphaKey[] { new GradientAlphaKey(0.9f, 0f), new GradientAlphaKey(0f, 1f) }
+                );
+                _dashTrail.colorGradient = grad;
+            }
         }
 
         private void Start()
@@ -158,6 +190,10 @@ namespace OrbitalPanopticon.Player
             if (_dashTimer > 0f)
             {
                 _dashTimer -= Time.deltaTime;
+                if (_dashTimer <= 0f && _dashTrail != null)
+                {
+                    _dashTrail.emitting = false;
+                }
             }
 
             HandleMouseLook();
@@ -266,6 +302,11 @@ namespace OrbitalPanopticon.Player
                 if (rb != null)
                 {
                     rb.linearVelocity = dashDir * impulse;
+                }
+
+                if (config != null && config.playerRelativisticOverdriveUnlocked && _dashTrail != null)
+                {
+                    _dashTrail.emitting = true;
                 }
             }
         }
