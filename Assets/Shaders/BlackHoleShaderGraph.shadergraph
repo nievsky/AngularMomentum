@@ -648,7 +648,7 @@
     "m_Title": "Better Distortion",
     "m_Position": {
         "x": -4294.0,
-        "y": -243.33331298828126
+        "y": -243.0
     }
 }
 
@@ -3762,8 +3762,8 @@
     "m_ObjectId": "c3710228909a450dbddb271c30aab60d",
     "m_Title": "Screen Space vector towards center",
     "m_Position": {
-        "x": -3647.333251953125,
-        "y": -995.9999389648438
+        "x": -3647.0,
+        "y": -996.0
     }
 }
 
@@ -4771,8 +4771,8 @@
     "m_ObjectId": "fb20ff5bf1e247f39ee68c5a118ac61d",
     "m_Title": "BlackHoleMask",
     "m_Position": {
-        "x": -1787.9998779296875,
-        "y": 1240.666748046875
+        "x": -1788.0,
+        "y": 1241.0
     }
 }
 

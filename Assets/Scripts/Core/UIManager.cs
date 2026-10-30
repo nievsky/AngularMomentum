@@ -38,6 +38,12 @@ namespace OrbitalPanopticon.Core
         [SerializeField] private GameObject signalLostOverlay;
         [SerializeField] private TextMeshProUGUI signalLostReasonText;
 
+        [Header("Observed Scrap Notification")]
+        [SerializeField] private GameObject observedNoticePanel;
+        [SerializeField] private TextMeshProUGUI observedNoticeText;
+        [SerializeField] private Image observedNoticeBorder;
+        [SerializeField] private Color observedGoldColor = new Color(1f, 0.85f, 0.1f, 1f);
+
         [Header("Heat Colors")]
         [SerializeField] private Color heat1xColor = Color.white;
         [SerializeField] private Color heat2xColor = new Color(1f, 0.9f, 0.2f);
@@ -81,6 +87,11 @@ namespace OrbitalPanopticon.Core
             {
                 warningPanel.SetActive(false);
             }
+
+            if (observedNoticePanel != null)
+            {
+                observedNoticePanel.SetActive(false);
+            }
         }
 
         private void OnDestroy()
@@ -96,6 +107,38 @@ namespace OrbitalPanopticon.Core
         {
             UpdateHUD();
             UpdateWarningHUD();
+            UpdateObservedNotice();
+        }
+
+        public void SetObservedNotice(bool show, string message = "OBSERVED TARGET GRABBED - x3 VALUE!")
+        {
+            if (observedNoticePanel != null && observedNoticePanel.activeSelf != show)
+            {
+                observedNoticePanel.SetActive(show);
+            }
+            if (show && observedNoticeText != null)
+            {
+                observedNoticeText.text = message;
+            }
+        }
+
+        private void UpdateObservedNotice()
+        {
+            if (observedNoticePanel == null || !observedNoticePanel.activeSelf) return;
+
+            float pulse = (Mathf.Sin(Time.time * 8f) + 1f) * 0.5f;
+            if (observedNoticeText != null)
+            {
+                Color c = observedGoldColor;
+                c.a = Mathf.Lerp(0.85f, 1f, pulse);
+                observedNoticeText.color = c;
+            }
+            if (observedNoticeBorder != null)
+            {
+                Color c = observedGoldColor;
+                c.a = Mathf.Lerp(0.35f, 0.85f, pulse);
+                observedNoticeBorder.color = c;
+            }
         }
 
         private void UpdateHUD()
@@ -224,7 +267,7 @@ namespace OrbitalPanopticon.Core
                 }
             }
 
-            yield return new WaitForSeconds(1.5f);
+            yield return new WaitForSeconds(1.2f);
 
             if (signalLostOverlay != null)
             {

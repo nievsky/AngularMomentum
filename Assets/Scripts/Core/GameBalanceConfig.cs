@@ -28,51 +28,94 @@ namespace OrbitalPanopticon.Core
         }
 
         // =========================================================================
-        // 1. Black Hole & Outer Wilds Physics
+        // 0. Global Pacing
         // =========================================================================
-        [Header("1. Black Hole & Outer Wilds Physics")]
+        [Header("0. Global Pacing")]
+        [Tooltip("Master global speed multiplier for pacing all physics and entity speeds (defaults to 0.5 for calm, deliberate pacing).")]
+        [Range(0.1f, 2.0f)]
+        public float globalSimulationSpeed = 0.5f;
+
+        // =========================================================================
+        // 1. Black Hole & Two-Zone Physics
+        // =========================================================================
+        [Header("1. Black Hole & Two-Zone Physics")]
         [Tooltip("Orbit direction: true for clockwise, false for counter-clockwise.")]
         public bool clockwiseOrbit = true;
 
-        [Tooltip("Gravitational attraction strength (inverse-square force magnitude).")]
-        [Range(100f, 5000f)]
-        public float gravityConstantG = 1200f;
-
-        [Tooltip("Inner radius threshold preventing infinite gravitational acceleration.")]
-        [Range(1f, 15f)]
-        public float minGravityDistance = 4.5f;
-
-        [Tooltip("Force multiplier aligning object velocity into stable circular/spiral orbits instead of direct radial plunge.")]
-        [Range(0.5f, 10f)]
-        public float orbitalGuidanceStrength = 2.5f;
-
-        [Tooltip("Inward drag factor gradually tightening orbits toward the singularity.")]
-        [Range(0.1f, 1.5f)]
-        public float inwardSpiralDecay = 0.85f;
-
-        [Tooltip("Hard velocity cap inside the gravity well preventing physics tunneling or orbital escape spikes.")]
-        [Range(20f, 120f)]
-        public float maxSafeVelocity = 45f;
+        [Tooltip("The accretion threshold radius. Outside this radius, floating scrap NEVER falls inward.")]
+        [Range(5f, 35f)]
+        public float accretionThresholdRadius = 15.0f;
 
         [Tooltip("Lethal radius where spaghettification and consumption occur.")]
         [Range(1f, 10f)]
         public float eventHorizonRadius = 3.5f;
 
-        [Tooltip("Outer reach radius of the gravitational well.")]
+        [Tooltip("Very slow, predictable clockwise orbit speed for floating scrap outside the threshold.")]
+        [Range(0.5f, 10f)]
+        public float outerZoneDriftSpeed = 2.2f;
+
+        [Tooltip("Gently keeps floating scrap at its initial spawn radius so orbits don't shift chaotically.")]
+        [Range(0.1f, 5f)]
+        public float outerZoneOrbitSpring = 1.5f;
+
+        [Tooltip("Tangential speed right at the threshold.")]
+        [Range(1f, 40f)]
+        public float innerMinSwirlSpeed = 16.0f;
+
+        [Tooltip("Max tangential speed near the Event Horizon.")]
+        [Range(10f, 100f)]
+        public float innerMaxSwirlSpeed = 48.0f;
+
+        [Tooltip("Controls the exponential acceleration curve inside the threshold.")]
+        [Range(0.5f, 5f)]
+        public float swirlExponentialPower = 1.8f;
+
+        [Tooltip("Slow inward pull inside the threshold so objects MUST complete 2-4 full rotations before reaching the center!")]
+        [Range(0.5f, 10f)]
+        public float innerRadialSinkSpeed = 2.0f;
+
+        [Tooltip("Meters per second that the target orbital radius actively shrinks inside the threshold.")]
+        [Range(0.5f, 20f)]
+        public float spiralRadiusShrinkRate = 5.5f;
+
+        [Tooltip("How strongly the object is pulled onto its shrinking spiral radius.")]
+        [Range(1f, 30f)]
+        public float spiralTightnessSpring = 8.0f;
+
+        [Tooltip("How fast objects above/below the Black Hole get pulled toward the Y = 0 plane.")]
+        [Range(0.5f, 20f)]
+        public float verticalFlattenStrength = 6.0f;
+
+        [Tooltip("Outer reach radius of the gravitational well trigger.")]
         [Range(20f, 80f)]
         public float gravityWellRadius = 45f;
+
+        [Tooltip("Gravity multiplier applied to the player drone.")]
+        [Range(0.1f, 2.0f)]
+        public float playerGravityMultiplier = 0.65f;
+
+        // Legacy / Compatibility fields
+        [HideInInspector] public float gravityConstantG = 1200f;
+        [HideInInspector] public float minGravityDistance = 4.5f;
+        [HideInInspector] public float orbitalGuidanceStrength = 2.5f;
+        [HideInInspector] public float inwardSpiralDecay = 0.85f;
+        [HideInInspector] public float maxSafeVelocity = 45f;
 
         // =========================================================================
         // 2. Drone Inertia & Movement (Outer Wilds Feel)
         // =========================================================================
         [Header("2. Drone Inertia & Movement (Outer Wilds Feel)")]
+        [Tooltip("Mouse look sensitivity for FPV pitch and yaw control.")]
+        [Range(0.2f, 5.0f)]
+        public float mouseSensitivity = 1.8f;
+
         [Tooltip("Base horizontal thruster acceleration force.")]
-        [Range(5f, 50f)]
-        public float baseThrusterAcceleration = 14f;
+        [Range(2f, 30f)]
+        public float baseThrusterAcceleration = 7.5f;
 
         [Tooltip("Vertical thruster acceleration force (Space / Ctrl / Q / E).")]
-        [Range(5f, 40f)]
-        public float verticalThrusterAcceleration = 10f;
+        [Range(2f, 25f)]
+        public float verticalThrusterAcceleration = 6.0f;
 
         [Tooltip("Space linear damping (near zero for authentic zero-G inertia).")]
         [Range(0f, 1f)]
@@ -83,20 +126,28 @@ namespace OrbitalPanopticon.Core
         public float retroBrakeDamping = 3.5f;
 
         [Tooltip("Max linear speed achievable solely from onboard drone thrusters (gravity slingshots exceed this!).")]
-        [Range(10f, 50f)]
-        public float maxThrusterSpeed = 18f;
+        [Range(5f, 30f)]
+        public float maxThrusterSpeed = 9.0f;
 
-        [Tooltip("Instant burst impulse applied when pressing boost (Shift).")]
+        [Tooltip("Instant burst impulse applied when pressing boost (Shift) - Legacy.")]
         [Range(5f, 50f)]
         public float boostImpulse = 16f;
 
-        [Tooltip("Cooldown in seconds between boost burst impulses.")]
+        [Tooltip("Cooldown in seconds between boost burst impulses - Legacy.")]
         [Range(0.5f, 5f)]
         public float boostCooldown = 2.0f;
 
-        [Tooltip("Gravity multiplier applied to the player drone (allowing escape from the black hole).")]
-        [Range(0.1f, 1.5f)]
-        public float playerGravityMultiplier = 0.65f;
+        [Tooltip("Instant velocity impulse applied when performing a directional dash (Shift).")]
+        [Range(10f, 60f)]
+        public float dashImpulse = 22f;
+
+        [Tooltip("Duration in seconds during which normal thruster speed clamping is bypassed after a dash.")]
+        [Range(0.05f, 1f)]
+        public float dashDuration = 0.22f;
+
+        [Tooltip("Cooldown in seconds between directional dashes.")]
+        [Range(0.2f, 3f)]
+        public float dashCooldown = 0.9f;
 
         // =========================================================================
         // 3. Robo-Arm & Gravity Gun (HL2 Style)
@@ -123,15 +174,23 @@ namespace OrbitalPanopticon.Core
 
         [Tooltip("Distance in front of the drone where captured cargo is held suspended.")]
         [Range(1.5f, 8f)]
-        public float holdPointDistance = 3.2f;
+        public float holdPointDistance = 2.8f;
 
         [Tooltip("Spring tension maintaining cargo stability at the hold point.")]
         [Range(20f, 200f)]
         public float holdSpringStrength = 80f;
 
         [Tooltip("Launch impulse when punting/firing held scrap toward targets or the black hole.")]
-        [Range(15f, 100f)]
-        public float puntLaunchImpulse = 38f;
+        [Range(10f, 100f)]
+        public float puntLaunchImpulse = 20.0f;
+
+        [Tooltip("Max reach distance for forward dry punt without holding objects.")]
+        [Range(3f, 20f)]
+        public float dryPuntRange = 8.5f;
+
+        [Tooltip("Cone/sphere radius for forward dry punt.")]
+        [Range(0.5f, 5f)]
+        public float dryPuntRadius = 2.2f;
 
         [Tooltip("Max scrap items the drone can simultaneously hold.")]
         [Range(1, 10)]
@@ -182,12 +241,28 @@ namespace OrbitalPanopticon.Core
         public float cameraObservedMultiplier = 3.0f;
 
         [Tooltip("Rotational tracking speed for surveillance camera pan & tilt.")]
-        [Range(1f, 20f)]
-        public float cameraRotationSpeed = 4.0f;
+        [Range(0.5f, 10f)]
+        public float cameraRotationSpeed = 1.5f;
+
+        [Tooltip("Rotational tracking speed for surveillance camera when locked onto a target.")]
+        [Range(5f, 50f)]
+        public float cameraLockRotationSpeed = 25f;
+
+        [Tooltip("Rotational tracking speed for surveillance camera when searching or switching targets.")]
+        [Range(1f, 15f)]
+        public float cameraSearchRotationSpeed = 4f;
+
+        [Tooltip("Spotlight beam radius at the target object.")]
+        [Range(0.5f, 10f)]
+        public float cameraSpotRadiusAtTarget = 2.5f;
 
         [Tooltip("Orbital traversal speed for mobile overseer cameras.")]
-        [Range(1f, 30f)]
-        public float overseerOrbitSpeed = 8.0f;
+        [Range(0.5f, 20f)]
+        public float overseerOrbitSpeed = 2.0f;
+
+        [Tooltip("Smooth tracking rotation speed for Corporate Overseer Eye looking at player.")]
+        [Range(0.2f, 5.0f)]
+        public float overseerTrackingSpeed = 1.5f;
 
         [Tooltip("Baseline target score for the first quota.")]
         [Range(100f, 2000f)]

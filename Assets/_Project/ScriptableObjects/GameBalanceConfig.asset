@@ -12,30 +12,47 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 16dcf1ee8f9de844ba374c52091935d2, type: 3}
   m_Name: GameBalanceConfig
   m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GameBalanceConfig
+  globalSimulationSpeed: 0.5
   clockwiseOrbit: 1
+  accretionThresholdRadius: 15
+  eventHorizonRadius: 3.5
+  outerZoneDriftSpeed: 2.2
+  outerZoneOrbitSpring: 1.5
+  innerMinSwirlSpeed: 16
+  innerMaxSwirlSpeed: 48
+  swirlExponentialPower: 1.8
+  innerRadialSinkSpeed: 2
+  spiralRadiusShrinkRate: 5.5
+  spiralTightnessSpring: 8
+  verticalFlattenStrength: 6
+  gravityWellRadius: 45
+  playerGravityMultiplier: 0.65
   gravityConstantG: 1200
   minGravityDistance: 4.5
   orbitalGuidanceStrength: 2.5
   inwardSpiralDecay: 0.85
   maxSafeVelocity: 45
-  eventHorizonRadius: 3.5
-  gravityWellRadius: 45
-  baseThrusterAcceleration: 14
-  verticalThrusterAcceleration: 10
+  mouseSensitivity: 1.8
+  baseThrusterAcceleration: 7.5
+  verticalThrusterAcceleration: 6
   spaceLinearDamping: 0.08
   retroBrakeDamping: 3.5
-  maxThrusterSpeed: 18
+  maxThrusterSpeed: 9
   boostImpulse: 16
   boostCooldown: 2
-  playerGravityMultiplier: 0.65
+  dashImpulse: 22
+  dashDuration: 0.22
+  dashCooldown: 0.9
   isMagnetUnlocked: 0
   grabRangeBase: 4.5
   magnetPullRange: 18
   magnetConeAngle: 25
   magnetPullForce: 50
-  holdPointDistance: 3.2
+  holdPointDistance: 2.8
   holdSpringStrength: 80
-  puntLaunchImpulse: 38
+  puntLaunchImpulse: 20
+  dryPuntRange: 8.5
+  dryPuntRadius: 2.2
   maxHeldObjects: 1
   maxActiveScrap: 50
   scrapSpawnInterval: 1
@@ -46,8 +63,12 @@ MonoBehaviour:
   outOfBoundsWarningTime: 3
   scrapFadeOutDuration: 1.8
   cameraObservedMultiplier: 3
-  cameraRotationSpeed: 4
-  overseerOrbitSpeed: 8
+  cameraRotationSpeed: 1.5
+  cameraLockRotationSpeed: 25
+  cameraSearchRotationSpeed: 4
+  cameraSpotRadiusAtTarget: 2.5
+  overseerOrbitSpeed: 2
+  overseerTrackingSpeed: 1.5
   baseQuotaTarget: 500
   quotaGrowthMultiplier: 1.75
   heatDecayDelay: 4.5

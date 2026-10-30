@@ -9,14 +9,8 @@ namespace OrbitalPanopticon.Player
     public class DroneController : MonoBehaviour
     {
         [Header("Tuning Fallbacks (Overrides from GameBalanceConfig)")]
-        [Tooltip("Turn rate for aligning drone heading with movement direction.")]
-        [SerializeField] private float turnSpeed = 10f;
-
         [Tooltip("Damping factor for cargo weight penalty on acceleration.")]
         [SerializeField] private float cargoMassPenaltyFactor = 0.05f;
-
-        [Tooltip("Thrust multiplier applied when holding boost.")]
-        [SerializeField] private float boostContinuousMultiplier = 1.6f;
 
         [Header("References")]
         [SerializeField] private Rigidbody rb;
@@ -28,13 +22,13 @@ namespace OrbitalPanopticon.Player
         [SerializeField] private float currentCargoMass = 0f;
         [SerializeField] private bool isControlEnabled = true;
         [SerializeField] private bool isBraking = false;
+        [SerializeField] private float currentPitch = 0f;
+        [SerializeField] private float currentYaw = 0f;
 
         private Vector2 _moveInput;
         private float _verticalInput;
-        private bool _isBoostHeld;
-        private bool _burstRequested;
-        private float _lastBurstTime = -999f;
-        private Vector3 _lastNonZeroVelocityDir = Vector3.forward;
+        private float _dashTimer = 0f;
+        private float _lastDashTime = -999f;
 
         public float CurrentCargoMass
         {
@@ -43,19 +37,25 @@ namespace OrbitalPanopticon.Player
         }
 
         public bool IsControlEnabled => isControlEnabled;
-        public bool IsBoosting => _isBoostHeld;
+        public bool IsDashing => _dashTimer > 0f;
+        public bool IsBoosting => IsDashing;
         public bool IsBraking => isBraking;
-        public float BoostCooldownTimer
+        public float Pitch => currentPitch;
+        public float Yaw => currentYaw;
+
+        public float DashCooldownTimer
         {
             get
             {
                 GameBalanceConfig config = GameManager.GameBalanceConfigInstance;
-                float cooldown = config != null ? config.boostCooldown : 2.0f;
-                return Mathf.Max(0f, cooldown - (Time.time - _lastBurstTime));
+                float cooldown = config != null ? config.dashCooldown : 0.9f;
+                return Mathf.Max(0f, cooldown - (Time.time - _lastDashTime));
             }
         }
+        public float BoostCooldownTimer => DashCooldownTimer;
         public Transform TetherPoint => tetherPoint;
         public Rigidbody Rigidbody => rb;
+        public Camera MainCamera => mainCamera;
 
         public void SetControlEnabled(bool enabled)
         {
@@ -64,8 +64,7 @@ namespace OrbitalPanopticon.Player
             {
                 _moveInput = Vector2.zero;
                 _verticalInput = 0f;
-                _isBoostHeld = false;
-                _burstRequested = false;
+                _dashTimer = 0f;
                 isBraking = false;
             }
         }
@@ -73,11 +72,19 @@ namespace OrbitalPanopticon.Player
         public void Teleport(Vector3 position, Quaternion rotation)
         {
             transform.position = position;
-            transform.rotation = rotation;
+            currentYaw = rotation.eulerAngles.y;
+            currentPitch = 0f;
+            transform.rotation = Quaternion.Euler(0f, currentYaw, 0f);
+
+            if (mainCamera != null)
+            {
+                mainCamera.transform.localRotation = Quaternion.identity;
+            }
+
             if (rb != null)
             {
                 rb.position = position;
-                rb.rotation = rotation;
+                rb.rotation = Quaternion.Euler(0f, currentYaw, 0f);
                 rb.linearVelocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
             }
@@ -90,22 +97,62 @@ namespace OrbitalPanopticon.Player
                 rb = GetComponent<Rigidbody>();
             }
 
+            // Freeze physics torque to keep Roll and Pitch strictly stabilized under player control
+            if (rb != null)
+            {
+                rb.freezeRotation = true;
+            }
+
+            if (mainCamera == null)
+            {
+                mainCamera = GetComponentInChildren<Camera>();
+            }
             if (mainCamera == null)
             {
                 mainCamera = Camera.main;
             }
         }
 
-        private void OnValidate()
+        private void Start()
         {
-            if (rb == null)
+            currentYaw = transform.eulerAngles.y;
+            currentPitch = 0f;
+
+            if (mainCamera != null)
             {
-                rb = GetComponent<Rigidbody>();
+                mainCamera.transform.localRotation = Quaternion.Euler(currentPitch, 0f, 0f);
             }
+
+            LockCursor();
+        }
+
+        private void OnEnable()
+        {
+            LockCursor();
+        }
+
+        private void OnApplicationFocus(bool hasFocus)
+        {
+            if (hasFocus && isControlEnabled)
+            {
+                LockCursor();
+            }
+        }
+
+        private void LockCursor()
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
         }
 
         private void Update()
         {
+            if (_dashTimer > 0f)
+            {
+                _dashTimer -= Time.deltaTime;
+            }
+
+            HandleMouseLook();
             ReadInput();
         }
 
@@ -113,14 +160,50 @@ namespace OrbitalPanopticon.Player
         {
             UpdateDampingAndBrakes();
             ApplyMovementPhysics();
-            AlignDroneHeading();
+
+            // Enforce zero physics angular velocity to eliminate collision tumble
+            if (rb != null && !rb.isKinematic)
+            {
+                rb.angularVelocity = Vector3.zero;
+            }
+        }
+
+        private void HandleMouseLook()
+        {
+            if (!isControlEnabled) return;
+
+            var mouse = Mouse.current;
+            if (mouse == null) return;
+
+            // Re-acquire cursor lock on click if lost
+            if (mouse.leftButton.wasPressedThisFrame && Cursor.lockState != CursorLockMode.Locked)
+            {
+                LockCursor();
+            }
+
+            GameBalanceConfig config = GameManager.GameBalanceConfigInstance;
+            float sens = config != null ? config.mouseSensitivity : 1.8f;
+
+            Vector2 mouseDelta = mouse.delta.ReadValue();
+            float mouseX = mouseDelta.x * sens * 0.1f;
+            float mouseY = mouseDelta.y * sens * 0.1f;
+
+            // Yaw: Horizontal turn around world Up
+            currentYaw += mouseX;
+            transform.rotation = Quaternion.Euler(0f, currentYaw, 0f);
+
+            // Pitch: Vertical look clamped [-80, +80], Roll strictly zero
+            currentPitch = Mathf.Clamp(currentPitch - mouseY, -80f, 80f);
+            if (mainCamera != null)
+            {
+                mainCamera.transform.localRotation = Quaternion.Euler(currentPitch, 0f, 0f);
+            }
         }
 
         private void ReadInput()
         {
             _moveInput = Vector2.zero;
             _verticalInput = 0f;
-            _isBoostHeld = false;
             isBraking = false;
 
             if (!isControlEnabled) return;
@@ -135,49 +218,70 @@ namespace OrbitalPanopticon.Player
             if (keyboard.aKey.isPressed) _moveInput.x -= 1f;
             _moveInput = Vector2.ClampMagnitude(_moveInput, 1f);
 
-            // Vertical thrust (Space / Left Ctrl or E / Q)
-            bool space = keyboard.spaceKey.isPressed || keyboard.eKey.isPressed;
-            bool ctrl = keyboard.leftCtrlKey.isPressed || keyboard.qKey.isPressed;
+            // Vertical thrust UP is strictly Space; Vertical thrust DOWN is strictly LeftControl (or C).
+            // KeyCode.E and KeyCode.Q are strictly removed to eliminate input conflicts.
+            // Using New Input System (Keyboard.current) to avoid InvalidOperationException.
+            bool up = keyboard.spaceKey.isPressed;
+            bool down = keyboard.leftCtrlKey.isPressed || keyboard.cKey.isPressed;
 
-            if (space && !ctrl) _verticalInput += 1f;
-            if (ctrl && !space) _verticalInput -= 1f;
+            if (up && !down) _verticalInput += 1f;
+            if (down && !up) _verticalInput -= 1f;
 
-            // Retro-Braking / Inertia match: X or C or holding both Space+Ctrl
-            if (keyboard.xKey.isPressed || keyboard.cKey.isPressed || (space && ctrl))
+            // Retro-Braking / Inertia match: X or holding both Up+Down
+            bool xBrake = keyboard.xKey.isPressed;
+            if (xBrake || (up && down))
             {
                 isBraking = true;
             }
 
-            // Boost
-            _isBoostHeld = keyboard.leftShiftKey.isPressed;
-
+            // Directional Dash on Left Shift
             GameBalanceConfig config = GameManager.GameBalanceConfigInstance;
-            float cooldown = config != null ? config.boostCooldown : 2.0f;
+            float cooldown = config != null ? config.dashCooldown : 0.9f;
+            float impulse = config != null ? config.dashImpulse : 22f;
+            float duration = config != null ? config.dashDuration : 0.22f;
 
-            if (keyboard.leftShiftKey.wasPressedThisFrame && Time.time - _lastBurstTime >= cooldown)
+            if (keyboard.leftShiftKey.wasPressedThisFrame && Time.time - _lastDashTime >= cooldown)
             {
-                _burstRequested = true;
-                _lastBurstTime = Time.time;
+                Transform camTransform = mainCamera != null ? mainCamera.transform : transform;
+                Vector3 camForward = camTransform.forward;
+                Vector3 camRight = camTransform.right;
+
+                // Calculate desired direction from active movement keys
+                Vector3 inputDir = (camForward * _moveInput.y) + (camRight * _moveInput.x) + (Vector3.up * _verticalInput);
+                Vector3 dashDir = inputDir.sqrMagnitude > 0.01f ? inputDir.normalized : camForward;
+
+                _lastDashTime = Time.time;
+                _dashTimer = duration;
+
+                if (rb != null)
+                {
+                    rb.linearVelocity = dashDir * impulse;
+                }
             }
         }
 
         private void UpdateDampingAndBrakes()
         {
-            if (rb == null) return;
+            if (rb == null || rb.isKinematic) return;
 
             GameBalanceConfig config = GameManager.GameBalanceConfigInstance;
             float spaceDamping = config != null ? config.spaceLinearDamping : 0.08f;
             float brakeDamping = config != null ? config.retroBrakeDamping : 3.5f;
+            float pacing = config != null ? (config.globalSimulationSpeed / 0.5f) : 1.0f;
+            float baseAcc = (config != null ? config.baseThrusterAcceleration : 7.5f) * pacing;
 
             if (isBraking)
             {
                 rb.linearDamping = brakeDamping;
 
-                // Active retro-thrust countering remaining velocity
+                // Active retro-thrust countering remaining velocity for a crisp stop
                 if (rb.linearVelocity.sqrMagnitude > 0.05f)
                 {
-                    float baseAcc = config != null ? config.baseThrusterAcceleration : 14f;
-                    rb.AddForce(-rb.linearVelocity.normalized * (baseAcc * 0.8f), ForceMode.Acceleration);
+                    rb.AddForce(-rb.linearVelocity.normalized * (baseAcc * 1.5f), ForceMode.Acceleration);
+                }
+                else
+                {
+                    rb.linearVelocity = Vector3.zero;
                 }
             }
             else
@@ -188,97 +292,46 @@ namespace OrbitalPanopticon.Player
 
         private void ApplyMovementPhysics()
         {
-            if (rb == null || !isControlEnabled) return;
+            if (rb == null || rb.isKinematic || !isControlEnabled) return;
 
             GameBalanceConfig config = GameManager.GameBalanceConfigInstance;
-            float baseAcc = config != null ? config.baseThrusterAcceleration : 14f;
-            float vertAcc = config != null ? config.verticalThrusterAcceleration : 10f;
-            float maxSpeed = config != null ? config.maxThrusterSpeed : 18f;
-            float burstImpulse = config != null ? config.boostImpulse : 16f;
+            float pacing = config != null ? (config.globalSimulationSpeed / 0.5f) : 1.0f;
+            float baseAcc = (config != null ? config.baseThrusterAcceleration : 7.5f) * pacing;
+            float vertAcc = (config != null ? config.verticalThrusterAcceleration : 6.0f) * pacing;
+            float maxSpeed = (config != null ? config.maxThrusterSpeed : 9.0f) * pacing;
+            float burstImpulse = (config != null ? config.boostImpulse : 16f) * pacing;
 
             Transform camTransform = mainCamera != null ? mainCamera.transform : transform;
 
-            // Camera-relative directions on horizontal XZ plane
+            // Fly Where You Look: Forward is directly along camera aim vector (including vertical pitch)
             Vector3 camForward = camTransform.forward;
-            camForward.y = 0f;
-            if (camForward.sqrMagnitude < 0.001f)
-            {
-                camForward = camTransform.up;
-                camForward.y = 0f;
-            }
-            camForward.Normalize();
-
             Vector3 camRight = camTransform.right;
-            camRight.y = 0f;
-            camRight.Normalize();
 
             Vector3 desiredDir = (camForward * _moveInput.y) + (camRight * _moveInput.x);
+            Vector3 verticalThrust = Vector3.up * _verticalInput;
 
             // Cargo penalty calculation
             float cargoPenaltyMultiplier = 1f / (1f + (currentCargoMass * cargoMassPenaltyFactor));
-            float currentMultiplier = (_isBoostHeld ? boostContinuousMultiplier : 1f) * cargoPenaltyMultiplier;
+            Vector3 desiredAccel = ((desiredDir * baseAcc) + (verticalThrust * vertAcc)) * cargoPenaltyMultiplier;
 
-            Vector3 desiredAccel = (desiredDir * (baseAcc * currentMultiplier)) + (Vector3.up * (_verticalInput * vertAcc * currentMultiplier));
-
-            // Smart Soft Cap:
-            // If current speed exceeds maxThrusterSpeed (e.g. from gravity slingshots),
-            // engines do not auto-brake, but only allow perpendicular steering or reverse braking!
-            float currentSpeed = rb.linearVelocity.magnitude;
-            if (currentSpeed > maxSpeed && desiredAccel.sqrMagnitude > 0.001f)
+            // Smart Soft Cap: bypass while dashing so directional dash jump feels snappy and unrestrained
+            if (_dashTimer <= 0f)
             {
-                Vector3 velDir = rb.linearVelocity / currentSpeed;
-                float forwardComponent = Vector3.Dot(desiredAccel, velDir);
-                if (forwardComponent > 0f)
+                float currentSpeed = rb.linearVelocity.magnitude;
+                if (currentSpeed > maxSpeed && desiredAccel.sqrMagnitude > 0.001f)
                 {
-                    // Subtract component parallel to forward velocity
-                    desiredAccel -= velDir * forwardComponent;
+                    Vector3 velDir = rb.linearVelocity / currentSpeed;
+                    float forwardComponent = Vector3.Dot(desiredAccel, velDir);
+                    if (forwardComponent > 0f)
+                    {
+                        desiredAccel -= velDir * forwardComponent;
+                    }
                 }
             }
 
             if (desiredAccel.sqrMagnitude > 0.001f && !isBraking)
             {
                 rb.AddForce(desiredAccel, ForceMode.Acceleration);
-            }
-
-            // Burst impulse
-            if (_burstRequested)
-            {
-                _burstRequested = false;
-                Vector3 burstDir = desiredDir.sqrMagnitude > 0.01f ? desiredDir.normalized : transform.forward;
-                if (Mathf.Abs(_verticalInput) > 0.01f)
-                {
-                    burstDir = (burstDir + Vector3.up * Mathf.Sign(_verticalInput)).normalized;
-                }
-                rb.AddForce(burstDir * (burstImpulse * cargoPenaltyMultiplier), ForceMode.Impulse);
-            }
-        }
-
-        private void AlignDroneHeading()
-        {
-            if (rb == null || !isControlEnabled) return;
-
-            Vector3 vel = rb.linearVelocity;
-            vel.y = 0f;
-
-            Vector3 targetHeading = vel.sqrMagnitude > 0.25f ? vel.normalized : Vector3.zero;
-
-            if (targetHeading == Vector3.zero && _moveInput.sqrMagnitude > 0.1f)
-            {
-                Transform camTransform = mainCamera != null ? mainCamera.transform : transform;
-                Vector3 camForward = camTransform.forward;
-                camForward.y = 0f;
-                camForward.Normalize();
-                Vector3 camRight = camTransform.right;
-                camRight.y = 0f;
-                camRight.Normalize();
-                targetHeading = ((camForward * _moveInput.y) + (camRight * _moveInput.x)).normalized;
-            }
-
-            if (targetHeading.sqrMagnitude > 0.01f)
-            {
-                _lastNonZeroVelocityDir = targetHeading;
-                Quaternion targetRotation = Quaternion.LookRotation(_lastNonZeroVelocityDir, Vector3.up);
-                transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, turnSpeed * Time.fixedDeltaTime);
             }
         }
     }

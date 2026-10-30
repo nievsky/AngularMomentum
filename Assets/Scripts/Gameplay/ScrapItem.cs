@@ -43,6 +43,31 @@ namespace OrbitalPanopticon.Gameplay
         [SerializeField] private bool isObserved = false;
         [SerializeField] private Color observedGoldColor = new Color(1f, 0.84f, 0.05f, 1f); // Radiant Gold
 
+        [Header("Tractor Immunity")]
+        [SerializeField] public float pullImmunityTimer = 0f;
+
+        public float PullImmunityTimer
+        {
+            get => pullImmunityTimer;
+            set => pullImmunityTimer = Mathf.Max(0f, value);
+        }
+
+        public bool IsPullImmune => pullImmunityTimer > 0f;
+
+        [Header("Accretion Spiral State")]
+        [SerializeField] public float currentSpiralRadius = 0f;
+
+        [Header("Ballistic Launch State")]
+        [SerializeField] public float ballisticLaunchTimer = 0f;
+
+        public float BallisticLaunchTimer
+        {
+            get => ballisticLaunchTimer;
+            set => ballisticLaunchTimer = Mathf.Max(0f, value);
+        }
+
+        public bool IsBallisticFlight => ballisticLaunchTimer > 0f;
+
         [Header("Components")]
         [SerializeField] private Rigidbody rb;
         [SerializeField] private GravityBody gravityBody;
@@ -54,6 +79,22 @@ namespace OrbitalPanopticon.Gameplay
         private float _fadeDuration = 1.8f;
         private float _fadeElapsed = 0f;
         private float _currentAlpha = 1f;
+
+        [Header("Two-Zone Orbit State")]
+        [SerializeField] private float homeOrbitRadius = 25f;
+        [SerializeField] private bool wasInteractedByPlayer = false;
+
+        public float HomeOrbitRadius
+        {
+            get => homeOrbitRadius;
+            set => homeOrbitRadius = value;
+        }
+
+        public bool WasInteractedByPlayer
+        {
+            get => wasInteractedByPlayer;
+            set => wasInteractedByPlayer = value;
+        }
 
         public ScrapState CurrentState => currentState;
         public ScrapData Data => scrapData;
@@ -143,6 +184,16 @@ namespace OrbitalPanopticon.Gameplay
         /// </summary>
         public void CentralizedUpdate(float dt, float bonusPerSec = -1f)
         {
+            if (pullImmunityTimer > 0f)
+            {
+                pullImmunityTimer = Mathf.Max(0f, pullImmunityTimer - dt);
+            }
+
+            if (ballisticLaunchTimer > 0f)
+            {
+                ballisticLaunchTimer = Mathf.Max(0f, ballisticLaunchTimer - dt);
+            }
+
             float rate = bonusPerSec >= 0f ? bonusPerSec : bonusMultiplierPerSecond;
             // When launched into the accretion disk, build bonus multiplier over time
             if (currentState == ScrapState.Launched && isInAccretionZone)
@@ -212,9 +263,14 @@ namespace OrbitalPanopticon.Gameplay
             isInAccretionZone = false;
             isObserved = false;
             IsTargetedByCamera = false;
+            pullImmunityTimer = 0f;
+            currentSpiralRadius = 0f;
+            ballisticLaunchTimer = 0f;
             orbitalBonusMultiplier = 1.0f;
             _fadeElapsed = 0f;
             _currentAlpha = 1.0f;
+            wasInteractedByPlayer = false;
+            homeOrbitRadius = 0f;
 
             if (rb != null)
             {
@@ -274,9 +330,16 @@ namespace OrbitalPanopticon.Gameplay
             currentState = newState;
             UpdateGravityForState();
 
+            if (currentState == ScrapState.Held || currentState == ScrapState.Launched)
+            {
+                wasInteractedByPlayer = true;
+            }
+
             if (currentState != ScrapState.Launched)
             {
                 orbitalBonusMultiplier = 1.0f;
+                currentSpiralRadius = 0f;
+                ballisticLaunchTimer = 0f;
                 ResetVisualHeat();
             }
         }

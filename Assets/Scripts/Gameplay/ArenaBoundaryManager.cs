@@ -2,12 +2,15 @@ using System.Collections;
 using UnityEngine;
 using OrbitalPanopticon.Core;
 using OrbitalPanopticon.Player;
+using OrbitalPanopticon.Physics;
 
 namespace OrbitalPanopticon.Gameplay
 {
     [DisallowMultipleComponent]
     public class ArenaBoundaryManager : MonoBehaviour
     {
+        public static ArenaBoundaryManager Instance { get; private set; }
+
         [Header("Boundary Radii (Fallback Defaults)")]
         [Tooltip("Safe radius of the orbital arena. Beyond this distance, out-of-bounds warning starts.")]
         [SerializeField] private float arenaSafeRadius = 42f;
@@ -22,7 +25,7 @@ namespace OrbitalPanopticon.Gameplay
         [SerializeField] private float warningDuration = 3.0f;
 
         [Tooltip("Time in seconds controls are locked while drone is reconnected/teleported.")]
-        [SerializeField] private float respawnDelay = 1.5f;
+        [SerializeField] private float respawnDelay = 1.2f;
 
         [Header("Locations & Center")]
         [SerializeField] private Transform centerTransform;
@@ -52,12 +55,30 @@ namespace OrbitalPanopticon.Gameplay
 
         private void Awake()
         {
+            if (Instance == null)
+            {
+                Instance = this;
+            }
+            else if (Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+
             if (playerDrone == null)
             {
                 playerDrone = Object.FindAnyObjectByType<DroneController>();
             }
 
             SyncConfigValues();
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this)
+            {
+                Instance = null;
+            }
         }
 
         private void SyncConfigValues()
@@ -82,10 +103,10 @@ namespace OrbitalPanopticon.Gameplay
             float distance = Vector3.Distance(playerDrone.transform.position, center);
 
             // 1. Black hole event horizon fatal check
-            if (distance < eventHorizonRadius)
+            if (distance <= eventHorizonRadius)
             {
                 ClearWarning();
-                TriggerSignalLoss("CRITICAL MASS - DRONE CONSUMED", true);
+                OnPlayerConsumedByBlackHole(playerDrone.transform.position);
                 return;
             }
 
@@ -93,7 +114,7 @@ namespace OrbitalPanopticon.Gameplay
             if (distance > arenaMaxRadius + 10f)
             {
                 ClearWarning();
-                TriggerSignalLoss("OUT OF RANGE - SIGNAL LOST", false);
+                HandlePlayerDeath(playerDrone.transform.position, "OUT OF RANGE - SIGNAL LOST", true);
                 return;
             }
 
@@ -113,7 +134,7 @@ namespace OrbitalPanopticon.Gameplay
                 if (currentWarningTimer <= 0f)
                 {
                     ClearWarning();
-                    TriggerSignalLoss("SIGNAL TIMEOUT - OUT OF BOUNDS", false);
+                    HandlePlayerDeath(playerDrone.transform.position, "SIGNAL TIMEOUT - OUT OF BOUNDS", true);
                 }
             }
             else
@@ -135,30 +156,68 @@ namespace OrbitalPanopticon.Gameplay
             }
         }
 
+        public void OnPlayerConsumedByBlackHole(Vector3 deathPos)
+        {
+            if (isRespawning) return;
+            HandlePlayerDeath(deathPos, "CRITICAL MASS - DRONE CONSUMED", true);
+        }
+
         public void TriggerSignalLoss(string reason, bool spawnWreckage)
+        {
+            if (isRespawning) return;
+            Vector3 deathPos = playerDrone != null ? playerDrone.transform.position : Vector3.zero;
+            HandlePlayerDeath(deathPos, reason, spawnWreckage);
+        }
+
+        private void HandlePlayerDeath(Vector3 deathPos, string reason, bool spawnWreckage)
         {
             if (isRespawning) return;
             isRespawning = true;
             ClearWarning();
 
-            Debug.LogWarning($"[ArenaBoundary] Signal Lost: {reason}");
-            OnSignalLost?.Invoke(reason);
+            Debug.LogWarning($"[ArenaBoundary] Player death / signal loss: {reason} at {deathPos}");
 
+            // 1) Spawn dummy visual prop at deathPos so the Black Hole spaghettifies the dummy wreckage and awards scrap points
+            if (spawnWreckage)
+            {
+                SpawnWreckage(deathPos);
+            }
+
+            // 2) Immediately teleport PlayerDrone to a safe respawn position, zero out velocities, and lock input
             if (playerDrone != null)
             {
-                playerDrone.SetControlEnabled(false);
+                Vector3 spawnPos = droneSpawnPoint != null
+                    ? droneSpawnPoint.position
+                    : (Random.onUnitSphere * Random.Range(24f, 34f));
+                Quaternion spawnRot = droneSpawnPoint != null
+                    ? droneSpawnPoint.rotation
+                    : Quaternion.LookRotation(-spawnPos.normalized, Vector3.up);
 
-                if (spawnWreckage)
+                // Zero out velocities and teleport immediately
+                playerDrone.Teleport(spawnPos, spawnRot);
+
+                if (playerDrone.Rigidbody != null)
                 {
-                    SpawnWreckage(playerDrone.transform.position);
+                    playerDrone.Rigidbody.linearVelocity = Vector3.zero;
+                    playerDrone.Rigidbody.angularVelocity = Vector3.zero;
                 }
 
-                StartCoroutine(RespawnRoutine());
+                // Lock player input
+                playerDrone.SetControlEnabled(false);
             }
+
+            // Show SignalLostOverlay UI
+            OnSignalLost?.Invoke(reason);
+
+            // Unlock player input after 1.2f seconds
+            StartCoroutine(RespawnUnlockRoutine());
         }
 
         private void SpawnWreckage(Vector3 position)
         {
+            Vector3 center = centerTransform != null ? centerTransform.position : Vector3.zero;
+            Vector3 inwardDir = (center - position).normalized;
+
             if (droneWreckagePrefab != null)
             {
                 ScrapItem wreckage = Instantiate(droneWreckagePrefab, position, Random.rotation);
@@ -168,27 +227,50 @@ namespace OrbitalPanopticon.Gameplay
                 }
                 wreckage.SetState(ScrapState.Launched);
 
-                // Add slight inward spiral impulse toward the black hole center
-                Vector3 center = centerTransform != null ? centerTransform.position : Vector3.zero;
-                Vector3 inwardDir = (center - position).normalized;
                 if (wreckage.Rigidbody != null)
                 {
                     wreckage.Rigidbody.linearVelocity = inwardDir * 5f;
                 }
+
+                GravityBody gb = wreckage.GetComponent<GravityBody>();
+                if (gb != null)
+                {
+                    BlackHoleGravity bh = Object.FindAnyObjectByType<BlackHoleGravity>();
+                    if (bh != null)
+                    {
+                        bh.RegisterBody(gb);
+                    }
+                }
+            }
+            else
+            {
+                // Fallback: spawn a temporary primitive with GravityBody
+                GameObject dummy = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                dummy.name = "DroneWreckage_Dummy";
+                dummy.transform.position = position;
+                dummy.transform.rotation = Random.rotation;
+                dummy.transform.localScale = Vector3.one * 1.5f;
+
+                Rigidbody rb = dummy.AddComponent<Rigidbody>();
+                rb.mass = 2.0f;
+                rb.linearDamping = 0.05f;
+                rb.linearVelocity = inwardDir * 5f;
+
+                GravityBody gb = dummy.AddComponent<GravityBody>();
+                BlackHoleGravity bh = Object.FindAnyObjectByType<BlackHoleGravity>();
+                if (bh != null)
+                {
+                    bh.RegisterBody(gb);
+                }
             }
         }
 
-        private IEnumerator RespawnRoutine()
+        private IEnumerator RespawnUnlockRoutine()
         {
-            Vector3 spawnPos = droneSpawnPoint != null ? droneSpawnPoint.position : new Vector3(0f, 10f, -35f);
-            Quaternion spawnRot = droneSpawnPoint != null ? droneSpawnPoint.rotation : Quaternion.identity;
-
-            // Wait for signal loss cooldown
             yield return new WaitForSeconds(respawnDelay);
 
             if (playerDrone != null)
             {
-                playerDrone.Teleport(spawnPos, spawnRot);
                 playerDrone.SetControlEnabled(true);
             }
 

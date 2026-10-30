@@ -57,7 +57,8 @@ namespace OrbitalPanopticon.Gameplay
         {
             GameBalanceConfig config = GameManager.GameBalanceConfigInstance;
             float baseRadius = config != null ? config.arenaMaxRadius : 48f;
-            float orbitSpeed = config != null ? config.overseerOrbitSpeed : 8.0f;
+            float speedMult = config != null ? config.globalSimulationSpeed : 0.5f;
+            float orbitSpeed = (config != null ? config.overseerOrbitSpeed : 2.0f) * speedMult;
             float totalRadius = baseRadius + radiusOffset;
 
             // Advance orbital traversal
@@ -79,13 +80,20 @@ namespace OrbitalPanopticon.Gameplay
             if (targetDrone == null)
             {
                 GameObject player = GameObject.FindWithTag("Player");
+                if (player == null) player = GameObject.Find("PlayerDrone");
                 if (player != null) targetDrone = player.transform;
             }
 
             if (targetDrone != null)
             {
-                // Unflinching, omniscient gaze directed right at the player
-                transform.LookAt(targetDrone.position, Vector3.up);
+                Vector3 toDrone = targetDrone.position - transform.position;
+                if (toDrone.sqrMagnitude > 0.001f)
+                {
+                    Quaternion targetRot = Quaternion.LookRotation(toDrone.normalized, Vector3.up);
+                    GameBalanceConfig config = GameManager.GameBalanceConfigInstance;
+                    float rotSpeed = config != null ? config.overseerTrackingSpeed : 1.5f;
+                    transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, rotSpeed * Time.deltaTime);
+                }
             }
         }
 

@@ -236,29 +236,41 @@ namespace OrbitalPanopticon.Gameplay
             ScrapItem scrap = _scrapPool.Dequeue();
             if (scrap == null) return null;
 
-            // Compute random position in spherical shell
+            // Compute random position in spherical shell (mildly flattened on Y for cohesive orbital plane)
             Vector3 radialDir = Random.onUnitSphere;
+            radialDir.y = Random.Range(-0.25f, 0.25f);
+            radialDir.Normalize();
+
             float radius = Random.Range(config.minSpawnRadius, config.maxSpawnRadius);
             Vector3 spawnPos = center + (radialDir * radius);
 
             scrap.transform.position = spawnPos;
             scrap.transform.rotation = Random.rotation;
 
-            // Compute tangential orbital velocity
-            Vector3 randomAxis = Random.insideUnitSphere;
-            if (randomAxis.sqrMagnitude < 0.001f) randomAxis = Vector3.up;
-            Vector3 tangent = Vector3.Cross(radialDir, randomAxis).normalized;
-            float speed = Random.Range(2.5f, 6.0f);
-            Vector3 initialVelocity = tangent * speed;
-
             scrap.ResetForPool();
+            scrap.HomeOrbitRadius = radius;
             scrap.gameObject.SetActive(true);
+
+            // Compute clockwise tangential orbital velocity for Zone A Calm Drift
+            Vector3 toCenter = center - spawnPos;
+            Vector3 dirToCenter = toCenter.sqrMagnitude > 0.001f ? toCenter.normalized : Vector3.forward;
+            Vector3 tangent = Vector3.Cross(dirToCenter, Vector3.up).normalized;
+            if (!config.clockwiseOrbit) tangent = -tangent;
+
+            float speed = config.outerZoneDriftSpeed * config.globalSimulationSpeed;
+            Vector3 initialVelocity = tangent * speed;
 
             Rigidbody rb = scrap.Rigidbody;
             if (rb != null)
             {
                 rb.linearVelocity = initialVelocity;
-                rb.angularVelocity = Random.insideUnitSphere * 1.2f;
+                rb.angularVelocity = Random.insideUnitSphere * 0.4f;
+            }
+
+            var bh = Object.FindAnyObjectByType<OrbitalPanopticon.Physics.BlackHoleGravity>();
+            if (bh != null)
+            {
+                bh.RegisterBody(scrap.GravityBody);
             }
 
             _activeScrap.Add(scrap);
@@ -276,6 +288,12 @@ namespace OrbitalPanopticon.Gameplay
 
         private void ReturnToPoolInternal(ScrapItem scrap)
         {
+            var bh = Object.FindAnyObjectByType<OrbitalPanopticon.Physics.BlackHoleGravity>();
+            if (bh != null)
+            {
+                bh.UnregisterBody(scrap.GravityBody);
+            }
+
             scrap.ResetForPool();
             scrap.gameObject.SetActive(false);
 

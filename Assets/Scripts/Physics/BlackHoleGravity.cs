@@ -54,82 +54,188 @@ namespace OrbitalPanopticon.Physics
                 Rigidbody rb = body.Rigidbody;
                 if (rb == null) continue;
 
-                Vector3 toCenter = center - rb.position;
-                float dist = toCenter.magnitude;
+                Vector3 toCenter3D = center - rb.position;
+                float dist3D = toCenter3D.magnitude;
+
+                bool isPlayer = body.CompareTag("Player") || body.GetComponent<DroneController>() != null;
 
                 // Event horizon crossing (consumption)
-                if (dist <= config.eventHorizonRadius)
+                if (dist3D <= config.eventHorizonRadius)
                 {
+                    if (isPlayer)
+                    {
+                        if (ArenaBoundaryManager.Instance != null)
+                        {
+                            ArenaBoundaryManager.Instance.OnPlayerConsumedByBlackHole(body.transform.position);
+                        }
+                        return;
+                    }
+
                     ConsumeObject(body);
                     continue;
                 }
 
-                Vector3 dirToCenter = dist > 0.001f ? toCenter / dist : Vector3.zero;
+                Vector3 dirToCenter3D = dist3D > 0.001f ? toCenter3D / dist3D : Vector3.zero;
 
-                // Clockwise tangent vector when looking down +Y axis
-                // Cross(dirToCenter, up) yields clockwise tangent
-                Vector3 clockwiseTangent = Vector3.Cross(dirToCenter, Vector3.up).normalized;
+                // Horizontal direction for the tangent so it never degenerates when an object is directly above/below (0, Y, 0)
+                Vector3 horizontalDir = new Vector3(toCenter3D.x, 0f, toCenter3D.z).normalized;
+                if (horizontalDir.sqrMagnitude < 0.01f) horizontalDir = Vector3.forward;
+                Vector3 clockwiseTangent = Vector3.Cross(horizontalDir, Vector3.up).normalized;
                 if (!config.clockwiseOrbit)
                 {
                     clockwiseTangent = -clockwiseTangent;
                 }
 
-                // Clamped distance to prevent singularity slingshot glitch
-                float clampedDist = Mathf.Max(dist, config.minGravityDistance);
-
-                // Inverse-square law acceleration
-                float inwardAccel = config.gravityConstantG / (clampedDist * clampedDist);
-
-                // Target ideal orbital velocity at this radius: sqrt(G / r)
-                float targetOrbitalSpeed = Mathf.Sqrt(config.gravityConstantG / clampedDist);
-
-                bool isPlayer = body.CompareTag("Player") || body.GetComponent<DroneController>() != null;
-
                 if (isPlayer)
                 {
-                    // Honest Newtonian acceleration for PlayerDrone (enables slingshot gravitational assists)
-                    float playerMult = config.playerGravityMultiplier;
-                    Vector3 radialForce = dirToCenter * (inwardAccel * playerMult);
-                    Vector3 swirlForce = clockwiseTangent * (inwardAccel * 0.35f * playerMult);
+                    // Player Two-Zone Physics
+                    if (dist3D > config.accretionThresholdRadius)
+                    {
+                        // Outer calm zone: gentle clockwise drift with matching centripetal hold (almost zero inward pull, prevents centrifugal drift)
+                        float driftSpeed = 0.6f * config.globalSimulationSpeed;
+                        Vector3 playerDrift = clockwiseTangent * driftSpeed;
+                        float centripetalAccel = (driftSpeed * driftSpeed) / Mathf.Max(1f, dist3D);
+                        Vector3 centripetal = dirToCenter3D * centripetalAccel;
+                        rb.AddForce(playerDrift + centripetal, ForceMode.Acceleration);
+                    }
+                    else
+                    {
+                        // Inside accretion threshold: exponential ramp up allowing diving & slingshot maneuvers
+                        float depth01 = 1f - Mathf.Clamp01((dist3D - config.eventHorizonRadius) / Mathf.Max(0.1f, config.accretionThresholdRadius - config.eventHorizonRadius));
+                        float playerPull = Mathf.Lerp(2.0f, 25.0f, Mathf.Pow(depth01, 2.0f)) * config.globalSimulationSpeed * config.playerGravityMultiplier;
+                        float playerSwirl = Mathf.Lerp(4.0f, 18.0f, Mathf.Pow(depth01, 1.5f)) * config.globalSimulationSpeed * config.playerGravityMultiplier;
 
-                    body.Rigidbody.AddForce(radialForce + swirlForce, ForceMode.Acceleration);
+                        Vector3 radialForce = dirToCenter3D * playerPull;
+                        Vector3 swirlForce = clockwiseTangent * playerSwirl;
+                        rb.AddForce(radialForce + swirlForce, ForceMode.Acceleration);
+                    }
                 }
                 else
                 {
-                    // Controlled converging spiral orbit for Scrap / debris
-                    Vector3 currentVel = rb.linearVelocity;
+                    ScrapItem scrap = body.GetComponent<ScrapItem>();
 
-                    // Decompose velocity into radial (toward center) and tangential components
-                    Vector3 currentRadialVel = Vector3.Dot(currentVel, dirToCenter) * dirToCenter;
-                    Vector3 currentTangentVel = currentVel - currentRadialVel;
-
-                    // Desired orbital tangential velocity with spiral decay factor
-                    Vector3 desiredTangentVel = clockwiseTangent * (targetOrbitalSpeed * config.inwardSpiralDecay);
-
-                    // Smoothly steer tangential velocity toward ideal clockwise orbit
-                    float guidanceStep = config.orbitalGuidanceStrength * inwardAccel * Time.fixedDeltaTime;
-                    Vector3 steeredTangentVel = Vector3.MoveTowards(currentTangentVel, desiredTangentVel, guidanceStep);
-
-                    // Compute inward approach speed (gradually accelerating toward singularity)
-                    float currentInwardSpeed = Mathf.Max(0f, Vector3.Dot(currentVel, dirToCenter));
-                    float targetInwardSpeed = Mathf.Min(currentInwardSpeed + (inwardAccel * Time.fixedDeltaTime), targetOrbitalSpeed * 0.75f);
-                    Vector3 newRadialVel = dirToCenter * targetInwardSpeed;
-
-                    // Reconstruct velocity and clamp to maxSafeVelocity
-                    Vector3 finalVel = newRadialVel + steeredTangentVel;
-                    if (finalVel.magnitude > config.maxSafeVelocity)
+                    // Skip physics if held by manipulator
+                    if (scrap != null && scrap.CurrentState == ScrapState.Held)
                     {
-                        finalVel = finalVel.normalized * config.maxSafeVelocity;
+                        continue;
                     }
 
-                    rb.linearVelocity = finalVel;
+                    // Skip physics if fading out
+                    if (scrap != null && scrap.CurrentState == ScrapState.FadingOut)
+                    {
+                        continue;
+                    }
+
+                    // Ballistic Launch Phase: Let punted scrap fly purely on its ballistic shot trajectory without interference
+                    if (scrap != null && scrap.ballisticLaunchTimer > 0f && dist3D > config.accretionThresholdRadius)
+                    {
+                        scrap.ballisticLaunchTimer = Mathf.Max(0f, scrap.ballisticLaunchTimer - Time.fixedDeltaTime);
+                        continue;
+                    }
+
+                    // ZONE A: Outer Calm Zone (dist3D > accretionThresholdRadius AND Floating)
+                    // Scrap MUST NOT fall into the black hole on its own!
+                    bool isFloating = (scrap == null || scrap.CurrentState == ScrapState.Floating);
+                    if (dist3D > config.accretionThresholdRadius && isFloating)
+                    {
+                        float homeRadius = scrap != null && scrap.HomeOrbitRadius > 0.1f ? scrap.HomeOrbitRadius : dist3D;
+                        float radialOffset = dist3D - homeRadius;
+
+                        // Radial stabilization keeping it on its home circular orbit ring
+                        Vector3 radialStabVel = dirToCenter3D * (radialOffset * config.outerZoneOrbitSpring);
+                        // Tangential clockwise drift
+                        Vector3 tangentDriftVel = clockwiseTangent * (config.outerZoneDriftSpeed * config.globalSimulationSpeed);
+
+                        Vector3 targetVel = tangentDriftVel + radialStabVel;
+                        // Gently damp vertical plane movement to maintain disk stability
+                        float relY = rb.position.y - center.y;
+                        targetVel.y = Mathf.Lerp(rb.linearVelocity.y, -relY * 2.0f, Time.fixedDeltaTime * 2.0f);
+
+                        rb.linearVelocity = Vector3.Lerp(rb.linearVelocity, targetVel, Time.fixedDeltaTime * 3.5f);
+                    }
+                    else
+                    {
+                        // ZONE B: Inner Accretion Threshold (dist3D <= accretionThresholdRadius OR Launched)
+                        // Once launched or pushed into threshold, it commits to active inward swirl
+                        if (scrap != null && scrap.CurrentState == ScrapState.Floating)
+                        {
+                            scrap.SetState(ScrapState.Launched);
+                        }
+
+                        // Initialize currentSpiralRadius when entering Zone B or newly launched
+                        if (scrap != null && (scrap.currentSpiralRadius <= 0.01f || scrap.currentSpiralRadius > config.accretionThresholdRadius))
+                        {
+                            scrap.currentSpiralRadius = Mathf.Min(dist3D, config.accretionThresholdRadius);
+                        }
+
+                        float thresholdRange = Mathf.Max(0.1f, config.accretionThresholdRadius - config.eventHorizonRadius);
+                        float depth01 = 1f - Mathf.Clamp01((dist3D - config.eventHorizonRadius) / thresholdRange);
+
+                        // Step 1 — Shrink the target radius continuously
+                        if (scrap != null)
+                        {
+                            scrap.currentSpiralRadius -= config.spiralRadiusShrinkRate * (1f + depth01 * 1.5f) * config.globalSimulationSpeed * Time.fixedDeltaTime;
+                        }
+
+                        // Step 2 — Fast Exponential Clockwise Swirl
+                        float swirlSpeed = Mathf.Lerp(config.innerMinSwirlSpeed, config.innerMaxSwirlSpeed, Mathf.Pow(depth01, config.swirlExponentialPower)) * config.globalSimulationSpeed;
+
+                        // Step 3 — Compensate Centrifugal Drift & Pull Inward strictly along dirToCenter3D (True 3D Center Pull)
+                        float targetRadius = scrap != null ? scrap.currentSpiralRadius : Mathf.Min(dist3D, config.accretionThresholdRadius);
+                        float radiusError = dist3D - targetRadius;
+                        float inwardSpeed = (config.spiralRadiusShrinkRate * (1f + depth01)) + Mathf.Max(0f, radiusError * config.spiralTightnessSpring);
+
+                        // Base velocity from tangential swirl + true 3D inward radial pull
+                        Vector3 targetVel = (clockwiseTangent * swirlSpeed) + (dirToCenter3D * inwardSpeed);
+
+                        // Add extra vertical pull toward the equatorial plane
+                        float relY = rb.position.y - center.y;
+                        targetVel.y += -relY * config.verticalFlattenStrength;
+
+                        rb.linearVelocity = Vector3.Lerp(rb.linearVelocity, targetVel, 12f * Time.fixedDeltaTime);
+
+                        // Directly constrain the 3D distance so it cannot exceed currentSpiralRadius:
+                        // If dist3D > targetRadius, smoothly pull toward the shrinking 3D sphere around center
+                        if (dist3D > targetRadius)
+                        {
+                            float excess = dist3D - targetRadius;
+                            float pullStep = Mathf.Min(excess, excess * config.spiralTightnessSpring * Time.fixedDeltaTime);
+                            rb.position += dirToCenter3D * pullStep;
+                        }
+                    }
                 }
+            }
+        }
+
+        public void RegisterBody(GravityBody body)
+        {
+            if (body != null && !_trackedBodies.Contains(body) && !_consumingBodies.Contains(body))
+            {
+                _trackedBodies.Add(body);
+            }
+        }
+
+        public void UnregisterBody(GravityBody body)
+        {
+            if (body != null)
+            {
+                _trackedBodies.Remove(body);
             }
         }
 
         public void ConsumeObject(GravityBody body)
         {
             if (body == null || _consumingBodies.Contains(body)) return;
+
+            bool isPlayer = body.CompareTag("Player") || body.GetComponent<DroneController>() != null;
+            if (isPlayer)
+            {
+                if (ArenaBoundaryManager.Instance != null)
+                {
+                    ArenaBoundaryManager.Instance.OnPlayerConsumedByBlackHole(body.transform.position);
+                }
+                return;
+            }
 
             _consumingBodies.Add(body);
 
@@ -197,6 +303,14 @@ namespace OrbitalPanopticon.Physics
 
             if (body != null)
             {
+                bool isPlayer = body.CompareTag("Player") || body.GetComponent<DroneController>() != null;
+                if (isPlayer)
+                {
+                    _trackedBodies.Remove(body);
+                    _consumingBodies.Remove(body);
+                    yield break;
+                }
+
                 OnObjectConsumed?.Invoke(body);
                 _trackedBodies.Remove(body);
                 _consumingBodies.Remove(body);
@@ -216,9 +330,9 @@ namespace OrbitalPanopticon.Physics
         private void OnTriggerEnter(Collider other)
         {
             GravityBody body = other.GetComponentInParent<GravityBody>();
-            if (body != null && !_trackedBodies.Contains(body) && !_consumingBodies.Contains(body))
+            if (body != null)
             {
-                _trackedBodies.Add(body);
+                RegisterBody(body);
             }
         }
 
@@ -227,7 +341,7 @@ namespace OrbitalPanopticon.Physics
             GravityBody body = other.GetComponentInParent<GravityBody>();
             if (body != null)
             {
-                _trackedBodies.Remove(body);
+                UnregisterBody(body);
             }
         }
 
@@ -236,11 +350,16 @@ namespace OrbitalPanopticon.Physics
             Vector3 center = centerPoint != null ? centerPoint.position : transform.position;
             GameBalanceConfig config = GameManager.GameBalanceConfigInstance;
             float eventRadius = config != null ? config.eventHorizonRadius : 3.5f;
+            float thresholdRadius = config != null ? config.accretionThresholdRadius : 15.0f;
             float wellRadius = config != null ? config.gravityWellRadius : 45f;
 
             // Event Horizon Sphere (Red)
             Gizmos.color = new Color(1f, 0f, 0f, 0.7f);
             Gizmos.DrawWireSphere(center, eventRadius);
+
+            // Accretion Threshold (Orange/Gold)
+            Gizmos.color = new Color(1f, 0.6f, 0.1f, 0.6f);
+            Gizmos.DrawWireSphere(center, thresholdRadius);
 
             // Gravity Well Sphere (Purple)
             Gizmos.color = new Color(0.6f, 0.2f, 1f, 0.25f);

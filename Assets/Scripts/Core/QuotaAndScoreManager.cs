@@ -106,16 +106,23 @@ namespace OrbitalPanopticon.Core
         {
             if (body == null) return;
 
+            ScrapItem scrap = body.GetComponent<ScrapItem>();
+            bool isScrap = scrap != null;
+            bool playerInvolved = isScrap && (scrap.WasInteractedByPlayer || scrap.CurrentState == ScrapState.Launched);
+
             lastConsumptionTime = Time.time;
 
-            // 1. Advance Heat Streak
-            currentHeatStreak++;
-            if (currentHeatStreak >= itemsPerHeatLevel && _currentStageIndex < _heatStages.Length - 1)
+            // 1. Advance Heat Streak only for player-interacted scrap
+            if (playerInvolved)
             {
-                _currentStageIndex++;
-                currentHeatStreak = 0;
-                currentHeatMultiplier = _heatStages[_currentStageIndex];
-                OnHeatMultiplierChanged?.Invoke(currentHeatMultiplier);
+                currentHeatStreak++;
+                if (currentHeatStreak >= itemsPerHeatLevel && _currentStageIndex < _heatStages.Length - 1)
+                {
+                    _currentStageIndex++;
+                    currentHeatStreak = 0;
+                    currentHeatMultiplier = _heatStages[_currentStageIndex];
+                    OnHeatMultiplierChanged?.Invoke(currentHeatMultiplier);
+                }
             }
 
             // 2. Calculate Final Score
@@ -123,7 +130,6 @@ namespace OrbitalPanopticon.Core
             float orbitalMultiplier = 1f;
             bool isObserved = false;
 
-            ScrapItem scrap = body.GetComponent<ScrapItem>();
             if (scrap != null)
             {
                 baseValue = scrap.BaseValue;
@@ -134,7 +140,8 @@ namespace OrbitalPanopticon.Core
             GameBalanceConfig config = GameManager.GameBalanceConfigInstance;
             float obsMultiplier = config != null ? config.cameraObservedMultiplier : 3f;
             float observationMultiplier = isObserved ? obsMultiplier : 1f;
-            float finalScore = baseValue * orbitalMultiplier * observationMultiplier * currentHeatMultiplier;
+            int effectiveHeatMultiplier = playerInvolved ? currentHeatMultiplier : 1;
+            float finalScore = baseValue * orbitalMultiplier * observationMultiplier * effectiveHeatMultiplier;
 
             currentQuotaProgress += finalScore;
             OnScoreAdded?.Invoke(finalScore, scrapCoins);
