@@ -9,6 +9,8 @@ namespace OrbitalPanopticon.Core
     [DisallowMultipleComponent]
     public class UIManager : MonoBehaviour
     {
+        public static UIManager Instance { get; private set; }
+
         [Header("Manager References")]
         [SerializeField] private QuotaAndScoreManager quotaManager;
         [SerializeField] private ArenaBoundaryManager arenaBoundaryManager;
@@ -19,6 +21,18 @@ namespace OrbitalPanopticon.Core
         [SerializeField] private Image quotaFillImage;
         [SerializeField] private TextMeshProUGUI heatMultiplierText;
         [SerializeField] private TextMeshProUGUI scrapCoinsText;
+
+        [Header("Crosshair Elements")]
+        [SerializeField] private Image crosshairImage;
+        [SerializeField] private Color crosshairNormalColor = new Color(1f, 1f, 1f, 0.45f);
+        [SerializeField] private Color crosshairTargetInRangeColor = new Color(0.2f, 1f, 0.5f, 0.95f);
+        [SerializeField] private Color crosshairHoldingColor = new Color(0.15f, 0.85f, 1f, 0.95f);
+
+        [Header("Boundary Warning Elements")]
+        [SerializeField] private GameObject warningPanel;
+        [SerializeField] private TextMeshProUGUI warningCountdownText;
+        [SerializeField] private Image warningBorderImage;
+        [SerializeField] private Color warningBorderPulsingColor = new Color(1f, 0.15f, 0.1f, 0.75f);
 
         [Header("Signal Lost Overlay")]
         [SerializeField] private GameObject signalLostOverlay;
@@ -32,6 +46,13 @@ namespace OrbitalPanopticon.Core
         [SerializeField] private Color heat16xColor = new Color(1f, 0.1f, 0.9f);
 
         private Coroutine _signalLostCoroutine;
+        private bool _isWarningActive = false;
+        private float _warningRemainingSeconds = 0f;
+
+        private void Awake()
+        {
+            Instance = this;
+        }
 
         private void Start()
         {
@@ -48,11 +69,17 @@ namespace OrbitalPanopticon.Core
             if (arenaBoundaryManager != null)
             {
                 arenaBoundaryManager.OnSignalLost += HandleSignalLost;
+                arenaBoundaryManager.OnBoundaryWarningChanged += HandleBoundaryWarning;
             }
 
             if (signalLostOverlay != null)
             {
                 signalLostOverlay.SetActive(false);
+            }
+
+            if (warningPanel != null)
+            {
+                warningPanel.SetActive(false);
             }
         }
 
@@ -61,12 +88,14 @@ namespace OrbitalPanopticon.Core
             if (arenaBoundaryManager != null)
             {
                 arenaBoundaryManager.OnSignalLost -= HandleSignalLost;
+                arenaBoundaryManager.OnBoundaryWarningChanged -= HandleBoundaryWarning;
             }
         }
 
         private void Update()
         {
             UpdateHUD();
+            UpdateWarningHUD();
         }
 
         private void UpdateHUD()
@@ -106,6 +135,63 @@ namespace OrbitalPanopticon.Core
             {
                 bool blink = (Time.time % 1.2f) < 0.8f;
                 recStatusText.text = blink ? "● REC | DRONE #001" : "  REC | DRONE #001";
+            }
+        }
+
+        private void UpdateWarningHUD()
+        {
+            if (!_isWarningActive) return;
+
+            if (warningCountdownText != null)
+            {
+                warningCountdownText.text = $"WARNING: BOUNDARY BREACH DETECTED\nSIGNAL LOSS IN {_warningRemainingSeconds:F1}s";
+            }
+
+            if (warningBorderImage != null)
+            {
+                float pulse = (Mathf.Sin(Time.time * 9f) + 1f) * 0.5f;
+                Color c = warningBorderPulsingColor;
+                c.a = Mathf.Lerp(0.25f, 0.85f, pulse);
+                warningBorderImage.color = c;
+            }
+        }
+
+        private void HandleBoundaryWarning(bool isWarning, float remainingTime, float normalized)
+        {
+            _isWarningActive = isWarning;
+            _warningRemainingSeconds = remainingTime;
+
+            if (warningPanel != null)
+            {
+                warningPanel.SetActive(isWarning);
+            }
+
+            if (!isWarning && warningBorderImage != null)
+            {
+                Color c = warningBorderPulsingColor;
+                c.a = 0f;
+                warningBorderImage.color = c;
+            }
+        }
+
+        public void SetCrosshairState(bool hasTargetInRange, bool isHolding)
+        {
+            if (crosshairImage == null) return;
+
+            if (isHolding)
+            {
+                crosshairImage.color = crosshairHoldingColor;
+                crosshairImage.transform.localScale = new Vector3(1.15f, 1.15f, 1f);
+            }
+            else if (hasTargetInRange)
+            {
+                crosshairImage.color = crosshairTargetInRangeColor;
+                crosshairImage.transform.localScale = new Vector3(1.3f, 1.3f, 1f);
+            }
+            else
+            {
+                crosshairImage.color = crosshairNormalColor;
+                crosshairImage.transform.localScale = Vector3.one;
             }
         }
 

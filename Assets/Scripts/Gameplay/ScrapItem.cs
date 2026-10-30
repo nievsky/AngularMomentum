@@ -6,9 +6,11 @@ namespace OrbitalPanopticon.Gameplay
     public enum ScrapState
     {
         Floating,  // Freely drifting in space, minimal black hole pull (0.15x)
-        Tethered,  // Captured by player tether beam
+        Tethered,  // Legacy tethered / captured
+        Held,      // Captured and held by gravity manipulator / robo-arm
         Launched,  // Released/launched towards the hole (full 1.0x gravity & swirl)
-        Consumed   // Being absorbed by event horizon
+        Consumed,  // Being absorbed by event horizon
+        FadingOut  // Escaped beyond max boundary, smoothly dissolving
     }
 
     [RequireComponent(typeof(Rigidbody))]
@@ -49,6 +51,10 @@ namespace OrbitalPanopticon.Gameplay
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         private static readonly int ColorId = Shader.PropertyToID("_Color");
 
+        private float _fadeDuration = 1.8f;
+        private float _fadeElapsed = 0f;
+        private float _currentAlpha = 1f;
+
         public ScrapState CurrentState => currentState;
         public ScrapData Data => scrapData;
         public float OrbitalBonusMultiplier
@@ -67,6 +73,22 @@ namespace OrbitalPanopticon.Gameplay
             UpdateVisualHeat();
         }
         public bool IsObserved => isObserved;
+        public bool IsTargetedByCamera { get; set; }
+
+        public void SetObserved(bool observed)
+        {
+            isObserved = observed;
+            if (mainRenderer != null)
+            {
+                if (_propertyBlock == null) _propertyBlock = new MaterialPropertyBlock();
+                mainRenderer.GetPropertyBlock(_propertyBlock);
+                Color c = observed ? observedGoldColor : baseColdColor;
+                c.a = _currentAlpha;
+                _propertyBlock.SetColor(BaseColorId, c);
+                _propertyBlock.SetColor(ColorId, c);
+                mainRenderer.SetPropertyBlock(_propertyBlock);
+            }
+        }
 
         public void ApplyObservationBonus(float multiplier)
         {
@@ -78,8 +100,10 @@ namespace OrbitalPanopticon.Gameplay
             {
                 if (_propertyBlock == null) _propertyBlock = new MaterialPropertyBlock();
                 mainRenderer.GetPropertyBlock(_propertyBlock);
-                _propertyBlock.SetColor(BaseColorId, observedGoldColor);
-                _propertyBlock.SetColor(ColorId, observedGoldColor);
+                Color c = observedGoldColor;
+                c.a = _currentAlpha;
+                _propertyBlock.SetColor(BaseColorId, c);
+                _propertyBlock.SetColor(ColorId, c);
                 mainRenderer.SetPropertyBlock(_propertyBlock);
             }
         }
@@ -113,14 +137,112 @@ namespace OrbitalPanopticon.Gameplay
             }
         }
 
-        private void Update()
+        /// <summary>
+        /// Centralized simulation step invoked exclusively by ScrapSimulationManager.
+        /// No individual Update() on ScrapItem instances.
+        /// </summary>
+        public void CentralizedUpdate(float dt, float bonusPerSec = -1f)
         {
+            float rate = bonusPerSec >= 0f ? bonusPerSec : bonusMultiplierPerSecond;
             // When launched into the accretion disk, build bonus multiplier over time
             if (currentState == ScrapState.Launched && isInAccretionZone)
             {
-                orbitalBonusMultiplier += bonusMultiplierPerSecond * Time.deltaTime;
+                orbitalBonusMultiplier += rate * dt;
                 UpdateVisualHeat();
             }
+        }
+
+        public void StartFadeOut(float fadeDuration)
+        {
+            currentState = ScrapState.FadingOut;
+            _fadeDuration = Mathf.Max(0.1f, fadeDuration);
+            _fadeElapsed = 0f;
+            _currentAlpha = 1f;
+
+            if (gravityBody != null)
+            {
+                gravityBody.GravityMultiplier = 0f;
+            }
+
+            if (rb != null)
+            {
+                rb.linearDamping = 3f;
+                rb.angularDamping = 3f;
+            }
+        }
+
+        public bool UpdateFadeOut(float dt)
+        {
+            _fadeElapsed += dt;
+            float t = Mathf.Clamp01(_fadeElapsed / _fadeDuration);
+            _currentAlpha = Mathf.Lerp(1f, 0f, t);
+            ApplyAlpha(_currentAlpha);
+
+            return t >= 1f;
+        }
+
+        public void SetAlpha(float alpha)
+        {
+            _currentAlpha = Mathf.Clamp01(alpha);
+            ApplyAlpha(_currentAlpha);
+        }
+
+        private void ApplyAlpha(float alpha)
+        {
+            if (mainRenderer == null) return;
+            if (_propertyBlock == null) _propertyBlock = new MaterialPropertyBlock();
+            mainRenderer.GetPropertyBlock(_propertyBlock);
+
+            Color currentColor = isObserved ? observedGoldColor : baseColdColor;
+            if (currentState == ScrapState.Launched && orbitalBonusMultiplier > 1f)
+            {
+                float heat = Mathf.Clamp01((orbitalBonusMultiplier - 1.0f) / 3.0f);
+                currentColor = Color.Lerp(baseColdColor, hotAccretionColor, heat);
+            }
+
+            currentColor.a = alpha;
+            _propertyBlock.SetColor(BaseColorId, currentColor);
+            _propertyBlock.SetColor(ColorId, currentColor);
+            mainRenderer.SetPropertyBlock(_propertyBlock);
+        }
+
+        public void ResetForPool()
+        {
+            currentState = ScrapState.Floating;
+            isInAccretionZone = false;
+            isObserved = false;
+            IsTargetedByCamera = false;
+            orbitalBonusMultiplier = 1.0f;
+            _fadeElapsed = 0f;
+            _currentAlpha = 1.0f;
+
+            if (rb != null)
+            {
+                rb.isKinematic = false;
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+                rb.linearDamping = 0.05f;
+                rb.angularDamping = 0.05f;
+            }
+
+            Collider[] colliders = GetComponentsInChildren<Collider>(true);
+            for (int i = 0; i < colliders.Length; i++)
+            {
+                if (colliders[i] != null) colliders[i].enabled = true;
+            }
+
+            if (visualRoot != null)
+            {
+                visualRoot.localPosition = Vector3.zero;
+                visualRoot.localRotation = Quaternion.identity;
+                if (scrapData != null)
+                {
+                    visualRoot.localScale = scrapData.BaseScale;
+                }
+            }
+
+            ResetVisualHeat();
+            UpdateGravityForState();
         }
 
         public void Initialize(ScrapData data)
@@ -177,10 +299,10 @@ namespace OrbitalPanopticon.Gameplay
                     gravityBody.GravityMultiplier = launchedGravityMultiplier;
                     break;
                 case ScrapState.Tethered:
-                    // During tethering, external gravity is suppressed so player maintains control
-                    gravityBody.GravityMultiplier = 0f;
-                    break;
+                case ScrapState.Held:
                 case ScrapState.Consumed:
+                case ScrapState.FadingOut:
+                    // During tethering / holding / fading / consumption, black hole gravity is suppressed
                     gravityBody.GravityMultiplier = 0f;
                     break;
             }
@@ -193,6 +315,7 @@ namespace OrbitalPanopticon.Gameplay
             // Heat factor scales from 0 (multiplier 1.0) to 1.0 (multiplier >= 4.0)
             float heat = Mathf.Clamp01((orbitalBonusMultiplier - 1.0f) / 3.0f);
             Color currentColor = Color.Lerp(baseColdColor, hotAccretionColor, heat);
+            currentColor.a = _currentAlpha;
 
             if (_propertyBlock == null) _propertyBlock = new MaterialPropertyBlock();
             mainRenderer.GetPropertyBlock(_propertyBlock);
@@ -207,14 +330,22 @@ namespace OrbitalPanopticon.Gameplay
 
             if (_propertyBlock == null) _propertyBlock = new MaterialPropertyBlock();
             mainRenderer.GetPropertyBlock(_propertyBlock);
-            _propertyBlock.SetColor(BaseColorId, baseColdColor);
-            _propertyBlock.SetColor(ColorId, baseColdColor);
+            Color c = baseColdColor;
+            c.a = _currentAlpha;
+            _propertyBlock.SetColor(BaseColorId, c);
+            _propertyBlock.SetColor(ColorId, c);
             mainRenderer.SetPropertyBlock(_propertyBlock);
+        }
+
+        private bool IsAccretionTrigger(Collider other)
+        {
+            if (other == null) return false;
+            return other.gameObject.name.IndexOf("Accretion", System.StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         private void OnTriggerEnter(Collider other)
         {
-            if (other.CompareTag("AccretionZone") || other.gameObject.name.Contains("Accretion"))
+            if (IsAccretionTrigger(other))
             {
                 SetInAccretionZone(true);
             }
@@ -222,7 +353,7 @@ namespace OrbitalPanopticon.Gameplay
 
         private void OnTriggerExit(Collider other)
         {
-            if (other.CompareTag("AccretionZone") || other.gameObject.name.Contains("Accretion"))
+            if (IsAccretionTrigger(other))
             {
                 SetInAccretionZone(false);
             }

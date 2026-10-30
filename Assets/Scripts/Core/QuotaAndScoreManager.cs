@@ -131,7 +131,9 @@ namespace OrbitalPanopticon.Core
                 isObserved = scrap.IsObserved;
             }
 
-            float observationMultiplier = isObserved ? 3f : 1f;
+            GameBalanceConfig config = GameManager.GameBalanceConfigInstance;
+            float obsMultiplier = config != null ? config.cameraObservedMultiplier : 3f;
+            float observationMultiplier = isObserved ? obsMultiplier : 1f;
             float finalScore = baseValue * orbitalMultiplier * observationMultiplier * currentHeatMultiplier;
 
             currentQuotaProgress += finalScore;

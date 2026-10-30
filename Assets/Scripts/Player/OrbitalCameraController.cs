@@ -8,12 +8,16 @@ namespace OrbitalPanopticon.Player
     {
         [Header("Target & Tracking")]
         [SerializeField] private Transform target;
-        [SerializeField] private Vector3 targetOffset = new Vector3(0f, 1.2f, 0f);
+        [SerializeField] private Vector3 targetOffset = new Vector3(0f, 1.0f, 0f);
         [SerializeField] private float positionSmoothTime = 0.08f;
 
+        [Header("Over-The-Shoulder Framing")]
+        [Tooltip("Horizontal (X) and vertical (Y) shoulder offset in camera orbit space. Shifts view right/up so drone is on the left and crosshair points ahead.")]
+        [SerializeField] private Vector2 shoulderOffset = new Vector2(1.3f, 0.5f);
+
         [Header("Orbit & Distance")]
-        [SerializeField] private float defaultDistance = 9.0f;
-        [SerializeField] private float boostDistance = 12.0f;
+        [SerializeField] private float defaultDistance = 7.5f;
+        [SerializeField] private float boostDistance = 10.5f;
         [SerializeField] private float minDistance = 3.0f;
         [SerializeField] private float maxDistance = 25.0f;
         [SerializeField] private float distanceSmoothTime = 0.2f;
@@ -138,12 +142,16 @@ namespace OrbitalPanopticon.Player
             Vector3 focusPoint = target.position + targetOffset;
             Quaternion orbitRotation = Quaternion.Euler(_pitch, _yaw, 0f);
 
-            // Compute ideal position behind target
-            Vector3 targetPosition = focusPoint - (orbitRotation * Vector3.forward * _currentDistance);
+            // Compute ideal position behind target with over-the-shoulder offset
+            Vector3 camOffset = -(orbitRotation * Vector3.forward * _currentDistance)
+                              + (orbitRotation * Vector3.right * shoulderOffset.x)
+                              + (orbitRotation * Vector3.up * shoulderOffset.y);
+
+            Vector3 targetPosition = focusPoint + camOffset;
 
             // Smooth position tracking
             transform.position = Vector3.SmoothDamp(transform.position, targetPosition, ref _currentVelocity, positionSmoothTime);
-            transform.LookAt(focusPoint);
+            transform.rotation = orbitRotation;
         }
 
         private void UpdateDynamicFovAndDistance()

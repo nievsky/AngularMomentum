@@ -37,6 +37,7 @@ namespace OrbitalPanopticon.Core
                 return;
             }
             Instance = this;
+            Application.runInBackground = true;
 
             if (balanceConfig != null)
             {

@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using OrbitalPanopticon.Core;
 using OrbitalPanopticon.Player;
 
 namespace OrbitalPanopticon.Gameplay
@@ -7,12 +8,18 @@ namespace OrbitalPanopticon.Gameplay
     [DisallowMultipleComponent]
     public class ArenaBoundaryManager : MonoBehaviour
     {
-        [Header("Boundary Radii")]
-        [Tooltip("Max outer radius of the orbital arena. Beyond this distance, connection is lost.")]
-        [SerializeField] private float maxArenaRadius = 45f;
+        [Header("Boundary Radii (Fallback Defaults)")]
+        [Tooltip("Safe radius of the orbital arena. Beyond this distance, out-of-bounds warning starts.")]
+        [SerializeField] private float arenaSafeRadius = 42f;
+
+        [Tooltip("Max outer radius of the orbital arena. Hard escape buffer begins here.")]
+        [SerializeField] private float arenaMaxRadius = 48f;
 
         [Tooltip("Inner radius representing the lethal event horizon of the black hole.")]
-        [SerializeField] private float eventHorizonRadius = 4.5f;
+        [SerializeField] private float eventHorizonRadius = 3.5f;
+
+        [Tooltip("Time in seconds warning countdown runs before signal is forcibly lost.")]
+        [SerializeField] private float warningDuration = 3.0f;
 
         [Tooltip("Time in seconds controls are locked while drone is reconnected/teleported.")]
         [SerializeField] private float respawnDelay = 1.5f;
@@ -28,13 +35,20 @@ namespace OrbitalPanopticon.Gameplay
 
         [Header("Status")]
         [SerializeField] private bool isRespawning = false;
+        [SerializeField] private bool isWarningActive = false;
+        [SerializeField] private float currentWarningTimer = 0f;
 
         // Events for UI HUD notifications
         public event System.Action<string> OnSignalLost;
+        // isWarning, remainingTime, normalizedTimeRemaining (0 to 1)
+        public event System.Action<bool, float, float> OnBoundaryWarningChanged;
 
-        public float MaxArenaRadius => maxArenaRadius;
+        public float ArenaSafeRadius => arenaSafeRadius;
+        public float ArenaMaxRadius => arenaMaxRadius;
         public float EventHorizonRadius => eventHorizonRadius;
         public bool IsRespawning => isRespawning;
+        public bool IsWarningActive => isWarningActive;
+        public float CurrentWarningTimer => currentWarningTimer;
 
         private void Awake()
         {
@@ -42,22 +56,82 @@ namespace OrbitalPanopticon.Gameplay
             {
                 playerDrone = Object.FindAnyObjectByType<DroneController>();
             }
+
+            SyncConfigValues();
+        }
+
+        private void SyncConfigValues()
+        {
+            GameBalanceConfig config = GameManager.GameBalanceConfigInstance;
+            if (config != null)
+            {
+                arenaSafeRadius = config.arenaSafeRadius;
+                arenaMaxRadius = config.arenaMaxRadius;
+                eventHorizonRadius = config.eventHorizonRadius;
+                warningDuration = config.outOfBoundsWarningTime;
+            }
         }
 
         private void Update()
         {
             if (isRespawning || playerDrone == null) return;
 
+            SyncConfigValues();
+
             Vector3 center = centerTransform != null ? centerTransform.position : Vector3.zero;
             float distance = Vector3.Distance(playerDrone.transform.position, center);
 
-            if (distance > maxArenaRadius)
+            // 1. Black hole event horizon fatal check
+            if (distance < eventHorizonRadius)
             {
-                TriggerSignalLoss("OUT OF RANGE - SIGNAL LOST", false);
-            }
-            else if (distance < eventHorizonRadius)
-            {
+                ClearWarning();
                 TriggerSignalLoss("CRITICAL MASS - DRONE CONSUMED", true);
+                return;
+            }
+
+            // 2. Far boundary hard escape check (> maxRadius + 10f)
+            if (distance > arenaMaxRadius + 10f)
+            {
+                ClearWarning();
+                TriggerSignalLoss("OUT OF RANGE - SIGNAL LOST", false);
+                return;
+            }
+
+            // 3. Two-tier warning buffer check
+            if (distance > arenaSafeRadius)
+            {
+                if (!isWarningActive)
+                {
+                    isWarningActive = true;
+                    currentWarningTimer = warningDuration;
+                }
+
+                currentWarningTimer -= Time.deltaTime;
+                float normalized = Mathf.Clamp01(currentWarningTimer / Mathf.Max(0.1f, warningDuration));
+                OnBoundaryWarningChanged?.Invoke(true, Mathf.Max(0f, currentWarningTimer), normalized);
+
+                if (currentWarningTimer <= 0f)
+                {
+                    ClearWarning();
+                    TriggerSignalLoss("SIGNAL TIMEOUT - OUT OF BOUNDS", false);
+                }
+            }
+            else
+            {
+                if (isWarningActive)
+                {
+                    ClearWarning();
+                }
+            }
+        }
+
+        private void ClearWarning()
+        {
+            if (isWarningActive)
+            {
+                isWarningActive = false;
+                currentWarningTimer = warningDuration;
+                OnBoundaryWarningChanged?.Invoke(false, 0f, 0f);
             }
         }
 
@@ -65,6 +139,7 @@ namespace OrbitalPanopticon.Gameplay
         {
             if (isRespawning) return;
             isRespawning = true;
+            ClearWarning();
 
             Debug.LogWarning($"[ArenaBoundary] Signal Lost: {reason}");
             OnSignalLost?.Invoke(reason);
@@ -117,6 +192,7 @@ namespace OrbitalPanopticon.Gameplay
                 playerDrone.SetControlEnabled(true);
             }
 
+            currentWarningTimer = warningDuration;
             isRespawning = false;
         }
 
@@ -124,12 +200,16 @@ namespace OrbitalPanopticon.Gameplay
         {
             Vector3 center = centerTransform != null ? centerTransform.position : Vector3.zero;
 
-            // Outer Arena Sphere (Cyan)
-            Gizmos.color = new Color(0.1f, 0.8f, 1f, 0.35f);
-            Gizmos.DrawWireSphere(center, maxArenaRadius);
+            // Safe Radius Sphere (Greenish/Cyan)
+            Gizmos.color = new Color(0.1f, 1f, 0.7f, 0.35f);
+            Gizmos.DrawWireSphere(center, arenaSafeRadius);
+
+            // Max Outer Arena Sphere (Orange/Red)
+            Gizmos.color = new Color(1f, 0.5f, 0.1f, 0.45f);
+            Gizmos.DrawWireSphere(center, arenaMaxRadius);
 
             // Event Horizon (Red)
-            Gizmos.color = new Color(1f, 0.1f, 0.1f, 0.45f);
+            Gizmos.color = new Color(1f, 0.1f, 0.1f, 0.55f);
             Gizmos.DrawWireSphere(center, eventHorizonRadius);
         }
     }

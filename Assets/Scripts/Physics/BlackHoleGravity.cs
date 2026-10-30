@@ -161,9 +161,9 @@ namespace OrbitalPanopticon.Physics
             // Lock physics
             if (body.Rigidbody != null)
             {
-                body.Rigidbody.isKinematic = true;
                 body.Rigidbody.linearVelocity = Vector3.zero;
                 body.Rigidbody.angularVelocity = Vector3.zero;
+                body.Rigidbody.isKinematic = true;
             }
 
             // Find visual root for scaling
@@ -200,7 +200,16 @@ namespace OrbitalPanopticon.Physics
                 OnObjectConsumed?.Invoke(body);
                 _trackedBodies.Remove(body);
                 _consumingBodies.Remove(body);
-                Destroy(body.gameObject);
+
+                ScrapItem scrap = body.GetComponent<ScrapItem>();
+                if (scrap != null && ScrapSimulationManager.Instance != null)
+                {
+                    ScrapSimulationManager.Instance.ReturnToPool(scrap);
+                }
+                else
+                {
+                    Destroy(body.gameObject);
+                }
             }
         }
 
