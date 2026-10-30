@@ -233,7 +233,24 @@ namespace OrbitalPanopticon.Gameplay
         {
             if (_scrapPool.Count == 0) return null;
 
-            ScrapItem scrap = _scrapPool.Dequeue();
+            int maxTier = config != null ? config.unlockedScrapTier : 1;
+            ScrapItem scrap = null;
+            int searchLimit = _scrapPool.Count;
+            for (int i = 0; i < searchLimit; i++)
+            {
+                var candidate = _scrapPool.Dequeue();
+                if (candidate == null) continue;
+                if (candidate.Tier <= maxTier)
+                {
+                    scrap = candidate;
+                    break;
+                }
+                else
+                {
+                    _scrapPool.Enqueue(candidate);
+                }
+            }
+
             if (scrap == null) return null;
 
             // Compute random position in spherical shell (mildly flattened on Y for cohesive orbital plane)

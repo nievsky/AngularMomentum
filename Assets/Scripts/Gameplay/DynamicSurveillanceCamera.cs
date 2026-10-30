@@ -23,9 +23,16 @@ namespace OrbitalPanopticon.Gameplay
         [Header("Runtime Status")]
         [SerializeField] private ScrapItem currentTarget;
         [SerializeField] private bool _isLocked = false;
+        [SerializeField] private float graviFlashTimer = 0f;
 
         public ScrapItem CurrentTarget => currentTarget;
         public bool IsLocked => _isLocked;
+
+        private float _flashVisualTimer = 0f;
+        private MeshRenderer _beamRenderer;
+        private MaterialPropertyBlock _beamPropertyBlock;
+        private readonly Color _standardBeamColor = new Color(1f, 0.92f, 0.15f, 0.25f);
+        private readonly Color _flashBeamColor = new Color(0.4f, 0.95f, 1f, 0.85f);
 
         private static UnityEngine.Mesh _sharedConeMesh;
 
@@ -82,6 +89,7 @@ namespace OrbitalPanopticon.Gameplay
             if (mr == null) mr = beamTransform.gameObject.AddComponent<MeshRenderer>();
             mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             mr.receiveShadows = false;
+            _beamRenderer = mr;
 
             if (beamMaterial == null)
             {
@@ -268,6 +276,92 @@ namespace OrbitalPanopticon.Gameplay
             else
             {
                 PerformIdleSweep(searchSpeed, speedMult, spotRadius);
+            }
+
+            UpdateGraviFlash(config);
+        }
+
+        private void UpdateGraviFlash(GameBalanceConfig config)
+        {
+            if (config != null && config.cameraGraviFlashUnlocked)
+            {
+                graviFlashTimer += Time.deltaTime;
+                float interval = config.cameraGraviFlashInterval > 0f ? config.cameraGraviFlashInterval : 10f;
+                if (graviFlashTimer >= interval)
+                {
+                    graviFlashTimer = 0f;
+                    if (currentTarget != null && IsTargetValid(currentTarget))
+                    {
+                        TriggerGraviFlash(config);
+                    }
+                }
+            }
+
+            if (_flashVisualTimer > 0f)
+            {
+                _flashVisualTimer -= Time.deltaTime;
+                if (_flashVisualTimer <= 0f)
+                {
+                    ResetBeamVisual();
+                }
+            }
+        }
+
+        private void TriggerGraviFlash(GameBalanceConfig config)
+        {
+            _flashVisualTimer = 0.25f;
+            SetBeamColor(_flashBeamColor);
+            if (spotLight != null)
+            {
+                spotLight.color = Color.cyan;
+                spotLight.intensity = 12f;
+            }
+
+            Vector3 center = centerReference != null ? centerReference.position : Vector3.zero;
+            Vector3 pushDir = (center - currentTarget.transform.position).normalized;
+            float pushImpulse = 26f;
+
+            // Direct impulse pushing current target toward black hole accretion threshold
+            currentTarget.TransitionToLaunched(pushDir * pushImpulse);
+
+            // Also push nearby scrap inside the cone
+            Collider[] colliders = UnityEngine.Physics.OverlapSphere(currentTarget.transform.position, 6.0f, ~0, QueryTriggerInteraction.Ignore);
+            for (int i = 0; i < colliders.Length; i++)
+            {
+                if (colliders[i] == null) continue;
+                ScrapItem scrap = colliders[i].GetComponentInParent<ScrapItem>();
+                if (scrap != null && scrap != currentTarget && scrap.CurrentState == ScrapState.Floating)
+                {
+                    Vector3 toCenter = (center - scrap.transform.position).normalized;
+                    scrap.TransitionToLaunched(toCenter * pushImpulse);
+                }
+            }
+        }
+
+        private void ResetBeamVisual()
+        {
+            SetBeamColor(_standardBeamColor);
+            if (spotLight != null)
+            {
+                spotLight.color = new Color(1f, 0.92f, 0.15f);
+                spotLight.intensity = 4f;
+            }
+        }
+
+        private void SetBeamColor(Color color)
+        {
+            if (_beamRenderer == null && beamTransform != null)
+            {
+                _beamRenderer = beamTransform.GetComponent<MeshRenderer>();
+            }
+
+            if (_beamRenderer != null)
+            {
+                if (_beamPropertyBlock == null) _beamPropertyBlock = new MaterialPropertyBlock();
+                _beamRenderer.GetPropertyBlock(_beamPropertyBlock);
+                _beamPropertyBlock.SetColor("_BaseColor", color);
+                _beamPropertyBlock.SetColor("_Color", color);
+                _beamRenderer.SetPropertyBlock(_beamPropertyBlock);
             }
         }
 

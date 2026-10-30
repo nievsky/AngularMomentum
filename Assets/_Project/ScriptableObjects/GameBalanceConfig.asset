@@ -53,7 +53,9 @@ MonoBehaviour:
   puntLaunchImpulse: 20
   dryPuntRange: 8.5
   dryPuntRadius: 2.2
-  maxHeldObjects: 1
+  maxHeldObjects: 3
+  heldObjectAlpha: 0.42
+  heldClusterRadius: 0.85
   maxActiveScrap: 50
   scrapSpawnInterval: 1
   minSpawnRadius: 16
@@ -72,3 +74,10 @@ MonoBehaviour:
   baseQuotaTarget: 500
   quotaGrowthMultiplier: 1.75
   heatDecayDelay: 4.5
+  fixedHelperRobotPrice: 50
+  heatFillRateMultiplier: 1
+  unlockedScrapTier: 1
+  cameraGraviFlashUnlocked: 0
+  cameraGraviFlashInterval: 10
+  kamikazeProtocolUnlocked: 0
+  activeHelperRobotsCount: 0

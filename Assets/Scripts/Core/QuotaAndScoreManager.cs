@@ -35,6 +35,7 @@ namespace OrbitalPanopticon.Core
         [SerializeField] private int scrapCoins = 0;
         [SerializeField] private float currentQuotaProgress = 0f;
         [SerializeField] private int currentQuotaLevel = 1;
+        [SerializeField] private int completedQuotasCount = 0;
         [SerializeField] private float speedBonusPercent = 100f;
         [SerializeField] private int currentHeatMultiplier = 1;
         [SerializeField] private int currentHeatStreak = 0;
@@ -53,7 +54,29 @@ namespace OrbitalPanopticon.Core
         public float TargetQuota => targetQuota;
         public float SpeedBonusPercent => speedBonusPercent;
         public int CurrentQuotaLevel => currentQuotaLevel;
+        public int CompletedQuotasCount => completedQuotasCount;
         public int CurrentHeatMultiplier => currentHeatMultiplier;
+
+        public bool TrySpendScrapCoins(int amount)
+        {
+            if (amount <= 0) return true;
+            if (scrapCoins >= amount)
+            {
+                scrapCoins -= amount;
+                OnScoreAdded?.Invoke(0f, scrapCoins);
+                return true;
+            }
+            return false;
+        }
+
+        public void AddScrapCoins(int amount)
+        {
+            if (amount > 0)
+            {
+                scrapCoins += amount;
+                OnScoreAdded?.Invoke(0f, scrapCoins);
+            }
+        }
 
         private void Start()
         {
@@ -129,22 +152,31 @@ namespace OrbitalPanopticon.Core
             float baseValue = 10f;
             float orbitalMultiplier = 1f;
             bool isObserved = false;
+            bool isKamikaze = false;
 
             if (scrap != null)
             {
                 baseValue = scrap.BaseValue;
                 orbitalMultiplier = scrap.OrbitalBonusMultiplier;
                 isObserved = scrap.IsObserved;
+                isKamikaze = scrap.isKamikazeDelivery;
             }
 
             GameBalanceConfig config = GameManager.GameBalanceConfigInstance;
             float obsMultiplier = config != null ? config.cameraObservedMultiplier : 3f;
             float observationMultiplier = isObserved ? obsMultiplier : 1f;
-            int effectiveHeatMultiplier = playerInvolved ? currentHeatMultiplier : 1;
-            float finalScore = baseValue * orbitalMultiplier * observationMultiplier * effectiveHeatMultiplier;
+            float kamikazeMultiplier = isKamikaze ? 2.5f : 1f;
+            int effectiveHeatMultiplier = (playerInvolved || isKamikaze) ? currentHeatMultiplier : 1;
+            float finalScore = baseValue * orbitalMultiplier * observationMultiplier * effectiveHeatMultiplier * kamikazeMultiplier;
 
             currentQuotaProgress += finalScore;
             OnScoreAdded?.Invoke(finalScore, scrapCoins);
+
+            // World-space floating score popup
+            if (ScorePopupManager.Instance != null)
+            {
+                ScorePopupManager.Instance.SpawnPopup(body.transform.position, finalScore, isKamikaze, isObserved);
+            }
 
             // 3. Check Quota Completion
             if (currentQuotaProgress >= targetQuota)
@@ -155,11 +187,14 @@ namespace OrbitalPanopticon.Core
 
         private void CompleteCurrentQuota()
         {
-            int reward = Mathf.RoundToInt(baseQuotaReward * (1f + (speedBonusPercent / 100f)));
+            // Designer rule: each new mission/quota reward increases by +10%
+            float currentQuotaReward = baseQuotaReward * Mathf.Pow(1.10f, completedQuotasCount);
+            int reward = Mathf.RoundToInt(currentQuotaReward * (1f + (speedBonusPercent / 100f)));
             scrapCoins += reward;
 
             OnQuotaCompleted?.Invoke(currentQuotaLevel, reward);
 
+            completedQuotasCount++;
             currentQuotaLevel++;
             currentQuotaProgress = Mathf.Max(0f, currentQuotaProgress - targetQuota);
             targetQuota = Mathf.Round(targetQuota * quotaScalingFactor);

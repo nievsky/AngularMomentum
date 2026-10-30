@@ -41,6 +41,8 @@ namespace OrbitalPanopticon.Core
 
             if (balanceConfig != null)
             {
+                // Protect Editor Asset: clone in memory so upgrades mutate RuntimeConfig only!
+                balanceConfig = Instantiate(balanceConfig);
                 GameBalanceConfig.Instance = balanceConfig;
             }
         }
@@ -55,7 +57,7 @@ namespace OrbitalPanopticon.Core
 
         private void OnValidate()
         {
-            if (balanceConfig != null)
+            if (balanceConfig != null && !Application.isPlaying)
             {
                 GameBalanceConfig.Instance = balanceConfig;
             }

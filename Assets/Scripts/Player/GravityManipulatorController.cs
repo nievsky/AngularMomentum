@@ -153,11 +153,18 @@ namespace OrbitalPanopticon.Player
 
         private void FixedUpdate()
         {
+            if (OrbitalPanopticon.Core.UpgradeTreeManager.IsTreeOpen) return;
             ApplyHoldingPhysics();
         }
 
         private void HandleInputs()
         {
+            if (OrbitalPanopticon.Core.UpgradeTreeManager.IsTreeOpen)
+            {
+                _isGrabHeld = false;
+                return;
+            }
+
             if (droneController != null && !droneController.IsControlEnabled)
             {
                 ReleaseAllHeld();
@@ -269,6 +276,21 @@ namespace OrbitalPanopticon.Player
             ScrapItem bestCandidate = null;
             float bestScore = float.MaxValue;
 
+            Transform camT = mainCamera != null ? mainCamera.transform : transform;
+            Vector3 camRight = camT.right;
+            Vector3 camUp = camT.up;
+            Vector3 dynamicHoldPos = holdPoint != null ? holdPoint.position : holdTargetPos;
+
+            int targetIndex = _heldItems.Count;
+            int projectedCount = Mathf.Max(1, _heldItems.Count + 1);
+            Vector3 candidateSlotPos = dynamicHoldPos;
+            if (_heldItems.Count > 0)
+            {
+                float angle = (targetIndex * Mathf.PI * 2f / projectedCount) + (Time.time * 1.2f);
+                float dynamicRadius = config.heldClusterRadius + (projectedCount * 0.12f);
+                candidateSlotPos = dynamicHoldPos + (camRight * Mathf.Cos(angle) + camUp * Mathf.Sin(angle)) * dynamicRadius;
+            }
+
             for (int i = 0; i < hits.Length; i++)
             {
                 ScrapItem scrap = hits[i].GetComponentInParent<ScrapItem>();
@@ -292,7 +314,7 @@ namespace OrbitalPanopticon.Player
                     Rigidbody sRb = scrap.Rigidbody;
                     if (sRb != null)
                     {
-                        Vector3 toHold = holdTargetPos - sRb.position;
+                        Vector3 toHold = candidateSlotPos - sRb.position;
                         float distToHold = toHold.magnitude;
                         Vector3 pullDir = distToHold > 0.001f ? toHold / distToHold : Vector3.zero;
 
@@ -301,11 +323,14 @@ namespace OrbitalPanopticon.Player
                         sRb.AddForce(pullDir * pullForce, ForceMode.Acceleration);
                         sRb.linearVelocity = Vector3.Lerp(sRb.linearVelocity, pullDir * 16f, Time.fixedDeltaTime * 4f);
 
-                        // Capture if close enough to HoldPoint
+                        // Capture if close enough to slot position
                         if (distToHold <= 1.6f)
                         {
                             AttachHeldItem(scrap);
-                            return;
+                            if (_heldItems.Count >= config.maxHeldObjects)
+                            {
+                                return;
+                            }
                         }
                     }
 
@@ -324,10 +349,67 @@ namespace OrbitalPanopticon.Player
         {
             if (scrap == null || _heldItems.Contains(scrap)) return;
 
+            GameBalanceConfig config = GameManager.GameBalanceConfigInstance;
+            float alpha = config != null ? config.heldObjectAlpha : 0.42f;
+
             scrap.SetState(ScrapState.Held);
+            scrap.SetVisualAlpha(alpha);
+            IgnoreHeldCollisions(scrap);
             _heldItems.Add(scrap);
             _currentPullTarget = null;
             RecalculateCargoMass();
+        }
+
+        private void IgnoreHeldCollisions(ScrapItem newItem)
+        {
+            if (newItem == null) return;
+            Collider[] newCols = newItem.GetComponentsInChildren<Collider>();
+
+            for (int i = 0; i < _heldItems.Count; i++)
+            {
+                ScrapItem existing = _heldItems[i];
+                if (existing == null || existing == newItem) continue;
+                Collider[] existCols = existing.GetComponentsInChildren<Collider>();
+
+                for (int a = 0; a < newCols.Length; a++)
+                {
+                    for (int b = 0; b < existCols.Length; b++)
+                    {
+                        if (newCols[a] != null && existCols[b] != null)
+                        {
+                            UnityEngine.Physics.IgnoreCollision(newCols[a], existCols[b], true);
+                        }
+                    }
+                }
+            }
+        }
+
+        private void RestoreHeldCollisions()
+        {
+            for (int i = 0; i < _heldItems.Count; i++)
+            {
+                ScrapItem itemA = _heldItems[i];
+                if (itemA == null) continue;
+                Collider[] colsA = itemA.GetComponentsInChildren<Collider>();
+
+                for (int j = i + 1; j < _heldItems.Count; j++)
+                {
+                    ScrapItem itemB = _heldItems[j];
+                    if (itemB == null) continue;
+                    Collider[] colsB = itemB.GetComponentsInChildren<Collider>();
+
+                    for (int a = 0; a < colsA.Length; a++)
+                    {
+                        for (int b = 0; b < colsB.Length; b++)
+                        {
+                            if (colsA[a] != null && colsB[b] != null)
+                            {
+                                UnityEngine.Physics.IgnoreCollision(colsA[a], colsB[b], false);
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         private void ApplyHoldingPhysics()
@@ -339,8 +421,14 @@ namespace OrbitalPanopticon.Player
 
             Ray aimRay = GetAimRay();
             Vector3 holdTargetPos = GetHoldTargetPosition(aimRay, config);
+            Transform camT = mainCamera != null ? mainCamera.transform : transform;
+            Vector3 camRight = camT.right;
+            Vector3 camUp = camT.up;
+            Vector3 holdPos = holdPoint != null ? holdPoint.position : holdTargetPos;
+            int count = _heldItems.Count;
+            float alpha = config.heldObjectAlpha;
 
-            for (int i = _heldItems.Count - 1; i >= 0; i--)
+            for (int i = count - 1; i >= 0; i--)
             {
                 ScrapItem item = _heldItems[i];
                 if (item == null)
@@ -350,13 +438,45 @@ namespace OrbitalPanopticon.Player
                     continue;
                 }
 
+                item.SetVisualAlpha(alpha);
+
                 Rigidbody sRb = item.Rigidbody;
                 if (sRb == null) continue;
 
+                Vector3 slotPos;
+                if (count == 1)
+                {
+                    slotPos = holdPos;
+                }
+                else
+                {
+                    float angle = (i * Mathf.PI * 2f / count) + (Time.time * 1.2f);
+                    float dynamicRadius = config.heldClusterRadius + (count * 0.12f);
+                    slotPos = holdPos + (camRight * Mathf.Cos(angle) + camUp * Mathf.Sin(angle)) * dynamicRadius;
+                }
+
                 // High-precision spring-damper hold
-                Vector3 toTarget = holdTargetPos - sRb.position;
+                Vector3 toTarget = slotPos - sRb.position;
                 Vector3 targetVelocity = toTarget * config.holdSpringStrength;
 
+                // Short-range separation force if two held items get closer than 0.9f units
+                Vector3 separation = Vector3.zero;
+                for (int j = 0; j < count; j++)
+                {
+                    if (j == i) continue;
+                    ScrapItem other = _heldItems[j];
+                    if (other == null || other.Rigidbody == null) continue;
+
+                    Vector3 diff = sRb.position - other.Rigidbody.position;
+                    float d = diff.magnitude;
+                    if (d > 0.001f && d < 0.9f)
+                    {
+                        float pushStrength = (0.9f - d) * 15f;
+                        separation += (diff / d) * pushStrength;
+                    }
+                }
+
+                targetVelocity += separation;
                 sRb.linearVelocity = targetVelocity;
                 sRb.angularVelocity = Vector3.Lerp(sRb.angularVelocity, Vector3.zero, Time.fixedDeltaTime * 10f);
             }
@@ -384,6 +504,7 @@ namespace OrbitalPanopticon.Player
                 item.SetState(ScrapState.Launched);
                 item.pullImmunityTimer = 0.65f;
                 item.ballisticLaunchTimer = 0.85f;
+                item.SetVisualAlpha(1.0f);
 
                 if (item.Rigidbody != null)
                 {
@@ -397,6 +518,7 @@ namespace OrbitalPanopticon.Player
                 }
             }
 
+            RestoreHeldCollisions();
             _heldItems.Clear();
             RecalculateCargoMass();
 
@@ -574,8 +696,10 @@ namespace OrbitalPanopticon.Player
                 if (_heldItems[i] != null)
                 {
                     _heldItems[i].SetState(ScrapState.Floating);
+                    _heldItems[i].SetVisualAlpha(1.0f);
                 }
             }
+            RestoreHeldCollisions();
             _heldItems.Clear();
             RecalculateCargoMass();
         }
@@ -600,12 +724,16 @@ namespace OrbitalPanopticon.Player
             if (config == null || UIManager.Instance == null) return;
 
             bool hasTarget = false;
-            if (_heldItems.Count > 0)
+            int maxHeld = config.maxHeldObjects;
+
+            if (_heldItems.Count >= maxHeld)
             {
                 hasTarget = true;
             }
             else
             {
+                if (_heldItems.Count > 0) hasTarget = true;
+
                 Ray aimRay = GetAimRay();
                 Vector3 dronePos = droneRb != null ? droneRb.position : transform.position;
                 float checkRange = config.isMagnetUnlocked ? config.magnetPullRange : config.grabRangeBase;
@@ -614,7 +742,7 @@ namespace OrbitalPanopticon.Player
                 for (int i = 0; i < hits.Length; i++)
                 {
                     ScrapItem scrap = hits[i].GetComponentInParent<ScrapItem>();
-                    if (scrap != null && scrap.CurrentState != ScrapState.Consumed && scrap.CurrentState != ScrapState.FadingOut && !scrap.IsPullImmune && scrap.pullImmunityTimer <= 0f && scrap.ballisticLaunchTimer <= 0f)
+                    if (scrap != null && !_heldItems.Contains(scrap) && scrap.CurrentState != ScrapState.Consumed && scrap.CurrentState != ScrapState.FadingOut && !scrap.IsPullImmune && scrap.pullImmunityTimer <= 0f && scrap.ballisticLaunchTimer <= 0f)
                     {
                         Vector3 toScrap = scrap.transform.position - dronePos;
                         float angle = Vector3.Angle(aimRay.direction, toScrap.normalized);
@@ -743,7 +871,10 @@ namespace OrbitalPanopticon.Player
                 return;
             }
 
-            if (_isGrabHeld && _currentPullTarget != null && _heldItems.Count == 0)
+            GameBalanceConfig config = GameManager.GameBalanceConfigInstance;
+            int maxHeld = config != null ? config.maxHeldObjects : 3;
+
+            if (_isGrabHeld && _currentPullTarget != null && _heldItems.Count < maxHeld)
             {
                 magnetBeamLine.enabled = true;
                 Vector3 startPos = roboArmVisual != null ? roboArmVisual.position : transform.position;

@@ -194,7 +194,15 @@ namespace OrbitalPanopticon.Core
 
         [Tooltip("Max scrap items the drone can simultaneously hold.")]
         [Range(1, 10)]
-        public int maxHeldObjects = 1;
+        public int maxHeldObjects = 3;
+
+        [Tooltip("Transparency while held in front of the camera.")]
+        [Range(0.15f, 1.0f)]
+        public float heldObjectAlpha = 0.42f;
+
+        [Tooltip("Spacing radius so multiple held objects don't clip into each other.")]
+        [Range(0.2f, 3.0f)]
+        public float heldClusterRadius = 0.85f;
 
         // =========================================================================
         // 4. Arena Boundary & Scrap Spawning
@@ -275,6 +283,33 @@ namespace OrbitalPanopticon.Core
         [Tooltip("Idle seconds before heat multiplier combo starts decaying.")]
         [Range(1f, 10f)]
         public float heatDecayDelay = 4.5f;
+
+        // =========================================================================
+        // 6. Skill Tree & Progression
+        // =========================================================================
+        [Header("6. Skill Tree & Progression")]
+        [Tooltip("Robot purchase price is ALWAYS fixed and never scales.")]
+        public int fixedHelperRobotPrice = 50;
+
+        [Tooltip("Heat multiplier build rate (upgrades by +10% per level up to +50% max).")]
+        [Range(1.0f, 2.0f)]
+        public float heatFillRateMultiplier = 1.0f;
+
+        [Tooltip("Highest scrap tier currently unlocked (1 to 4, where 4 is Cosmic Anomaly).")]
+        [Range(1, 4)]
+        public int unlockedScrapTier = 1;
+
+        [Tooltip("Whether the periodic gravitational flash pulse from cameras is unlocked.")]
+        public bool cameraGraviFlashUnlocked = false;
+
+        [Tooltip("Interval in seconds between camera gravitational flashes.")]
+        public float cameraGraviFlashInterval = 10.0f;
+
+        [Tooltip("Whether helper bots are equipped with the Kamikaze sacrificial protocol.")]
+        public bool kamikazeProtocolUnlocked = false;
+
+        [Tooltip("Active count of purchased helper robots in the arena.")]
+        public int activeHelperRobotsCount = 0;
 
         private void OnEnable()
         {

@@ -147,6 +147,14 @@ namespace OrbitalPanopticon.Player
 
         private void Update()
         {
+            if (OrbitalPanopticon.Core.UpgradeTreeManager.IsTreeOpen)
+            {
+                _moveInput = Vector2.zero;
+                _verticalInput = 0f;
+                isBraking = false;
+                return;
+            }
+
             if (_dashTimer > 0f)
             {
                 _dashTimer -= Time.deltaTime;
@@ -158,6 +166,8 @@ namespace OrbitalPanopticon.Player
 
         private void FixedUpdate()
         {
+            if (OrbitalPanopticon.Core.UpgradeTreeManager.IsTreeOpen) return;
+
             UpdateDampingAndBrakes();
             ApplyMovementPhysics();
 
@@ -170,7 +180,7 @@ namespace OrbitalPanopticon.Player
 
         private void HandleMouseLook()
         {
-            if (!isControlEnabled) return;
+            if (!isControlEnabled || OrbitalPanopticon.Core.UpgradeTreeManager.IsTreeOpen) return;
 
             var mouse = Mouse.current;
             if (mouse == null) return;

@@ -162,8 +162,31 @@ namespace OrbitalPanopticon.Physics
                             scrap.SetState(ScrapState.Launched);
                         }
 
-                        // Initialize currentSpiralRadius when entering Zone B or newly launched
-                        if (scrap != null && (scrap.currentSpiralRadius <= 0.01f || scrap.currentSpiralRadius > config.accretionThresholdRadius))
+                        // Calculate dynamic per-object 3D orbital axis on threshold entry (No single-plane snapping)
+                        if (scrap != null && !scrap.hasEnteredVortex)
+                        {
+                            scrap.hasEnteredVortex = true;
+                            scrap.currentSpiralRadius = Mathf.Min(dist3D, config.accretionThresholdRadius);
+
+                            Vector3 lateralVel = Vector3.ProjectOnPlane(rb.linearVelocity, dirToCenter3D);
+                            Vector3 defaultCw = Vector3.Cross(dirToCenter3D, Vector3.up);
+                            if (defaultCw.sqrMagnitude < 0.01f)
+                            {
+                                defaultCw = Vector3.Cross(dirToCenter3D, Vector3.right);
+                            }
+                            if (!config.clockwiseOrbit)
+                            {
+                                defaultCw = -defaultCw;
+                            }
+
+                            Vector3 entryTangent = (lateralVel * 0.6f + defaultCw.normalized * 6.0f + UnityEngine.Random.insideUnitSphere * 1.5f).normalized;
+                            scrap.customOrbitAxis = Vector3.Cross(dirToCenter3D, entryTangent).normalized;
+                            if (scrap.customOrbitAxis.sqrMagnitude < 0.01f)
+                            {
+                                scrap.customOrbitAxis = Vector3.up;
+                            }
+                        }
+                        else if (scrap != null && (scrap.currentSpiralRadius <= 0.01f || scrap.currentSpiralRadius > config.accretionThresholdRadius))
                         {
                             scrap.currentSpiralRadius = Mathf.Min(dist3D, config.accretionThresholdRadius);
                         }
@@ -185,12 +208,14 @@ namespace OrbitalPanopticon.Physics
                         float radiusError = dist3D - targetRadius;
                         float inwardSpeed = (config.spiralRadiusShrinkRate * (1f + depth01)) + Mathf.Max(0f, radiusError * config.spiralTightnessSpring);
 
-                        // Base velocity from tangential swirl + true 3D inward radial pull
-                        Vector3 targetVel = (clockwiseTangent * swirlSpeed) + (dirToCenter3D * inwardSpeed);
+                        // 3D Spiral strictly along the item's customOrbitAxis
+                        Vector3 orbitAxis = (scrap != null && scrap.customOrbitAxis.sqrMagnitude > 0.01f) ? scrap.customOrbitAxis : Vector3.up;
+                        Vector3 tangent3D = Vector3.Cross(dirToCenter3D, orbitAxis).normalized;
 
-                        // Add extra vertical pull toward the equatorial plane
-                        float relY = rb.position.y - center.y;
-                        targetVel.y += -relY * config.verticalFlattenStrength;
+                        // Keep object locked onto its tilted orbital plane passing through center (0,0,0)
+                        Vector3 planeDriftCorrection = -Vector3.Project(rb.position - center, orbitAxis) * 6.0f;
+
+                        Vector3 targetVel = (tangent3D * swirlSpeed) + (dirToCenter3D * inwardSpeed) + planeDriftCorrection;
 
                         rb.linearVelocity = Vector3.Lerp(rb.linearVelocity, targetVel, 12f * Time.fixedDeltaTime);
 

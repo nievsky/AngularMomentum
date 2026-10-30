@@ -7,7 +7,7 @@ namespace OrbitalPanopticon.Gameplay
     {
         [Header("General Information")]
         [SerializeField] private string scrapName = "Scrap";
-        [SerializeField, Range(1, 3)] private int tier = 1;
+        [SerializeField, Range(1, 4)] private int tier = 1;
 
         [Header("Economics & Physics")]
         [Tooltip("Base score / points awarded upon black hole consumption.")]

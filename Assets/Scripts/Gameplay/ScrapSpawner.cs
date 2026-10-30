@@ -87,19 +87,38 @@ namespace OrbitalPanopticon.Gameplay
 
         public ScrapItem SpawnRandomScrap()
         {
-            if (spawnEntries == null || spawnEntries.Count == 0 || _totalWeight <= 0)
+            if (spawnEntries == null || spawnEntries.Count == 0)
             {
                 return null;
             }
 
-            // Weighted selection
-            int roll = Random.Range(0, _totalWeight);
+            OrbitalPanopticon.Core.GameBalanceConfig config = OrbitalPanopticon.Core.GameManager.GameBalanceConfigInstance;
+            int maxTier = config != null ? config.unlockedScrapTier : 1;
+
+            int validWeight = 0;
+            foreach (var entry in spawnEntries)
+            {
+                if (entry.prefab == null) continue;
+                int tier = entry.scrapData != null ? entry.scrapData.Tier : 1;
+                if (tier <= maxTier)
+                {
+                    validWeight += entry.weight;
+                }
+            }
+
+            if (validWeight <= 0) return null;
+
+            // Weighted selection among unlocked tiers
+            int roll = Random.Range(0, validWeight);
             int accumulated = 0;
             ScrapSpawnEntry selected = spawnEntries[0];
 
             foreach (var entry in spawnEntries)
             {
                 if (entry.prefab == null) continue;
+                int tier = entry.scrapData != null ? entry.scrapData.Tier : 1;
+                if (tier > maxTier) continue;
+
                 accumulated += entry.weight;
                 if (roll < accumulated)
                 {

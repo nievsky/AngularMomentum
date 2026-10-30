@@ -56,6 +56,9 @@ namespace OrbitalPanopticon.Gameplay
 
         [Header("Accretion Spiral State")]
         [SerializeField] public float currentSpiralRadius = 0f;
+        [SerializeField] public Vector3 customOrbitAxis = Vector3.up;
+        [SerializeField] public bool hasEnteredVortex = false;
+        [SerializeField] public bool isKamikazeDelivery = false;
 
         [Header("Ballistic Launch State")]
         [SerializeField] public float ballisticLaunchTimer = 0f;
@@ -98,6 +101,7 @@ namespace OrbitalPanopticon.Gameplay
 
         public ScrapState CurrentState => currentState;
         public ScrapData Data => scrapData;
+        public int Tier => scrapData != null ? scrapData.Tier : 1;
         public float OrbitalBonusMultiplier
         {
             get => orbitalBonusMultiplier;
@@ -234,15 +238,12 @@ namespace OrbitalPanopticon.Gameplay
 
         public void SetAlpha(float alpha)
         {
-            _currentAlpha = Mathf.Clamp01(alpha);
-            ApplyAlpha(_currentAlpha);
+            SetVisualAlpha(alpha);
         }
 
-        private void ApplyAlpha(float alpha)
+        public void SetVisualAlpha(float alpha)
         {
-            if (mainRenderer == null) return;
-            if (_propertyBlock == null) _propertyBlock = new MaterialPropertyBlock();
-            mainRenderer.GetPropertyBlock(_propertyBlock);
+            _currentAlpha = Mathf.Clamp01(alpha);
 
             Color currentColor = isObserved ? observedGoldColor : baseColdColor;
             if (currentState == ScrapState.Launched && orbitalBonusMultiplier > 1f)
@@ -250,11 +251,27 @@ namespace OrbitalPanopticon.Gameplay
                 float heat = Mathf.Clamp01((orbitalBonusMultiplier - 1.0f) / 3.0f);
                 currentColor = Color.Lerp(baseColdColor, hotAccretionColor, heat);
             }
+            currentColor.a = _currentAlpha;
 
-            currentColor.a = alpha;
-            _propertyBlock.SetColor(BaseColorId, currentColor);
-            _propertyBlock.SetColor(ColorId, currentColor);
-            mainRenderer.SetPropertyBlock(_propertyBlock);
+            if (_propertyBlock == null) _propertyBlock = new MaterialPropertyBlock();
+
+            if (visualRoot == null) visualRoot = transform.Find("VisualRoot");
+            Renderer[] rends = visualRoot != null ? visualRoot.GetComponentsInChildren<Renderer>(true) : GetComponentsInChildren<Renderer>(true);
+
+            for (int i = 0; i < rends.Length; i++)
+            {
+                Renderer r = rends[i];
+                if (r == null) continue;
+                r.GetPropertyBlock(_propertyBlock);
+                _propertyBlock.SetColor(BaseColorId, currentColor);
+                _propertyBlock.SetColor(ColorId, currentColor);
+                r.SetPropertyBlock(_propertyBlock);
+            }
+        }
+
+        private void ApplyAlpha(float alpha)
+        {
+            SetVisualAlpha(alpha);
         }
 
         public void ResetForPool()
@@ -267,10 +284,14 @@ namespace OrbitalPanopticon.Gameplay
             currentSpiralRadius = 0f;
             ballisticLaunchTimer = 0f;
             orbitalBonusMultiplier = 1.0f;
+            isKamikazeDelivery = false;
             _fadeElapsed = 0f;
             _currentAlpha = 1.0f;
             wasInteractedByPlayer = false;
             homeOrbitRadius = 0f;
+            hasEnteredVortex = false;
+            customOrbitAxis = Vector3.up;
+            SetVisualAlpha(1.0f);
 
             if (rb != null)
             {
@@ -335,12 +356,34 @@ namespace OrbitalPanopticon.Gameplay
                 wasInteractedByPlayer = true;
             }
 
+            if (currentState == ScrapState.Held)
+            {
+                hasEnteredVortex = false;
+            }
+            else if (currentState == ScrapState.Floating || currentState == ScrapState.Launched)
+            {
+                SetVisualAlpha(1.0f);
+            }
+
             if (currentState != ScrapState.Launched)
             {
                 orbitalBonusMultiplier = 1.0f;
                 currentSpiralRadius = 0f;
                 ballisticLaunchTimer = 0f;
                 ResetVisualHeat();
+            }
+        }
+
+        public void TransitionToLaunched(Vector3 launchVelocity, float ballisticDuration = 0.85f)
+        {
+            SetState(ScrapState.Launched);
+            pullImmunityTimer = 0.65f;
+            ballisticLaunchTimer = ballisticDuration;
+            SetVisualAlpha(1.0f);
+            if (rb != null)
+            {
+                rb.isKinematic = false;
+                rb.linearVelocity = launchVelocity;
             }
         }
 

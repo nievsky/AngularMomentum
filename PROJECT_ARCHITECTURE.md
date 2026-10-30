@@ -163,17 +163,18 @@ OutdoorsScene
 ├── --- TEST_STAND ---                      <-- 15 benchmark floating test scrap cubes in stable orbit
 │   ├── TestScrapCube_00 ... 14
 │
-├── GameManager                             <-- GameManager, QuotaAndScoreManager
+├── GameManager                             <-- GameManager, QuotaAndScoreManager, UpgradeTreeManager, HelperDroneManager, ScorePopupManager
 ├── EventSystem                             <-- New Input System UI Input Module
 │
-└── HUD_Canvas                              <-- Screen Space Canvas, UIManager
+└── HUD_Canvas                              <-- Screen Space Canvas, UIManager, UpgradeTreeUI
     ├── Text_REC_Status                     <-- Blinking "● REC | DRONE #001" HUD feed indicator
     ├── Panel_QuotaAndHeat                  <-- Quota progress bar & Heat Multiplier (x1, x2, x4, x8, x16)
     ├── Text_ScrapCoins                     <-- Persistent currency counter
     ├── SignalLostOverlay                   <-- Fullscreen static/reconnect splash on boundary breach
     ├── Crosshair                           <-- Dynamic HUD crosshair (turns green on target, blue on hold)
     ├── WarningPanel                        <-- Pulsing red border & countdown on boundary approach
-    └── Panel_ObservedNotice                <-- Radiant gold banner: "OBSERVED TARGET GRABBED - x3 VALUE!"
+    ├── Panel_ObservedNotice                <-- Radiant gold banner: "OBSERVED TARGET GRABBED - x3 VALUE!"
+    └── Panel_UpgradeTree                   <-- Fullscreen modular radial skill tree overlay (TAB toggle, world pause)
 ```
 
 ---
@@ -184,7 +185,7 @@ OutdoorsScene
 ```
     [ POOL ] ──Spawn──► [ Floating ] ──LMB/Magnet──► [ Held ]
                             │                           │
-                   Out of Bounds / Fade                 │ LMB Punt
+                   Out of Bounds / Fade                 │ LMB Punt / Helper / Flash
                             ▼                           ▼
                      [ FadingOut ]                 [ Launched ]
                             │                           │
@@ -203,16 +204,16 @@ OutdoorsScene
   * External forces are zeroed (`isKinematic` or damped spring force toward `HoldPoint`).
   * Aligned directly in front of the crosshair at local position `(0, -0.1, 2.8)`.
 * **`Launched`**:
-  * Debris released or punted with high impulse via LMB.
+  * Debris released or punted with high impulse via LMB, pushed by Camera Gravi-Flash, or flung by Helper Drone Bots.
   * Subject to active black hole gravity and accretion zone acceleration.
   * Accumulates `orbitalBonusMultiplier` while spiraling through the inner disc.
 * **`Consumed`**:
   * Crosses the event horizon (`dist <= 3.5f`).
   * Triggers `OnObjectConsumed` event on `BlackHoleGravity`.
-  * Computes final score and resets item into the simulation pool.
+  * Computes final score with risk bonuses, observation multipliers (`x3`), and kamikaze bonuses (`x2.5`), triggers floating world-space popup, and resets item into the simulation pool.
 * **`FadingOut`**:
   * Triggered if scrap drifts past `arenaMaxRadius` (48f).
-  * central manager shrinks scale and alpha over `scrapFadeOutDuration` (1.8s) before returning to the pool.
+  * Central manager shrinks scale and alpha over `scrapFadeOutDuration` (1.8s) before returning to the pool.
 
 ### 5.2 Two-Zone Black Hole Physics Model
 To eliminate chaotic slingshots and prevent un-thrown scrap from prematurely falling into the black hole, physics operates under a strict two-zone model with explicit tightening spiral dynamics:
@@ -222,8 +223,8 @@ To eliminate chaotic slingshots and prevent un-thrown scrap from prematurely fal
    * **Tangential Orbit**: Predictable clockwise orbital drift (`outerZoneDriftSpeed = 2.2f`).
    * **Purpose**: Allows the player to navigate calmly, locate surveillance spotlight beams, align trajectories, and collect high-value scrap without panic.
 2. **Inner Accretion Zone (`dist <= accretionThresholdRadius` = 15.0m)**:
-   * **True 3D Center Pull (`dirToCenter3D`)**: Eliminates flat cylindrical high-altitude orbits by computing full 3D direction vectors to `(0,0,0)` and projecting singularity-safe horizontal tangents (`Vector3.Cross(horizontalDir, Vector3.up)`).
-   * **Equatorial Plane Flattening**: Objects above or below `Y = center.y` receive an active vertical restoring velocity (`-relY * verticalFlattenStrength`, default `6.0f`), pulling off-axis launches directly onto the accretion disk.
+   * **Dynamic Per-Object 3D Orbital Axis (`customOrbitAxis`)**: Eliminates single-axis flattening by computing a personalized 3D tilted orbital plane at the exact moment an object enters Zone B (`entryTangent = (lateralVel * 0.6 + defaultCw * 6.0 + noise * 1.5).normalized`, `customOrbitAxis = Cross(dirToCenter3D, entryTangent)`).
+   * **Planar Drift Correction**: Actively keeps each object locked onto its unique 3D tilted orbital plane passing through `(0,0,0)` (`planeDriftCorrection = -Project(pos - center, customOrbitAxis) * 6.0f`), generating rich natural accretion disks from all approach angles.
    * **Direct 3D Spherical Constraint**: When 3D distance exceeds `currentSpiralRadius`, `rb.position` is smoothly pulled onto the shrinking 3D sphere around the singularity (`pullStep = Min(excess, excess * spiralTightnessSpring * dt)`).
    * **Ballistic Punt Flight Window**: Debris punted by the player maintains full ballistic trajectory for `ballisticLaunchTimer = 0.85s` without orbital velocity overwrite until entering the accretion threshold.
    * **Tightening Death Spiral (`currentSpiralRadius`)**: Neutralizes discrete-step centrifugal drift by tracking an explicit shrinking target radius (`spiralRadiusShrinkRate = 5.5m/s`, accelerated by proximity depth `1 + depth01 * 1.5`).
@@ -232,15 +233,39 @@ To eliminate chaotic slingshots and prevent un-thrown scrap from prematurely fal
    * **Kinematic Grip**: Target velocity applied with high responsiveness (`12f * Time.fixedDeltaTime`), ensuring 2 to 3 dramatic tightening loops before consumption.
    * **Heat Growth**: Accumulates orbital bonus multiplier at `0.5f/s` (up to `maxOrbitalBonusMultiplier = 4.0x`).
 3. **Event Horizon (`dist <= eventHorizonRadius` = 3.5m)**:
-   * **Payoff Trigger**: Instantly consumes scrap, calculates combo scores, awards Scrap Coins, and recycles object.
+   * **Payoff Trigger**: Instantly consumes scrap, calculates combo scores, awards Scrap Coins, spawns 3D score popups, and recycles object.
    * **Player Protection**: Player drone is strictly immune to consumption and destruction (protecting child `Main Camera`), instantly respawning while dummy wreckage is spaghettified.
+
+### 5.3 Autonomous Helper Drone Bot State Machine (`HelperDroneBot`)
+```
+    [ Respawning ] ──(2.0s delay)──► [ Seek ] ──(Target < 2.8m)──► [ Deliver ]
+           ▲                                                            │
+           │                                                            ├─► [ Normal Release ] ──► [ Seek ]
+           │                                                            │
+           └────────────── [ Kamikaze Dive ] ◄──(Threshold Entry)───────┘
+```
+1. **Seek**: Scans outer zone for unharvested floating debris (`dist > 15m`, unclaimed), turns smoothly, and flies toward it. Speed scales directly with `"Мощность трала"` (`config.magnetPullForce`).
+2. **Deliver**: Attaches a dynamic `LineRenderer` tether beam and drags the scrap toward the black hole center.
+3. **Release (Normal Mode, `!kamikazeProtocolUnlocked`)**: Halts outside the threshold (17.5m), launches the scrap into the black hole vortex with high velocity (`TransitionToLaunched`), releases tether, and immediately returns to `Seek`.
+4. **Kamikaze Protocol (`kamikazeProtocolUnlocked == true`)**: Accelerates into a terminal dive directly into the singularity (`kamikazeSpeed = 34m/s`). When crossing the event horizon, it disintegrates, consumes the scrap with a **x2.5 Kamikaze Multiplier**, spawns a world-space popup, and resets into `Respawning` for 2 seconds.
+
+### 5.4 Camera "Грави-вспышка" (Gravi-Flash)
+* **Periodic Pulse**: Every `config.cameraGraviFlashInterval` (10s), active cameras tracking a target in the outer zone activate a gravitational shockwave.
+* **Visual Flash**: Spotlight flashes cyan with intensity spike (12f) and the procedural cone beam flashes white/cyan for 0.25 seconds.
+* **Dynamic Impulse**: Pushes the current target and all nearby scrap inside a 6m cone directly into the accretion threshold (`TransitionToLaunched(dirToCenter * 26f)`).
 
 ---
 
 ## 6. Current Project Status & Future Roadmap
 
 ### 6.1 Completed Systems `[x]`
-- [x] **True 3D Spherical Spiral & Equatorial Flattening**: Singularity-safe horizontal tangents, direct 3D center pull (`dirToCenter3D`), equatorial flattening (`verticalFlattenStrength = 6.0f`), and 3D spherical radius clamping.
+- [x] **Autonomous Helper Robots & Kamikaze Protocol**: Procedural `HelperDroneBot.prefab` (spherical body, cyan visor, engine trail, tether `LineRenderer`), autonomous state machine (`Seek`, `Deliver`, `Release`, `Kamikaze`, `Respawning`), +100% fixed-cost purchase in Skill Tree, and x2.5 Kamikaze Event Horizon score bonus.
+- [x] **Camera Gravi-Flash Pulse**: 10-second timer on `DynamicSurveillanceCamera`, white/cyan cone flash, and physical impulse pushing targeted Outer Zone scrap straight into the Black Hole accretion vortex.
+- [x] **Tier 4 Scrap "Космическая аномалия" & Gated Spawning**: `SO_Scrap_Tier4_Anomaly.asset` (baseValue = 600, mass = 15) and monolithic golden torus prefab `Scrap_Tier4_Anomaly.prefab`. Dynamic pool filtering in `ScrapSimulationManager` & `ScrapSpawner` strictly enforcing `tier <= config.unlockedScrapTier`.
+- [x] **World-Space Floating Score Popups**: Camera-facing billboard 3D text showing `"+Score"`, with special gold styling for `"OBSERVED x3!"` and cyan styling for `"KAMIKAZE x2.5!"`.
+- [x] **Radial Upgrade Tree UI (TAB with World Pause) & Stat Hooks**: Modular, data-driven skill tree with 20 designer upgrade nodes across 5 branches (Player, Black Hole, Scrap, Cameras, Robots) converging into WOW perks, plus standalone Helper Robot purchase. Runtime configuration cloning (`RuntimeConfig` pattern) preventing editor asset mutation, procedural UI lines, color-coded node states, +10% compound quota reward scaling, and complete player flight/manipulator input suppression during skill tree navigation.
+- [x] **Dynamic Per-Object 3D Orbital Plane (Vortex Accretion)**: Each object establishes a unique, locked 3D orbital plane passing through `(0,0,0)` based on approach velocity and organic tilt, avoiding flat single-plane snapping.
+- [x] **Multi-Object Semi-Transparent Gravity Gun**: Simultaneous capture and holding of up to 3 objects (`maxHeldObjects = 3`), non-overlapping slowly rotating ring formation (`heldClusterRadius = 0.85f`), mutual held collision suppression with 0.9m separation spring, and dynamic FPV semi-transparency (`heldObjectAlpha = 0.42f`).
 - [x] **Directional Dash on Shift & Ballistic Punt**: 6DoF composite movement vector dash (`Left Shift`, impulse 22f, duration 0.22s, cooldown 0.9s) with speed-cap bypass, and `ballisticLaunchTimer = 0.85s` preserving player shot trajectories outside the accretion well.
 - [x] **Unbreakable Gravity Gun & Trigger Collision Fix**: Overlap queries ignore trigger colliders (`QueryTriggerInteraction.Ignore`), stale item auto-purging in `Update()`, automatic RMB release latching, and reliable dry punt blast (range 8.5m, radius 3.8m).
 - [x] **Volumetric Procedural Tapered Cone & Unlit Material**: Runtime `CreateConeMesh(segments = 24, tipRadius = 0.08f, baseRadius = 1.0f, length = 1.0f)` with double-sided faces, vertex colors `(1, 0.92, 0.15, 0.25)`, and bright unlit translucent warm yellow material (`M_CameraBeamYellow.mat`).
@@ -254,20 +279,11 @@ To eliminate chaotic slingshots and prevent un-thrown scrap from prematurely fal
 - [x] **Centralized Balance Configuration**: `GameBalanceConfig` scriptable object powering real-time inspector tuning.
 
 ### 6.2 Upcoming Development Roadmap `[ ]`
-- [ ] **Phase 1: Upgrade Shop UI (Scrap Coins Economy)**
-  - Implement a terminal / pause menu shop inside the cockpit.
-  - Upgrades to purchase with Scrap Coins:
-    - *Magnet Tractor Beam Upgrade*: Toggleable long-range pull cone (`isMagnetUnlocked`).
-    - *Cargo Expansion*: Increase `maxHeldObjects` from 1 to 2 or 3.
-    - *Thruster Booster Overclock*: Increase `baseThrusterAcceleration` and reduce `boostCooldown`.
-    - *Quota Multiplier Insurance*: Slower heat combo decay.
-- [ ] **Phase 2: Autonomous Helper Bots AI**
-  - Implement AI drones that orbit the outer zone, gather small scrap, and chuck it toward the black hole for passive income.
-- [ ] **Phase 3: 3D Art Asset Integration**
+- [ ] **Phase 1: 3D Art Asset Polish**
   - Replace prototype cylinders on `RoboArmVisual` with high-detail cockpit mechanical arm mesh.
   - Replace greybox sphere on `BlackHoleSphere` with animated accretion disc shader (event horizon distortion / gravitational lensing).
   - Replace boundary wireframe sphere with holographic boundary grid shader.
-- [ ] **Phase 4: Audio-Visual Juice & Feedback**
+- [ ] **Phase 2: Audio-Visual Juice & Feedback**
   - Thruster hum and boost burst SFX.
   - Black hole low-frequency rumble and event horizon consumption crunch.
   - Surveillance camera mechanical servo tracking whine.
