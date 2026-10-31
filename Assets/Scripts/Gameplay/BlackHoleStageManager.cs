@@ -232,6 +232,13 @@ namespace OrbitalPanopticon.Gameplay
 
         private void CheckStageProgression()
         {
+            // Decorative black hole in Main Menu should not progress gameplay stages or trigger sector collapse
+            string activeScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+            if (activeScene.IndexOf("MainMenu", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return;
+            }
+
             GameBalanceConfig config = GameManager.GameBalanceConfigInstance;
             if (config == null || config.stageMassTargets == null) return;
 
@@ -248,6 +255,7 @@ namespace OrbitalPanopticon.Gameplay
                 }
                 else
                 {
+                    currentStageIndex = config.stageMassTargets.Length;
                     // Reached target of Stage 4 (120,000 tons) -> All 4 containment locks broken!
                     Debug.Log("<color=#FFD700>[CRITICAL MASS] All 4 Containment Locks shattered! Singularity unconstrained!</color>");
                     if (EndgameFinaleController.Instance != null)

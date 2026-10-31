@@ -206,26 +206,23 @@ namespace OrbitalPanopticon.Core
 
             // Case 2: Transitioning to MainMenu (from CreditsScene, Endgame, or returning from gameplay)
             // The music must restart anew from the beginning with Stage = Menu (0.0).
-            // When returning from Credits, we add a customizable delay (default: 3s) so the credits track finishes fading out cleanly.
-            if (targetType == PlaylistType.MainMenu && currentPlaylistType != PlaylistType.MainMenu)
+            if (targetType == PlaylistType.MainMenu)
             {
-                bool fromCredits = (currentPlaylistType == PlaylistType.Credits);
-                currentPlaylistType = PlaylistType.MainMenu;
-                currentTrackIndex = 0;
-                _isMusicStopped = false;
+                if (currentPlaylistType != PlaylistType.MainMenu)
+                {
+                    currentPlaylistType = PlaylistType.MainMenu;
+                    currentTrackIndex = 0;
+                    _isMusicStopped = false;
 
-                if (fromCredits)
-                {
-                    float delay = audioConfig != null ? audioConfig.creditsToMenuMusicDelay : 3.0f;
-                    if (_crossfadeCoroutine != null) StopCoroutine(_crossfadeCoroutine);
-                    _crossfadeCoroutine = StartCoroutine(DelayedStartMenuMusicRoutine(delay));
-                    Debug.Log($"<color=#33FF88>[MusicPlaylistManager] Transitioned from Credits to Main Menu: waiting {delay:F1}s before starting MusicGameplay (Menu stage)...</color>");
-                    return;
-                }
-                else
-                {
                     CrossfadeToTrack(PlaylistType.MainMenu, 0);
                     Debug.Log("<color=#33FF88>[MusicPlaylistManager] Transitioned to Main Menu: restarting MusicGameplay anew from beginning with Stage = Menu (0.0)</color>");
+                    return;
+                }
+                else if (!_activeFmodInstance.isValid() || _isMusicStopped)
+                {
+                    _isMusicStopped = false;
+                    CrossfadeToTrack(PlaylistType.MainMenu, 0);
+                    Debug.Log("<color=#33FF88>[MusicPlaylistManager] Main Menu active with stopped/invalid music: restarting MusicGameplay with Stage = Menu (0.0)</color>");
                     return;
                 }
             }
@@ -616,7 +613,12 @@ namespace OrbitalPanopticon.Core
                 _audioSourceB.volume = 0f;
             }
 
-            // 2. Wait for delay in unscaled time so credits track finishes cleanly
+            // 2. Wait for scene transition overlay to finish and delay in unscaled time so credits track finishes cleanly
+            while (SceneTransitionManager.Instance != null && SceneTransitionManager.Instance.IsTransitioning)
+            {
+                yield return null;
+            }
+
             float elapsed = 0f;
             while (elapsed < delay)
             {

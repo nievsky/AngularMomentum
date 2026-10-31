@@ -873,6 +873,13 @@ namespace OrbitalPanopticon.Core
 
         public void PlayCollapseGameOver(Vector3 position = default)
         {
+            // Do not play collapse game over sound or stop background music when in Main Menu scene
+            string activeScene = SceneManager.GetActiveScene().name;
+            if (activeScene.IndexOf("MainMenu", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return;
+            }
+
             if (position == default)
             {
                 if (blackHoleTransform != null)
