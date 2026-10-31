@@ -169,7 +169,7 @@ namespace OrbitalPanopticon.Core
             ResolveConfig();
             PlaylistType targetType = GetPlaylistTypeForScene(scene.name);
 
-            if (!RuntimeManager.HaveMasterBanksLoaded)
+            if (!RuntimeManager.HaveAllBanksLoaded)
             {
                 return;
             }
@@ -277,7 +277,7 @@ namespace OrbitalPanopticon.Core
 
         private void Update()
         {
-            if (isCrossfading) return;
+            if (!_isInitialized || !RuntimeManager.HaveAllBanksLoaded || isCrossfading) return;
 
             MonitorTrackCompletion();
         }

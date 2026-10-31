@@ -112,7 +112,7 @@ namespace OrbitalPanopticon.Core
         {
             ResolveReferences();
 
-            if (!RuntimeManager.HaveMasterBanksLoaded)
+            if (!RuntimeManager.HaveAllBanksLoaded)
             {
                 return;
             }
@@ -270,6 +270,7 @@ namespace OrbitalPanopticon.Core
 #endif
 
             if (audioConfig == null) return;
+            if (!RuntimeManager.HaveAllBanksLoaded) return;
 
             // Re-resolve dynamic references if needed
             if (playerDrone == null) playerDrone = DroneController.Instance;
@@ -447,7 +448,7 @@ namespace OrbitalPanopticon.Core
 
         private void SetParameter(string paramName, float value)
         {
-            if (string.IsNullOrEmpty(paramName)) return;
+            if (string.IsNullOrEmpty(paramName) || !RuntimeManager.HaveAllBanksLoaded) return;
 
             // Global Studio parameter
             RuntimeManager.StudioSystem.setParameterByName(paramName, value);
@@ -512,6 +513,8 @@ namespace OrbitalPanopticon.Core
             PlayerPrefs.SetFloat("Settings_MusicVolume", volume);
             PlayerPrefs.Save();
 
+            if (!RuntimeManager.HaveAllBanksLoaded) return;
+
             try
             {
                 string path = (audioConfig != null && !string.IsNullOrEmpty(audioConfig.vcaMusicPath))
@@ -535,6 +538,8 @@ namespace OrbitalPanopticon.Core
             PlayerPrefs.SetFloat("Settings_SoundsVolume", volume);
             PlayerPrefs.Save();
             AudioListener.volume = volume;
+
+            if (!RuntimeManager.HaveAllBanksLoaded) return;
 
             try
             {
@@ -565,7 +570,7 @@ namespace OrbitalPanopticon.Core
         /// </summary>
         public void PlayOneShot(EventReference eventRef, Vector3 position = default)
         {
-            if (eventRef.IsNull) return;
+            if (eventRef.IsNull || !RuntimeManager.HaveAllBanksLoaded) return;
             RuntimeManager.PlayOneShot(eventRef, position);
         }
 
