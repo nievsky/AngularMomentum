@@ -89,11 +89,11 @@ MonoBehaviour:
     Path: event:/Boss/Overseer_Destroyed
   containmentBeamShockOneShot:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -601674861
+      Data2: 1204262701
+      Data3: -17583228
+      Data4: 1076307175
+    Path: event:/Player/Beam_Shock
   overseerIdleOneShot:
     Guid:
       Data1: 56212931

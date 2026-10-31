@@ -25,18 +25,18 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _DustLaneDarkness: 0.477
+    - _DustLaneDarkness: 0.18
     - _GradientExponent: 1.35
-    - _MilkyWayFalloff: 1.19
-    - _MilkyWayNoiseScale: 8.05
-    - _MilkyWayStarBoost: 2.42
-    - _MilkyWayWidth: 0.8
+    - _MilkyWayFalloff: 2.2
+    - _MilkyWayNoiseScale: 2.8
+    - _MilkyWayStarBoost: 3.5
+    - _MilkyWayWidth: 0.32
     - _NebulaIntensity: 0.95
     - _NebulaScale: 2
-    - _StarBrightness: 2.44
+    - _StarBrightness: 2.2
     - _StarColorVariation: 0.85
-    - _StarDensity: 300
-    - _StarSize: 0.06
+    - _StarDensity: 110
+    - _StarSize: 0.016
     - _StarTwinkleAmount: 0.55
     - _StarTwinkleSpeed: 2.2
     m_Colors:
