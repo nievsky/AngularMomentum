@@ -148,11 +148,7 @@ public class SceneTransitionManager : MonoBehaviour
         yield return null;
         yield return null;
 
-        if (OrbitalPanopticon.Core.FMODAudioManager.Instance != null)
-        {
-            OrbitalPanopticon.Core.FMODAudioManager.Instance.PlayDissolveTransition();
-        }
-
+        // Note: Do not play UI_Transition sound on boot when no transition actually occurred
         float elapsed = 0f;
         float dur = Mathf.Max(0.1f, fadeInDuration);
 

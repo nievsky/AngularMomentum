@@ -1,4 +1,7 @@
+using System;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 using TMPro;
 using DG.Tweening;
@@ -11,6 +14,15 @@ namespace OrbitalPanopticon.UI
     {
         public static MainMenuUIController Instance { get; private set; }
 
+        // UI Audio Delegates
+        public static event Action OnButtonHovered;
+        public static event Action OnButtonClicked;
+        public static event Action OnStartGameClicked;
+
+        public static void TriggerHover() => OnButtonHovered?.Invoke();
+        public static void TriggerClick() => OnButtonClicked?.Invoke();
+        public static void TriggerStartGame() => OnStartGameClicked?.Invoke();
+
         [Header("Main Menu Buttons")]
         [SerializeField] private Button startButton;
         [SerializeField] private Button settingsButton;
@@ -19,8 +31,13 @@ namespace OrbitalPanopticon.UI
 
         [Header("Settings Sub-Panel")]
         [SerializeField] private GameObject settingsPanel;
-        [SerializeField] private Slider masterVolumeSlider;
-        [SerializeField] private TextMeshProUGUI masterVolumeValueText;
+        [FormerlySerializedAs("masterVolumeSlider")]
+        [SerializeField] private Slider musicVolumeSlider;
+        [FormerlySerializedAs("masterVolumeValueText")]
+        [SerializeField] private TextMeshProUGUI musicVolumeValueText;
+
+        [SerializeField] private Slider soundsVolumeSlider;
+        [SerializeField] private TextMeshProUGUI soundsVolumeValueText;
         [SerializeField] private Slider mouseSensSlider;
         [SerializeField] private TextMeshProUGUI mouseSensValueText;
         [SerializeField] private Button closeSettingsButton;
@@ -48,7 +65,13 @@ namespace OrbitalPanopticon.UI
         [SerializeField] private TextMeshProUGUI creditsButtonText;
         [SerializeField] private TextMeshProUGUI quitButtonText;
         [SerializeField] private TextMeshProUGUI settingsTitleText;
-        [SerializeField] private TextMeshProUGUI masterVolumeLabelText;
+        [FormerlySerializedAs("masterVolumeLabelText")]
+        [SerializeField] private TextMeshProUGUI musicVolumeLabelText;
+        [SerializeField] private TextMeshProUGUI soundsVolumeLabelText;
+
+        public Slider MasterVolumeSlider => musicVolumeSlider;
+        public Slider MusicVolumeSlider => musicVolumeSlider;
+        public Slider SoundsVolumeSlider => soundsVolumeSlider;
         [SerializeField] private TextMeshProUGUI mouseSensLabelText;
         [SerializeField] private TextMeshProUGUI closeSettingsButtonText;
 
@@ -65,6 +88,13 @@ namespace OrbitalPanopticon.UI
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
 
+            // Hook up audio hover triggers on all menu buttons
+            SetupButtonHoverAudio(startButton);
+            SetupButtonHoverAudio(settingsButton);
+            SetupButtonHoverAudio(creditsButton);
+            SetupButtonHoverAudio(quitButton);
+            SetupButtonHoverAudio(closeSettingsButton);
+
             if (startButton != null) startButton.onClick.AddListener(OnStartClicked);
             if (settingsButton != null) settingsButton.onClick.AddListener(OnSettingsClicked);
             if (creditsButton != null) creditsButton.onClick.AddListener(OnCreditsClicked);
@@ -74,7 +104,16 @@ namespace OrbitalPanopticon.UI
 
             LoadSettings();
 
-            if (masterVolumeSlider != null) masterVolumeSlider.onValueChanged.AddListener(OnMasterVolumeChanged);
+            if (musicVolumeSlider != null)
+            {
+                musicVolumeSlider.onValueChanged.RemoveAllListeners();
+                musicVolumeSlider.onValueChanged.AddListener(OnMusicVolumeChanged);
+            }
+            if (soundsVolumeSlider != null)
+            {
+                soundsVolumeSlider.onValueChanged.RemoveAllListeners();
+                soundsVolumeSlider.onValueChanged.AddListener(OnSoundsVolumeChanged);
+            }
             if (mouseSensSlider != null) mouseSensSlider.onValueChanged.AddListener(OnMouseSensChanged);
 
             if (settingsPanel != null) settingsPanel.SetActive(false);
@@ -105,6 +144,18 @@ namespace OrbitalPanopticon.UI
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
             }
+        }
+
+        private void SetupButtonHoverAudio(Button btn)
+        {
+            if (btn == null) return;
+            EventTrigger trigger = btn.GetComponent<EventTrigger>();
+            if (trigger == null) trigger = btn.gameObject.AddComponent<EventTrigger>();
+
+            EventTrigger.Entry entry = new EventTrigger.Entry();
+            entry.eventID = EventTriggerType.PointerEnter;
+            entry.callback.AddListener((data) => { TriggerHover(); });
+            trigger.triggers.Add(entry);
         }
 
         private void ResolveLabelReferences()
@@ -142,7 +193,8 @@ namespace OrbitalPanopticon.UI
             if (quitButtonText != null) quitButtonText.text = LocalizationManager.Get("MM_Quit");
 
             if (settingsTitleText != null) settingsTitleText.text = LocalizationManager.Get("MM_Settings_Title");
-            if (masterVolumeLabelText != null) masterVolumeLabelText.text = LocalizationManager.Get("MM_Settings_Volume");
+            if (musicVolumeLabelText != null) musicVolumeLabelText.text = LocalizationManager.Get("MM_Settings_MusicVolume");
+            if (soundsVolumeLabelText != null) soundsVolumeLabelText.text = LocalizationManager.Get("MM_Settings_SoundsVolume");
             if (mouseSensLabelText != null) mouseSensLabelText.text = LocalizationManager.Get("MM_Settings_Sens");
             if (closeSettingsButtonText != null) closeSettingsButtonText.text = LocalizationManager.Get("MM_Settings_Close");
         }
@@ -245,11 +297,13 @@ namespace OrbitalPanopticon.UI
             {
                 btnFlagRU.onClick.RemoveAllListeners();
                 btnFlagRU.onClick.AddListener(() => OnLanguageButtonClicked(GameLanguage.RU));
+                SetupButtonHoverAudio(btnFlagRU);
             }
             if (btnFlagEN != null)
             {
                 btnFlagEN.onClick.RemoveAllListeners();
                 btnFlagEN.onClick.AddListener(() => OnLanguageButtonClicked(GameLanguage.EN));
+                SetupButtonHoverAudio(btnFlagEN);
             }
 
             UpdateLanguageSwitcherVisuals();
@@ -303,6 +357,7 @@ namespace OrbitalPanopticon.UI
 
         private void OnLanguageButtonClicked(GameLanguage lang)
         {
+            TriggerClick();
             LocalizationManager.SetLanguage(lang);
             Button activeBtn = (lang == GameLanguage.RU) ? btnFlagRU : btnFlagEN;
             if (activeBtn != null)
@@ -338,19 +393,111 @@ namespace OrbitalPanopticon.UI
             }
         }
 
-        private void LoadSettings()
+        public void EnsureVolumeSliders()
         {
-            float volume = PlayerPrefs.GetFloat("Settings_MasterVolume", 0.85f);
-            if (masterVolumeSlider != null)
+            if (settingsPanel == null) return;
+
+            Transform musicRow = settingsPanel.transform.Find("Row_MusicVolume");
+            if (musicRow == null) musicRow = settingsPanel.transform.Find("Row_MasterVolume");
+            Transform soundsRow = settingsPanel.transform.Find("Row_SoundsVolume");
+
+            if (musicRow != null)
             {
-                masterVolumeSlider.value = volume;
-            }
-            AudioListener.volume = volume;
-            if (masterVolumeValueText != null)
-            {
-                masterVolumeValueText.text = $"{Mathf.RoundToInt(volume * 100f)}%";
+                musicRow.name = "Row_MusicVolume";
+                RectTransform rtMusic = musicRow.GetComponent<RectTransform>();
+                if (rtMusic != null) rtMusic.anchoredPosition = new Vector2(0f, 60f);
+
+                if (musicVolumeSlider == null) musicVolumeSlider = musicRow.GetComponentInChildren<Slider>();
+                if (musicVolumeValueText == null)
+                {
+                    Transform valTr = musicRow.Find("ValueText");
+                    if (valTr != null) musicVolumeValueText = valTr.GetComponent<TextMeshProUGUI>();
+                }
+                if (musicVolumeLabelText == null)
+                {
+                    Transform lblTr = musicRow.Find("Label");
+                    if (lblTr != null) musicVolumeLabelText = lblTr.GetComponent<TextMeshProUGUI>();
+                }
             }
 
+            if (soundsRow == null && musicRow != null)
+            {
+                GameObject soundsGo = Instantiate(musicRow.gameObject, settingsPanel.transform);
+                soundsGo.name = "Row_SoundsVolume";
+                soundsRow = soundsGo.transform;
+
+                RectTransform rtSounds = soundsRow.GetComponent<RectTransform>();
+                if (rtSounds != null) rtSounds.anchoredPosition = new Vector2(0f, 0f);
+
+                soundsVolumeSlider = soundsGo.GetComponentInChildren<Slider>();
+                Transform valTr = soundsGo.transform.Find("ValueText");
+                if (valTr != null) soundsVolumeValueText = valTr.GetComponent<TextMeshProUGUI>();
+                Transform lblTr = soundsGo.transform.Find("Label");
+                if (lblTr != null) soundsVolumeLabelText = lblTr.GetComponent<TextMeshProUGUI>();
+
+                Transform mouseRow = settingsPanel.transform.Find("Row_MouseSens");
+                if (mouseRow != null)
+                {
+                    RectTransform rtMouse = mouseRow.GetComponent<RectTransform>();
+                    if (rtMouse != null) rtMouse.anchoredPosition = new Vector2(0f, -60f);
+                }
+            }
+            else if (soundsRow != null)
+            {
+                if (soundsVolumeSlider == null) soundsVolumeSlider = soundsRow.GetComponentInChildren<Slider>();
+                if (soundsVolumeValueText == null)
+                {
+                    Transform valTr = soundsRow.Find("ValueText");
+                    if (valTr != null) soundsVolumeValueText = valTr.GetComponent<TextMeshProUGUI>();
+                }
+                if (soundsVolumeLabelText == null)
+                {
+                    Transform lblTr = soundsRow.Find("Label");
+                    if (lblTr != null) soundsVolumeLabelText = lblTr.GetComponent<TextMeshProUGUI>();
+                }
+            }
+        }
+
+        private void LoadSettings()
+        {
+            EnsureVolumeSliders();
+
+            // 1. Music Volume (Default: 100% / 1.0)
+            float musicVol = PlayerPrefs.GetFloat("Settings_MusicVolume", 1.0f);
+            if (musicVolumeSlider != null)
+            {
+                musicVolumeSlider.minValue = 0f;
+                musicVolumeSlider.maxValue = 1f;
+                musicVolumeSlider.value = musicVol;
+            }
+            if (musicVolumeValueText != null)
+            {
+                musicVolumeValueText.text = $"{Mathf.RoundToInt(musicVol * 100f)}%";
+            }
+            if (FMODAudioManager.Instance != null)
+            {
+                FMODAudioManager.Instance.SetMusicVolume(musicVol);
+            }
+
+            // 2. Sounds Volume (Default: 100% / 1.0)
+            float soundsVol = PlayerPrefs.GetFloat("Settings_SoundsVolume", 1.0f);
+            if (soundsVolumeSlider != null)
+            {
+                soundsVolumeSlider.minValue = 0f;
+                soundsVolumeSlider.maxValue = 1f;
+                soundsVolumeSlider.value = soundsVol;
+            }
+            if (soundsVolumeValueText != null)
+            {
+                soundsVolumeValueText.text = $"{Mathf.RoundToInt(soundsVol * 100f)}%";
+            }
+            if (FMODAudioManager.Instance != null)
+            {
+                FMODAudioManager.Instance.SetSoundsVolume(soundsVol);
+            }
+            AudioListener.volume = soundsVol;
+
+            // 3. Mouse Sensitivity
             float sens = PlayerPrefs.GetFloat("Settings_MouseSens", 1.8f);
             if (mouseSensSlider != null)
             {
@@ -368,14 +515,34 @@ namespace OrbitalPanopticon.UI
             }
         }
 
-        private void OnMasterVolumeChanged(float val)
+        private void OnMusicVolumeChanged(float val)
         {
-            AudioListener.volume = val;
-            PlayerPrefs.SetFloat("Settings_MasterVolume", val);
+            val = Mathf.Clamp01(val);
+            PlayerPrefs.SetFloat("Settings_MusicVolume", val);
             PlayerPrefs.Save();
-            if (masterVolumeValueText != null)
+            if (musicVolumeValueText != null)
             {
-                masterVolumeValueText.text = $"{Mathf.RoundToInt(val * 100f)}%";
+                musicVolumeValueText.text = $"{Mathf.RoundToInt(val * 100f)}%";
+            }
+            if (FMODAudioManager.Instance != null)
+            {
+                FMODAudioManager.Instance.SetMusicVolume(val);
+            }
+        }
+
+        private void OnSoundsVolumeChanged(float val)
+        {
+            val = Mathf.Clamp01(val);
+            PlayerPrefs.SetFloat("Settings_SoundsVolume", val);
+            PlayerPrefs.Save();
+            AudioListener.volume = val;
+            if (soundsVolumeValueText != null)
+            {
+                soundsVolumeValueText.text = $"{Mathf.RoundToInt(val * 100f)}%";
+            }
+            if (FMODAudioManager.Instance != null)
+            {
+                FMODAudioManager.Instance.SetSoundsVolume(val);
             }
         }
 
@@ -397,6 +564,8 @@ namespace OrbitalPanopticon.UI
 
         public void OnStartClicked()
         {
+            TriggerStartGame();
+
             if (SceneTransitionManager.Instance != null)
             {
                 SceneTransitionManager.Instance.TransitionToScene("GameplayScene");
@@ -409,6 +578,8 @@ namespace OrbitalPanopticon.UI
 
         public void OnSettingsClicked()
         {
+            TriggerClick();
+
             if (settingsPanel != null)
             {
                 settingsPanel.SetActive(!settingsPanel.activeSelf);
@@ -417,6 +588,8 @@ namespace OrbitalPanopticon.UI
 
         public void OnCloseSettingsClicked()
         {
+            TriggerClick();
+
             if (settingsPanel != null)
             {
                 settingsPanel.SetActive(false);
@@ -425,6 +598,8 @@ namespace OrbitalPanopticon.UI
 
         public void OnCreditsClicked()
         {
+            TriggerClick();
+
             if (SceneTransitionManager.Instance != null)
             {
                 SceneTransitionManager.Instance.TransitionToScene("CreditsScene");
@@ -437,6 +612,8 @@ namespace OrbitalPanopticon.UI
 
         public void OnQuitClicked()
         {
+            TriggerClick();
+
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.isPlaying = false;
 #else
