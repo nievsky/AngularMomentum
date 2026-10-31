@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using OrbitalPanopticon.Core;
 using OrbitalPanopticon.Player;
@@ -30,6 +31,49 @@ namespace OrbitalPanopticon.Gameplay
         [Header("Lock Status")]
         [SerializeField] private bool isLockBroken = false;
         public bool isConsumedOrCollapsing = false;
+
+        [Header("Idle Audio Settings")]
+        [Tooltip("Periodicity slider in seconds between Overseer Idle sounds across active eyes. Default: 10s (rare).")]
+        [Range(2f, 60f)]
+        [SerializeField] private float idleSoundInterval = 10.0f;
+
+        [Tooltip("Random variance (+/- seconds) applied to idle interval so vocalizations sound organic.")]
+        [Range(0f, 10f)]
+        [SerializeField] private float idleSoundJitter = 2.5f;
+
+        /// <summary>
+        /// Static delegate invoked when any active Overseer Containment Eye emits an idle vocalization cue.
+        /// Passes emitting eye instance and 3D world position of pupil.
+        /// </summary>
+        public static event Action<OverseerContainmentEye, Vector3> OnOverseerIdleEmitted;
+
+        /// <summary>
+        /// Instance delegate invoked when this specific Overseer Containment Eye emits an idle vocalization cue.
+        /// Passes 3D world position of pupil.
+        /// </summary>
+        public event Action<Vector3> OnIdleEmitted;
+
+        /// <summary>
+        /// Delegate invoked when player is struck or damaged by an active containment beam.
+        /// Passes player drone and world collision point.
+        /// </summary>
+        public static event Action<DroneController, Vector3> OnPlayerBeamShock;
+
+        public float IdleSoundInterval
+        {
+            get => idleSoundInterval;
+            set => idleSoundInterval = Mathf.Clamp(value, 2f, 60f);
+        }
+
+        public float IdleSoundJitter
+        {
+            get => idleSoundJitter;
+            set => idleSoundJitter = Mathf.Clamp(value, 0f, 10f);
+        }
+
+        private static readonly List<OverseerContainmentEye> _activeEyes = new List<OverseerContainmentEye>();
+        private static Coroutine _globalIdleCoroutine;
+        private static OverseerContainmentEye _coroutineRunner;
 
         private float _orbitAngle = 0f;
         private MaterialPropertyBlock _propBlock;
@@ -80,6 +124,143 @@ namespace OrbitalPanopticon.Gameplay
             _renderers = visualRoot.GetComponentsInChildren<Renderer>(true);
 
             SetupContainmentBeam();
+        }
+
+        private void OnEnable()
+        {
+            _activeEyes.RemoveAll(e => e == null);
+            if (!_activeEyes.Contains(this))
+            {
+                _activeEyes.Add(this);
+            }
+            EnsureIdleCoordinatorRunning();
+        }
+
+        private void OnDisable()
+        {
+            _activeEyes.Remove(this);
+            if (_coroutineRunner == this)
+            {
+                if (_globalIdleCoroutine != null)
+                {
+                    StopCoroutine(_globalIdleCoroutine);
+                    _globalIdleCoroutine = null;
+                }
+                _coroutineRunner = null;
+                HandoverIdleCoordinator();
+            }
+        }
+
+        private void OnDestroy()
+        {
+            _activeEyes.Remove(this);
+            if (_coroutineRunner == this)
+            {
+                if (_globalIdleCoroutine != null)
+                {
+                    StopCoroutine(_globalIdleCoroutine);
+                    _globalIdleCoroutine = null;
+                }
+                _coroutineRunner = null;
+                HandoverIdleCoordinator();
+            }
+        }
+
+        private static void HandoverIdleCoordinator()
+        {
+            for (int i = 0; i < _activeEyes.Count; i++)
+            {
+                var candidate = _activeEyes[i];
+                if (candidate != null && candidate.isActiveAndEnabled && !candidate.isLockBroken && !candidate.isConsumedOrCollapsing)
+                {
+                    candidate.EnsureIdleCoordinatorRunning();
+                    break;
+                }
+            }
+        }
+
+        public void EnsureIdleCoordinatorRunning()
+        {
+            if (isLockBroken || isConsumedOrCollapsing || !isActiveAndEnabled) return;
+
+            if (_globalIdleCoroutine == null || _coroutineRunner == null || !_coroutineRunner.isActiveAndEnabled)
+            {
+                _coroutineRunner = this;
+                _globalIdleCoroutine = StartCoroutine(GlobalIdleRoutine());
+            }
+        }
+
+        private IEnumerator GlobalIdleRoutine()
+        {
+            // Initial delay so background ambience and gameplay music establish first
+            float baseInitial = idleSoundInterval;
+            if (FMODAudioManager.Instance != null && FMODAudioManager.Instance.Config != null && FMODAudioManager.Instance.Config.overseerIdleInterval > 0f)
+            {
+                baseInitial = FMODAudioManager.Instance.Config.overseerIdleInterval;
+            }
+            float initialDelay = Mathf.Max(3f, baseInitial * 0.5f);
+            yield return new WaitForSeconds(initialDelay);
+
+            while (true)
+            {
+                List<OverseerContainmentEye> candidates = new List<OverseerContainmentEye>();
+                for (int i = 0; i < _activeEyes.Count; i++)
+                {
+                    var eye = _activeEyes[i];
+                    if (eye != null && eye.isActiveAndEnabled && !eye.isLockBroken && !eye.isConsumedOrCollapsing)
+                    {
+                        candidates.Add(eye);
+                    }
+                }
+
+                if (candidates.Count > 0)
+                {
+                    int chosenIdx = UnityEngine.Random.Range(0, candidates.Count);
+                    OverseerContainmentEye chosenEye = candidates[chosenIdx];
+                    if (chosenEye != null)
+                    {
+                        chosenEye.EmitIdleSound();
+                    }
+                }
+
+                float baseInterval = idleSoundInterval;
+                float jitter = idleSoundJitter;
+
+                if (FMODAudioManager.Instance != null && FMODAudioManager.Instance.Config != null && FMODAudioManager.Instance.Config.overseerIdleInterval > 0f)
+                {
+                    baseInterval = FMODAudioManager.Instance.Config.overseerIdleInterval;
+                    jitter = FMODAudioManager.Instance.Config.overseerIdleJitter;
+                }
+                else
+                {
+                    GameBalanceConfig cfg = GameManager.GameBalanceConfigInstance;
+                    if (cfg != null && cfg.overseerIdleInterval > 0f)
+                    {
+                        baseInterval = cfg.overseerIdleInterval;
+                    }
+                }
+
+                float waitTime = Mathf.Max(2.5f, baseInterval + UnityEngine.Random.Range(-jitter, jitter));
+                yield return new WaitForSeconds(waitTime);
+            }
+        }
+
+        /// <summary>
+        /// Emits an idle vocalization cue from this Overseer Eye, invoking delegates and triggering 3D FMOD audio.
+        /// </summary>
+        public void EmitIdleSound()
+        {
+            if (isLockBroken || isConsumedOrCollapsing) return;
+
+            Vector3 emitPos = PupilPosition;
+
+            OnIdleEmitted?.Invoke(emitPos);
+            OnOverseerIdleEmitted?.Invoke(this, emitPos);
+
+            if (OnOverseerIdleEmitted == null && FMODAudioManager.Instance != null)
+            {
+                FMODAudioManager.Instance.PlayOverseerIdle(emitPos);
+            }
         }
 
         private void Start()
@@ -265,14 +446,12 @@ namespace OrbitalPanopticon.Gameplay
                 CameraShakeController.Instance.TriggerShake(duration: 0.45f, magnitude: 0.28f);
             }
 
+            OnPlayerBeamShock?.Invoke(drone, closestPoint);
+
             // Audio shock cue
             if (FMODAudioManager.Instance != null)
             {
-                FMODAudioManager.Instance.PlayContainmentLockBreak(closestPoint);
-            }
-            else if (GameAudioManager.Instance != null && GameAudioManager.Instance.Config != null)
-            {
-                GameAudioManager.Instance.PlayOneShot(GameAudioManager.Instance.Config.overseerDestructionSfx, 0.85f);
+                FMODAudioManager.Instance.PlayContainmentBeamShock(closestPoint);
             }
 
             // Evaluate Hits (Strict 3-Hit system, no HP bar)
@@ -387,6 +566,17 @@ namespace OrbitalPanopticon.Gameplay
         {
             if (isLockBroken) return;
             isLockBroken = true;
+
+            if (_coroutineRunner == this)
+            {
+                if (_globalIdleCoroutine != null)
+                {
+                    StopCoroutine(_globalIdleCoroutine);
+                    _globalIdleCoroutine = null;
+                }
+                _coroutineRunner = null;
+                HandoverIdleCoordinator();
+            }
 
             if (containmentBeam != null)
             {

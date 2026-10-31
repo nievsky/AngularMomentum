@@ -237,7 +237,15 @@ namespace OrbitalPanopticon.Gameplay
                 {
                     // Reached target of Stage 4 (120,000 tons) -> All 4 containment locks broken!
                     Debug.Log("<color=#FFD700>[CRITICAL MASS] All 4 Containment Locks shattered! Singularity unconstrained!</color>");
-                    EndgameFinaleController.Instance?.TriggerEndgameFinale();
+                    if (EndgameFinaleController.Instance != null)
+                    {
+                        EndgameFinaleController.Instance.TriggerEndgameFinale();
+                    }
+                    else if (FMODAudioManager.Instance != null)
+                    {
+                        Vector3 center = visualRoot != null ? visualRoot.position : transform.position;
+                        FMODAudioManager.Instance.PlayCollapseGameOver(center);
+                    }
                     break;
                 }
             }

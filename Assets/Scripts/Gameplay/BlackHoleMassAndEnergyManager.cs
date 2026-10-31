@@ -91,6 +91,15 @@ namespace OrbitalPanopticon.Gameplay
 
         public void TriggerCatastrophicCollapse()
         {
+            if (EndgameFinaleController.Instance != null)
+            {
+                EndgameFinaleController.Instance.TriggerEndgameFinale();
+            }
+            else if (FMODAudioManager.Instance != null)
+            {
+                FMODAudioManager.Instance.PlayCollapseGameOver();
+            }
+            OnCatastrophicCollapse?.Invoke();
         }
     }
 }

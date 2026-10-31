@@ -1,5 +1,32 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-7699357662918403016
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Player/Thruster_Loop
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Player/Thruster_Loop
+  Guid:
+    Data1: -1060347334
+    Data2: 1198373997
+    Data3: 1563518371
+    Data4: -874790919
+  Banks:
+  - {fileID: 1206500338223914334}
+  IsStream: 1
+  Is3D: 0
+  IsOneShot: 0
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 12877
 --- !u!114 &-4678422627807385823
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -102,12 +129,12 @@ MonoBehaviour:
   Banks:
   - {fileID: 1206500338223914334}
   IsStream: 0
-  Is3D: 0
+  Is3D: 1
   IsOneShot: 1
   Parameters: []
   MinDistance: 1
-  MaxDistance: 20
-  Length: 5346
+  MaxDistance: 100
+  Length: 7396
 --- !u!114 &-2933343117144284886
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -162,13 +189,15 @@ MonoBehaviour:
   - {fileID: 1606418619250310922}
   - {fileID: 452124941215673372}
   - {fileID: 250376656742973212}
+  - {fileID: -7699357662918403016}
+  - {fileID: 2014070168158378883}
   EditorParameters: []
   MasterBanks:
   - {fileID: 1206500338223914334}
   StringsBanks:
   - {fileID: 384512280698726887}
   cacheVersion: 131848
-  cacheTime: 639290601453215053
+  cacheTime: 639290652829174896
   SerializableEventsDict:
   - key: event:/Blackhole/Singularity_Hum
     index: 0
@@ -192,6 +221,10 @@ MonoBehaviour:
     index: 9
   - key: event:/MusicGameplay
     index: 10
+  - key: event:/Player/Thruster_Loop
+    index: 11
+  - key: event:/MusicCredits
+    index: 12
 --- !u!114 &250376656742973212
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -234,12 +267,12 @@ MonoBehaviour:
   Path: Assets/FMOD/Desktop/Master.strings.bank
   Name: Master.strings
   StudioPath: bank:/Master.strings
-  lastModified: 639290601453215053
+  lastModified: 639290652829174896
   FileSizes:
   - Name: Desktop
-    Value: 1360
+    Value: 1454
   - Name: WEB
-    Value: 1360
+    Value: 1454
   Exists: 1
 --- !u!114 &452124941215673372
 MonoBehaviour:
@@ -266,7 +299,7 @@ MonoBehaviour:
   IsOneShot: 1
   Parameters: []
   MinDistance: 1
-  MaxDistance: 20
+  MaxDistance: 290
   Length: 5831
 --- !u!114 &718460502020177242
 MonoBehaviour:
@@ -310,12 +343,12 @@ MonoBehaviour:
   Path: Assets/FMOD/Desktop/Master.bank
   Name: Master
   StudioPath: bank:/Master
-  lastModified: 639290601453190039
+  lastModified: 639290652829149882
   FileSizes:
   - Name: Desktop
-    Value: 4160960
+    Value: 7216000
   - Name: WEB
-    Value: 4160960
+    Value: 7216000
   Exists: 1
 --- !u!114 &1606418619250310922
 MonoBehaviour:
@@ -342,8 +375,35 @@ MonoBehaviour:
   IsOneShot: 1
   Parameters: []
   MinDistance: 1
-  MaxDistance: 20
+  MaxDistance: 280
   Length: 8303
+--- !u!114 &2014070168158378883
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/MusicCredits
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/MusicCredits
+  Guid:
+    Data1: 686295599
+    Data2: 1286262125
+    Data3: -1934319431
+    Data4: 323551914
+  Banks:
+  - {fileID: 1206500338223914334}
+  IsStream: 1
+  Is3D: 0
+  IsOneShot: 0
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 214411
 --- !u!114 &2922544707766357331
 MonoBehaviour:
   m_ObjectHideFlags: 0

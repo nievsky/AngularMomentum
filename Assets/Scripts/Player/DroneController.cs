@@ -67,6 +67,7 @@ namespace OrbitalPanopticon.Player
         public bool IsDashing => _dashTimer > 0f;
         public bool IsBoosting => IsDashing;
         public bool IsBraking => isBraking;
+        public bool HasThrusterInput => isControlEnabled && !isMovementLocked && !OrbitalPanopticon.Core.UpgradeTreeManager.IsTreeOpen && (_moveInput.sqrMagnitude > 0.001f || Mathf.Abs(_verticalInput) > 0.001f || isBraking || IsDashing);
         public float Pitch => currentPitch;
         public float Yaw => currentYaw;
 

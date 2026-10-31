@@ -66,9 +66,16 @@ namespace OrbitalPanopticon.Gameplay
         private IEnumerator EndgameCollapseSequenceRoutine()
         {
             GameBalanceConfig config = GameManager.GameBalanceConfigInstance;
+            if (_blackHole == null) _blackHole = FindAnyObjectByType<BlackHoleGravity>();
             Vector3 center = _blackHole != null ? _blackHole.transform.position : Vector3.zero;
 
             Debug.Log("<color=#FF0055>[FINALE] Initiating Sector Collapse & Suspense Sequence...</color>");
+
+            // Play massive 3D Collapse Game Over sound at the Black Hole singularity center
+            if (FMODAudioManager.Instance != null)
+            {
+                FMODAudioManager.Instance.PlayCollapseGameOver(center);
+            }
 
             // 1. Shut off the 4th and final OverseerContainmentEye lock and trigger Finale comms transmission
             if (BlackHoleStageManager.Instance != null)
@@ -406,6 +413,12 @@ namespace OrbitalPanopticon.Gameplay
 
             // The moment the player reaches (0,0,0), call SceneTransitionManager.Instance.TransitionToScene("CreditsScene")!
             Debug.Log("<color=#FF00FF>[FINALE] Singularity crossed! Transitioning to CreditsScene...</color>");
+
+            // Stop black hole loops after the endgame singularity collapse
+            if (FMODAudioManager.Instance != null)
+            {
+                FMODAudioManager.Instance.StopBlackHoleLoops(FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
+            }
 
             if (SceneTransitionManager.Instance != null)
             {

@@ -44,6 +44,7 @@ namespace OrbitalPanopticon.Core
 
         private Coroutine _crossfadeCoroutine;
         private bool _isInitialized = false;
+        private bool _isMusicStopped = false;
 
         public PlaylistType CurrentPlaylistType => currentPlaylistType;
         public int CurrentTrackIndex => currentTrackIndex;
@@ -175,6 +176,8 @@ namespace OrbitalPanopticon.Core
 
         private void MonitorTrackCompletion()
         {
+            if (_isMusicStopped) return;
+
             // 1. Check FMOD Event playback state
             if (_activeFmodInstance.isValid())
             {
@@ -208,6 +211,7 @@ namespace OrbitalPanopticon.Core
 
         public void CrossfadeToTrack(PlaylistType type, int trackIndex)
         {
+            _isMusicStopped = false;
             currentPlaylistType = type;
             currentTrackIndex = trackIndex;
 
@@ -463,8 +467,14 @@ namespace OrbitalPanopticon.Core
             Debug.Log($"<color=#33FF88>[MusicPlaylistManager] Crossfaded to {type} [Track #{trackIndex + 1}]</color>");
         }
 
-        public void StopAllMusicImmediate()
+        /// <summary>
+        /// Stops the current music track with the specified FMOD stop mode (e.g. ALLOWFADEOUT).
+        /// Disables automatic track progression until a new track is explicitly requested.
+        /// </summary>
+        public void StopMusic(FMOD.Studio.STOP_MODE stopMode = FMOD.Studio.STOP_MODE.ALLOWFADEOUT)
         {
+            _isMusicStopped = true;
+
             if (_crossfadeCoroutine != null)
             {
                 StopCoroutine(_crossfadeCoroutine);
@@ -473,14 +483,16 @@ namespace OrbitalPanopticon.Core
 
             if (_activeFmodInstance.isValid())
             {
-                _activeFmodInstance.stop(FMOD.Studio.STOP_MODE.IMMEDIATE);
+                _activeFmodInstance.stop(stopMode);
                 _activeFmodInstance.release();
+                _activeFmodInstance.clearHandle();
             }
 
             if (_fadingOutFmodInstance.isValid())
             {
-                _fadingOutFmodInstance.stop(FMOD.Studio.STOP_MODE.IMMEDIATE);
+                _fadingOutFmodInstance.stop(stopMode);
                 _fadingOutFmodInstance.release();
+                _fadingOutFmodInstance.clearHandle();
             }
 
             if (_audioSourceA != null)
@@ -496,6 +508,11 @@ namespace OrbitalPanopticon.Core
             }
 
             isCrossfading = false;
+        }
+
+        public void StopAllMusicImmediate()
+        {
+            StopMusic(FMOD.Studio.STOP_MODE.IMMEDIATE);
         }
     }
 }

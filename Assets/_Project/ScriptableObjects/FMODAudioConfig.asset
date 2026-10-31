@@ -20,7 +20,13 @@ MonoBehaviour:
       Data3: 436691867
       Data4: -1852162274
     Path: event:/MusicGameplay
-  creditsMusicPlaylist: []
+  creditsMusicPlaylist:
+  - Guid:
+      Data1: 686295599
+      Data2: 1286262125
+      Data3: -1934319431
+      Data4: 323551914
+    Path: event:/MusicCredits
   fallbackMainMenuClips: []
   fallbackGameplayClips: []
   fallbackCreditsClips: []
@@ -69,11 +75,27 @@ MonoBehaviour:
     Path: 
   containmentLockBreakOneShot:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -971791706
+      Data2: 1260674535
+      Data3: 1415243656
+      Data4: -888433246
+    Path: event:/Boss/Overseer_Destroyed
+  containmentBeamShockOneShot:
+    Guid:
+      Data1: -1039808365
+      Data2: 1146740612
+      Data3: 193796537
+      Data4: 762955554
+    Path: event:/Weapon/GravityGun_Hold_Punt
+  overseerIdleOneShot:
+    Guid:
+      Data1: 56212931
+      Data2: 1173858237
+      Data3: 1878719880
+      Data4: 1780395995
+    Path: event:/Boss/Overseer_Idle
+  overseerIdleInterval: 4.2
+  overseerIdleJitter: 2.5
   commsOpenBeepOneShot:
     Guid:
       Data1: 0
@@ -111,11 +133,11 @@ MonoBehaviour:
     Path: 
   thrusterLoop:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -1060347334
+      Data2: 1198373997
+      Data3: 1563518371
+      Data4: -874790919
+    Path: event:/Player/Thruster_Loop
   shiftDashOneShot:
     Guid:
       Data1: 0
