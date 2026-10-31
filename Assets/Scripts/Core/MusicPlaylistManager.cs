@@ -82,19 +82,20 @@ namespace OrbitalPanopticon.Core
 
         private IEnumerator WaitForBanksAndStartMusic()
         {
-            while (!RuntimeManager.HaveMasterBanksLoaded)
+            while (!RuntimeManager.HaveAllBanksLoaded)
             {
                 yield return null;
             }
 
-            // Small delay to ensure FMOD Studio System has registered all event definitions
-            yield return null;
+            // Short buffer to ensure FMOD Studio System has registered all event definitions
+            yield return new WaitForSeconds(0.1f);
 
             if (!_isInitialized)
             {
                 _isInitialized = true;
                 string activeSceneName = SceneManager.GetActiveScene().name;
                 PlaylistType sceneType = GetPlaylistTypeForScene(activeSceneName);
+                Debug.Log($"<color=#33FF88>[MusicPlaylistManager] All FMOD banks loaded! Starting playlist: {sceneType}</color>");
                 PlayPlaylist(sceneType, 0, false);
             }
         }

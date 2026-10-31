@@ -96,15 +96,16 @@ namespace OrbitalPanopticon.Core
 
         private System.Collections.IEnumerator WaitForBanksAndInitialize()
         {
-            while (!RuntimeManager.HaveMasterBanksLoaded)
+            while (!RuntimeManager.HaveAllBanksLoaded)
             {
                 yield return null;
             }
 
-            yield return null;
+            yield return new WaitForSeconds(0.1f);
 
             ApplySavedVolumes();
             InitializeLoops();
+            Debug.Log("<color=#33FF88>[FMODAudioManager] All banks loaded! Initialized loops & volumes.</color>");
         }
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -248,6 +249,15 @@ namespace OrbitalPanopticon.Core
             }
         }
 
+        public void ResumeWebAudio()
+        {
+            if (RuntimeManager.IsInitialized)
+            {
+                RuntimeManager.CoreSystem.mixerSuspend();
+                RuntimeManager.CoreSystem.mixerResume();
+            }
+        }
+
         private void Update()
         {
 #if UNITY_WEBGL && !UNITY_EDITOR
@@ -255,10 +265,7 @@ namespace OrbitalPanopticon.Core
             if ((UnityEngine.InputSystem.Pointer.current != null && UnityEngine.InputSystem.Pointer.current.press.wasPressedThisFrame) ||
                 (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.anyKey.wasPressedThisFrame))
             {
-                if (RuntimeManager.IsInitialized)
-                {
-                    RuntimeManager.CoreSystem.mixerResume();
-                }
+                ResumeWebAudio();
             }
 #endif
 
@@ -723,7 +730,13 @@ namespace OrbitalPanopticon.Core
         private const float UiSoundMinInterval = 0.05f; // 50ms cooldown to eliminate flanging / duplicate clicks
 
         private void HandleUiHover() => PlayUiHover();
-        private void HandleUiClick() => PlayUiClick();
+        private void HandleUiClick()
+        {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            ResumeWebAudio();
+#endif
+            PlayUiClick();
+        }
         private void HandleUiStartGame() => PlayUiStartGame();
 
         public void PlayUiHover(Vector3 position = default)
