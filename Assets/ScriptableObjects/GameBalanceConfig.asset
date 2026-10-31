@@ -128,6 +128,7 @@ MonoBehaviour:
   - CONTAINMENT LOCK EYE-02
   - CONTAINMENT LOCK EYE-03
   - CONTAINMENT LOCK EYE-04
+  beamKnockbackImpulse: 4.5
   enableDebugShortcuts: 1
   vfxPullBeamAsset: {fileID: 0}
   vfxPuntShockwaveAsset: {fileID: 0}

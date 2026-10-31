@@ -347,7 +347,7 @@ namespace OrbitalPanopticon.Player
 
         private void HandleMouseLook()
         {
-            if (!isControlEnabled || OrbitalPanopticon.Core.UpgradeTreeManager.IsTreeOpen) return;
+            if (!isControlEnabled || OrbitalPanopticon.Core.UpgradeTreeManager.IsTreeOpen || (OrbitalPanopticon.Core.PauseMenuController.Instance != null && OrbitalPanopticon.Core.PauseMenuController.Instance.IsGamePaused)) return;
 
             var mouse = Mouse.current;
             if (mouse == null) return;
@@ -383,7 +383,7 @@ namespace OrbitalPanopticon.Player
             _verticalInput = 0f;
             isBraking = false;
 
-            if (!isControlEnabled || isMovementLocked) return;
+            if (!isControlEnabled || isMovementLocked || OrbitalPanopticon.Core.UpgradeTreeManager.IsTreeOpen || (OrbitalPanopticon.Core.PauseMenuController.Instance != null && OrbitalPanopticon.Core.PauseMenuController.Instance.IsGamePaused)) return;
 
             var keyboard = Keyboard.current;
             if (keyboard == null) return;

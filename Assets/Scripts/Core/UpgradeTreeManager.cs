@@ -64,6 +64,7 @@ namespace OrbitalPanopticon.Core
     {
         public static UpgradeTreeManager Instance { get; private set; }
         public static bool IsTreeOpen { get; set; } = false;
+        public static int LastClosedFrame { get; set; } = -1;
 
         public event Action OnUpgradeTreeChanged;
 

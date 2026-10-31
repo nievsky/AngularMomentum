@@ -219,19 +219,36 @@ namespace OrbitalPanopticon.Physics
                         continue;
                     }
 
-                    // Ballistic Launch Phase: Let punted scrap fly purely on its ballistic shot trajectory without interference
-                    if (scrap != null && scrap.ballisticLaunchTimer > 0f && dist3D > config.accretionThresholdRadius)
+                    // Check if object is outside the Accretion Threshold
+                    if (dist3D > config.accretionThresholdRadius)
                     {
-                        scrap.ballisticLaunchTimer = Mathf.Max(0f, scrap.ballisticLaunchTimer - Time.fixedDeltaTime);
-                        continue;
-                    }
+                        // Launched scrap outside threshold: flies purely on ballistic velocity with gentle natural drag
+                        if (scrap != null && scrap.CurrentState == ScrapState.Launched)
+                        {
+                            if (scrap.ballisticLaunchTimer > 0f)
+                            {
+                                scrap.ballisticLaunchTimer = Mathf.Max(0f, scrap.ballisticLaunchTimer - Time.fixedDeltaTime);
+                            }
 
-                    // ZONE A: Outer Calm Zone (dist3D > accretionThresholdRadius AND Floating, NOT locked in vortex)
-                    // Scrap MUST NOT fall into the black hole on its own!
-                    bool isVortexLocked = scrap != null && scrap.hasEnteredVortex;
-                    bool isFloating = (scrap == null || (scrap.CurrentState == ScrapState.Floating && !isVortexLocked));
-                    if (dist3D > config.accretionThresholdRadius && isFloating)
-                    {
+                            rb.linearDamping = 0.25f;
+
+                            // Once speed drops below outerZoneDriftSpeed * 1.3f while still outside threshold,
+                            // smoothly transition back to Floating at its new radius
+                            if (rb.linearVelocity.magnitude <= config.outerZoneDriftSpeed * 1.3f)
+                            {
+                                scrap.SetState(ScrapState.Floating);
+                                scrap.HomeOrbitRadius = dist3D;
+                                scrap.hasEnteredVortex = false;
+                                scrap.timeInVortex = 0f;
+                                rb.linearDamping = 0f;
+                            }
+
+                            continue;
+                        }
+
+                        // ZONE A: Outer Calm Zone (Floating scrap)
+                        // Scrap MUST NOT fall into the black hole on its own!
+                        rb.linearDamping = 0f;
                         float homeRadius = scrap != null && scrap.HomeOrbitRadius > 0.1f ? scrap.HomeOrbitRadius : dist3D;
                         float radialOffset = dist3D - homeRadius;
 
@@ -249,8 +266,9 @@ namespace OrbitalPanopticon.Physics
                     }
                     else
                     {
-                        // ZONE B: Inner Accretion Threshold (dist3D <= accretionThresholdRadius OR Launched OR hasEnteredVortex)
-                        // Once launched or pushed into threshold, it commits to active inward swirl
+                        // ZONE B: Inner Accretion Threshold (dist3D <= accretionThresholdRadius)
+                        // Only enters the vortex when 3D distance actually crosses inside the threshold!
+                        rb.linearDamping = 0f;
                         if (scrap != null && scrap.CurrentState == ScrapState.Floating)
                         {
                             scrap.SetState(ScrapState.Launched);
@@ -260,6 +278,7 @@ namespace OrbitalPanopticon.Physics
                         if (scrap != null && !scrap.hasEnteredVortex)
                         {
                             scrap.hasEnteredVortex = true;
+                            scrap.timeInVortex = 0f;
                             scrap.currentSpiralRadius = Mathf.Min(dist3D, config.accretionThresholdRadius);
 
                             Vector3 lateralVel = Vector3.ProjectOnPlane(rb.linearVelocity, dirToCenter3D);
@@ -283,6 +302,11 @@ namespace OrbitalPanopticon.Physics
                         else if (scrap != null && (scrap.currentSpiralRadius <= 0.01f || scrap.currentSpiralRadius > config.accretionThresholdRadius))
                         {
                             scrap.currentSpiralRadius = Mathf.Min(dist3D, config.accretionThresholdRadius);
+                        }
+
+                        if (scrap != null)
+                        {
+                            scrap.timeInVortex += Time.fixedDeltaTime;
                         }
 
                         float thresholdRange = Mathf.Max(0.1f, config.accretionThresholdRadius - config.eventHorizonRadius);
@@ -312,13 +336,16 @@ namespace OrbitalPanopticon.Physics
                         // Keep object locked onto its tilted orbital plane passing through center (0,0,0)
                         Vector3 planeDriftCorrection = -Vector3.Project(rb.position - center, orbitAxis) * 6.0f;
 
-                        Vector3 targetVel = (tangent3D * maxSafeTangentialSpeed) + (dirToCenter3D * inwardSpeed) + planeDriftCorrection;
+                        Vector3 spiralVel = (tangent3D * maxSafeTangentialSpeed) + (dirToCenter3D * inwardSpeed) + planeDriftCorrection;
 
-                        rb.linearVelocity = Vector3.Lerp(rb.linearVelocity, targetVel, 14f * Time.fixedDeltaTime);
+                        // Smooth momentum blend on entry: takes 0.85s to smoothly blend from ballistic throw to spiral orbit
+                        float timeInVortex = scrap != null ? scrap.timeInVortex : 1.0f;
+                        float entryBlend = Mathf.SmoothStep(0f, 1f, timeInVortex / 0.85f);
+                        rb.linearVelocity = Vector3.Lerp(rb.linearVelocity, spiralVel, Mathf.Clamp01(entryBlend * 5.0f * Time.fixedDeltaTime + (depth01 * 8.0f * Time.fixedDeltaTime)));
 
-                        // Hard Spherical Clamping:
-                        // If dist3D exceeds targetRadius, clamp directly back onto the shrinking sphere and strip outward velocity
-                        if (scrap != null && scrap.hasEnteredVortex)
+                        // Only apply tight radial clamping when depth01 > 0.65f (deep inside near Event Horizon)
+                        // This makes initial capture at the threshold look completely natural without position jerking
+                        if (scrap != null && scrap.hasEnteredVortex && depth01 > 0.65f)
                         {
                             if (dist3D > scrap.currentSpiralRadius)
                             {

@@ -350,8 +350,8 @@ namespace OrbitalPanopticon.Core
                         elapsed += Time.unscaledDeltaTime;
                         float t = Mathf.Clamp01(elapsed / duration);
                         // Equal-power / sinusoidal perceptual audio curve (prevents abrupt linear volume jump)
-                        float inVol = Mathf.Sin(t * Mathf.PI * 0.5f);
-                        float outVol = Mathf.Cos(t * Mathf.PI * 0.5f);
+                        float inVol = Mathf.Clamp01(Mathf.Sin(t * Mathf.PI * 0.5f));
+                        float outVol = Mathf.Clamp01(Mathf.Cos(t * Mathf.PI * 0.5f));
 
                         if (_fadingOutFmodInstance.isValid())
                         {
@@ -424,8 +424,8 @@ namespace OrbitalPanopticon.Core
                 {
                     elapsed += Time.unscaledDeltaTime;
                     float t = Mathf.Clamp01(elapsed / duration);
-                    float inVol = Mathf.Sin(t * Mathf.PI * 0.5f);
-                    float outVol = Mathf.Cos(t * Mathf.PI * 0.5f);
+                    float inVol = Mathf.Clamp01(Mathf.Sin(t * Mathf.PI * 0.5f));
+                    float outVol = Mathf.Clamp01(Mathf.Cos(t * Mathf.PI * 0.5f));
 
                     if (_fadingOutAudioSource != null && _fadingOutAudioSource.isPlaying)
                     {

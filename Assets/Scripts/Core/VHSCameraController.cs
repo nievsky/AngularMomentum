@@ -66,6 +66,7 @@ namespace OrbitalPanopticon.Core
 
         // Runtime Transient Boosts
         private float _burstGlitchBoost = 0f;
+        private float _finaleInterference = 0f;
         private Coroutine _glitchBurstRoutine;
 
         public Material VHSMaterial
@@ -192,7 +193,7 @@ namespace OrbitalPanopticon.Core
         private void Update()
         {
             // Update in edit mode or when dynamic burst animation is running
-            if (!Application.isPlaying || _burstGlitchBoost > 0f)
+            if (!Application.isPlaying || _burstGlitchBoost > 0f || _finaleInterference > 0f)
             {
                 UpdateMaterialProperties();
             }
@@ -212,11 +213,12 @@ namespace OrbitalPanopticon.Core
         {
             if (vhsMaterial == null) return;
 
-            float effectiveBlend = enableVHSEffect ? Mathf.Clamp01(masterBlend + _burstGlitchBoost * 0.35f) : 0f;
-            float effectiveGlitch = Mathf.Clamp01(trackingBarIntensity + _burstGlitchBoost);
-            float effectiveHoriz = Mathf.Clamp(horizontalGlitchStrength + _burstGlitchBoost * 0.08f, 0f, 0.25f);
-            float effectiveNoise = Mathf.Clamp01(tapeNoiseIntensity + _burstGlitchBoost * 0.45f);
-            float effectiveJitter = Mathf.Clamp(verticalJitter + _burstGlitchBoost * 0.015f, 0f, 0.05f);
+            float effectiveBlend = enableVHSEffect ? Mathf.Clamp01(masterBlend + _burstGlitchBoost * 0.35f + _finaleInterference * 0.45f) : 0f;
+            float effectiveGlitch = Mathf.Clamp01(trackingBarIntensity + _burstGlitchBoost + _finaleInterference * 0.95f);
+            float effectiveHoriz = Mathf.Clamp(horizontalGlitchStrength + _burstGlitchBoost * 0.08f + _finaleInterference * 0.18f, 0f, 0.25f);
+            float effectiveNoise = Mathf.Clamp01(tapeNoiseIntensity + _burstGlitchBoost * 0.45f + _finaleInterference * 0.95f);
+            float effectiveJitter = Mathf.Clamp(verticalJitter + _burstGlitchBoost * 0.015f + _finaleInterference * 0.025f, 0f, 0.05f);
+            float effectiveRGBShift = rgbShiftAmount + _burstGlitchBoost * 0.015f + _finaleInterference * 0.035f;
 
             vhsMaterial.SetFloat(PropMasterBlend, effectiveBlend);
             vhsMaterial.SetFloat(PropOverscanScale, overscanScale);
@@ -229,7 +231,7 @@ namespace OrbitalPanopticon.Core
             vhsMaterial.SetFloat(PropTrackingBarThickness, trackingBarThickness);
             vhsMaterial.SetFloat(PropHorizontalGlitchStrength, effectiveHoriz);
 
-            vhsMaterial.SetFloat(PropRGBShiftAmount, rgbShiftAmount + _burstGlitchBoost * 0.015f);
+            vhsMaterial.SetFloat(PropRGBShiftAmount, effectiveRGBShift);
             vhsMaterial.SetFloat(PropTapeNoiseIntensity, effectiveNoise);
 
             vhsMaterial.SetFloat(PropScreenCurvature, screenCurvature);
@@ -238,6 +240,12 @@ namespace OrbitalPanopticon.Core
             vhsMaterial.SetFloat(PropVerticalJitter, effectiveJitter);
             vhsMaterial.SetColor(PropCCTVTint, cctvTint);
             vhsMaterial.SetFloat(PropCCTVTintIntensity, cctvTintIntensity);
+        }
+
+        public void SetFinaleInterference(float progress01)
+        {
+            _finaleInterference = Mathf.Clamp01(progress01);
+            UpdateMaterialProperties();
         }
 
         /// <summary>

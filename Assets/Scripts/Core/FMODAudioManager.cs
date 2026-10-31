@@ -734,6 +734,18 @@ namespace OrbitalPanopticon.Core
 
         #endregion
 
+        public void StopAllGameplayLoops(FMOD.Studio.STOP_MODE stopMode = FMOD.Studio.STOP_MODE.IMMEDIATE)
+        {
+            if (_spaceAmbienceInstance.isValid()) _spaceAmbienceInstance.stop(stopMode);
+            if (_singularityHumInstance.isValid()) _singularityHumInstance.stop(stopMode);
+            if (_containmentBeamHumInstance.isValid()) _containmentBeamHumInstance.stop(stopMode);
+            if (_thrusterInstance.isValid()) _thrusterInstance.stop(stopMode);
+            if (_gravityGunHoldInstance.isValid()) _gravityGunHoldInstance.stop(stopMode);
+            if (_criticalMassAlarmInstance.isValid()) _criticalMassAlarmInstance.stop(stopMode);
+            if (_boundaryWarningInstance.isValid()) _boundaryWarningInstance.stop(stopMode);
+            if (_signalLostRespawnInstance.isValid()) _signalLostRespawnInstance.stop(stopMode);
+        }
+
         private void OnDestroy()
         {
             SceneManager.sceneLoaded -= OnSceneLoaded;

@@ -63,6 +63,7 @@ namespace OrbitalPanopticon.Gameplay
         [SerializeField] public float currentSpiralRadius = 0f;
         [SerializeField] public Vector3 customOrbitAxis = Vector3.up;
         [SerializeField] public bool hasEnteredVortex = false;
+        [SerializeField] public float timeInVortex = 0f;
         [SerializeField] public bool isKamikazeDelivery = false;
 
         [Header("Ballistic Launch State")]
@@ -781,6 +782,7 @@ namespace OrbitalPanopticon.Gameplay
             wasInteractedByPlayer = false;
             homeOrbitRadius = 0f;
             hasEnteredVortex = false;
+            timeInVortex = 0f;
             customOrbitAxis = Vector3.up;
             SetupValuableScrap(false);
             ResetAccretionThermal();
@@ -858,6 +860,7 @@ namespace OrbitalPanopticon.Gameplay
             if (currentState == ScrapState.Held)
             {
                 hasEnteredVortex = false;
+                timeInVortex = 0f;
             }
             else if (currentState == ScrapState.Floating || currentState == ScrapState.Launched)
             {

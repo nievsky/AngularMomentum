@@ -125,6 +125,7 @@ namespace OrbitalPanopticon.Core
         public void SetTreeOpen(bool open)
         {
             UpgradeTreeManager.IsTreeOpen = open;
+            if (!open) UpgradeTreeManager.LastClosedFrame = Time.frameCount;
 
             if (FMODAudioManager.Instance != null)
             {

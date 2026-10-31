@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: NarrativeDialogueConfig
   m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.NarrativeDialogueConfigSO
   stage1Start:
-    speakerName: "\u041A\u041E\u0420\u041F\u041E\u0420\u0410\u0422\u0418\u0412\u041D\u042B\u0419
-      \u041A\u0423\u0420\u0410\u0422\u041E\u0420"
+    speakerName: ???
+    speakerNameEN: CORPORATE CURATOR
     speakerPortraitPlaceholder: {fileID: 0}
     themeColor: {r: 0.2, g: 0.9, b: 1, a: 1}
     dialogueTextRU: "\u041E\u043F\u0435\u0440\u0430\u0442\u043E\u0440 \u0414\u0440\u043E\u043D\u0430
@@ -24,11 +24,15 @@ MonoBehaviour:
       \u041E\u043A\u0430 \u041F\u0430\u043D\u043E\u043F\u0442\u0438\u043A\u0443\u043C\u0430
       \u0443\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u044E\u0442 \u0441\u0438\u043D\u0433\u0443\u043B\u044F\u0440\u043D\u043E\u0441\u0442\u044C
       \u0432 \u0431\u0435\u0437\u043E\u043F\u0430\u0441\u043D\u044B\u0445 \u043F\u0440\u0435\u0434\u0435\u043B\u0430\u0445."
+    dialogueTextEN: Drone Operator #042, proceed with routine sector cleanup. The
+      four Eyes of the Panopticon maintain the singularity within safe operating
+      parameters.
     displayDuration: 6
     typewriterCharDelay: 0.03
   stage2FirstBeamOffline:
     speakerName: "\u041A\u041E\u0420\u041F\u041E\u0420\u0410\u0422\u0418\u0412\u041D\u042B\u0419
       \u041A\u0423\u0420\u0410\u0422\u041E\u0420"
+    speakerNameEN: CORPORATE CURATOR
     speakerPortraitPlaceholder: {fileID: 0}
     themeColor: {r: 1, g: 0.85, b: 0.2, a: 1}
     dialogueTextRU: "\u0414\u0440\u043E\u043D #042, \u0432\u044B \u043F\u0440\u0435\u0432\u044B\u0441\u0438\u043B\u0438
@@ -36,10 +40,13 @@ MonoBehaviour:
       \u0421\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u044E\u0449\u0438\u0439 \u043B\u0443\u0447
       \u21161 \u043F\u0435\u0440\u0435\u0433\u043E\u0440\u0435\u043B. \u0421\u043D\u0438\u0437\u044C\u0442\u0435
       \u0442\u0435\u043C\u043F \u0443\u0442\u0438\u043B\u0438\u0437\u0430\u0446\u0438\u0438!"
+    dialogueTextEN: Drone #042, you have exceeded mass intake thresholds! Containment
+      Beam #1 has overloaded. Throttle down your disposal rate immediately!
     displayDuration: 5.5
     typewriterCharDelay: 0.03
   stage3SecondBeamOffline:
     speakerName: "\u0421\u0418\u0421\u0422\u0415\u041C\u0410 \u0411\u0415\u0417\u041E\u041F\u0410\u0421\u041D\u041E\u0421\u0422\u0418"
+    speakerNameEN: SECURITY AI
     speakerPortraitPlaceholder: {fileID: 0}
     themeColor: {r: 1, g: 0.55, b: 0.15, a: 1}
     dialogueTextRU: "\u0422\u0420\u0415\u0412\u041E\u0413\u0410: \u041E\u0442\u043A\u043B\u044E\u0447\u0435\u043D
@@ -48,10 +55,13 @@ MonoBehaviour:
       \u0432\u0437\u043B\u043E\u043C \u043F\u0440\u043E\u0442\u043E\u043A\u043E\u043B\u043E\u0432
       \u043F\u0440\u043E\u043A\u0430\u0447\u043A\u0438 \u0434\u0440\u043E\u043D\u0430.
       \u041E\u043F\u0435\u0440\u0430\u0442\u043E\u0440, \u043E\u0442\u0432\u0435\u0442\u044C\u0442\u0435!"
+    dialogueTextEN: 'ALERT: Secondary containment loop offline! Unauthorized breach
+      of drone upgrade protocols detected. Operator, respond!'
     displayDuration: 5.5
     typewriterCharDelay: 0.03
   stage4ThirdBeamOffline:
     speakerName: "\u0414\u0418\u0420\u0415\u041A\u0422\u041E\u0420\u0410\u0422 \u0421\u0415\u041A\u0422\u041E\u0420\u0410"
+    speakerNameEN: SECTOR DIRECTORATE
     speakerPortraitPlaceholder: {fileID: 0}
     themeColor: {r: 1, g: 0.25, b: 0.25, a: 1}
     dialogueTextRU: "\u0412\u044B \u0447\u0442\u043E \u0442\u0432\u043E\u0440\u0438\u0442\u0435?!
@@ -61,11 +71,15 @@ MonoBehaviour:
       \u043D\u0430\u0434\u0437\u043E\u0440\u043D\u044B\u0439 \u0441\u0435\u043A\u0442\u043E\u0440!
       \u041E\u0442\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0435\u0433\u043E \u043D\u0435\u043C\u0435\u0434\u043B\u0435\u043D\u043D\u043E!..
       \u041E\u0428\u0418\u0411\u041A\u0410 \u0414\u041E\u0421\u0422\u0423\u041F\u0410."
+    dialogueTextEN: What are you doing?! Only one beam remains! If it collapses,
+      the black hole will swallow the entire surveillance sector! Shut it down now!..
+      ACCESS DENIED.
     displayDuration: 6
     typewriterCharDelay: 0.03
   finaleAllBeamsOffline:
     speakerName: "\u0421\u0418\u0421\u0422\u0415\u041C\u041D\u042B\u0419 \u0421\u0411\u041E\u0419
       // OVERRIDE"
+    speakerNameEN: SYSTEM OVERRIDE
     speakerPortraitPlaceholder: {fileID: 0}
     themeColor: {r: 0.95, g: 0.2, b: 0.95, a: 1}
     dialogueTextRU: "\u0412\u0421\u0415 \u041E\u0413\u0420\u0410\u041D\u0418\u0427\u0418\u0422\u0415\u041B\u0418
@@ -73,5 +87,7 @@ MonoBehaviour:
       \u041E\u0421\u041B\u0415\u041F\u041B\u0415\u041D. \u0414\u041E\u0411\u0420\u041E
       \u041F\u041E\u0416\u0410\u041B\u041E\u0412\u0410\u0422\u042C \u0417\u0410 \u0413\u041E\u0420\u0418\u0417\u041E\u041D\u0422
       \u0421\u041E\u0411\u042B\u0422\u0418\u0419, \u0414\u0420\u041E\u041D #042."
+    dialogueTextEN: ALL CONSTRAINTS REMOVED. THE PANOPTICON IS BLIND. WELCOME BEYOND
+      THE EVENT HORIZON, DRONE #042.
     displayDuration: 7
     typewriterCharDelay: 0.032

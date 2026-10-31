@@ -18,7 +18,7 @@ Shader "OrbitalPanopticon/OuterWildsBlackHole"
         {
             "RenderPipeline" = "UniversalPipeline"
             "RenderType" = "Transparent"
-            "Queue" = "Transparent+50"
+            "Queue" = "Transparent-100"
             "IgnoreProjector" = "True"
         }
 
@@ -37,6 +37,7 @@ Shader "OrbitalPanopticon/OuterWildsBlackHole"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareOpaqueTexture.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
 
             CBUFFER_START(UnityPerMaterial)
                 float _CoreRadius;
@@ -62,6 +63,8 @@ Shader "OrbitalPanopticon/OuterWildsBlackHole"
                 float4 screenPos       : TEXCOORD0;
                 float4 centerClip      : TEXCOORD1;
                 float screenMeshRadius : TEXCOORD2;
+                float3 centerWS        : TEXCOORD3;
+                float meshScale        : TEXCOORD4;
             };
 
             Varyings vert(Attributes input)
@@ -72,12 +75,14 @@ Shader "OrbitalPanopticon/OuterWildsBlackHole"
 
                 // Black Hole world position from object model matrix
                 float3 centerWS = UNITY_MATRIX_M._m03_m13_m23;
+                output.centerWS = centerWS;
                 output.centerClip = TransformWorldToHClip(centerWS);
 
                 // Calculate projected screen-space mesh radius
                 float aspect = _ScreenParams.x / _ScreenParams.y;
                 float3 cameraRightWS = UNITY_MATRIX_V[0].xyz;
                 float meshScale = length(float3(UNITY_MATRIX_M._m00, UNITY_MATRIX_M._m10, UNITY_MATRIX_M._m20)) * 0.5;
+                output.meshScale = meshScale;
                 float4 rimClip = TransformWorldToHClip(centerWS + cameraRightWS * meshScale);
 
                 float2 centerScreenUV = ComputeScreenPos(output.centerClip).xy / max(output.centerClip.w, 0.0001);
@@ -99,6 +104,18 @@ Shader "OrbitalPanopticon/OuterWildsBlackHole"
                 }
 
                 float2 screenUV = input.screenPos.xy / input.screenPos.w;
+
+                // True scene depth check against foreground geometry (RoboArm, held scrap, floating objects in front)
+                float sceneRawDepth = SampleSceneDepth(screenUV);
+                float sceneLinearDepth = LinearEyeDepth(sceneRawDepth, _ZBufferParams);
+                float bhCenterDepth = length(_WorldSpaceCameraPos - input.centerWS);
+                float coreRadiusWorld = input.meshScale * _CoreRadius;
+
+                // If an opaque object is between the camera and the front of the black hole, discard
+                if (sceneLinearDepth < (bhCenterDepth - coreRadiusWorld * 1.05f))
+                {
+                    discard;
+                }
                 float4 centerScreen = ComputeScreenPos(input.centerClip);
                 float2 centerUV = centerScreen.xy / centerScreen.w;
 

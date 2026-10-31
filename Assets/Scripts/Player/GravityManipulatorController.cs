@@ -19,6 +19,7 @@ namespace OrbitalPanopticon.Player
         [SerializeField] private Camera mainCamera;
         [SerializeField] private Transform holdPoint;
         [SerializeField] private Transform roboArmVisual;
+        [SerializeField] private RoboArmAnimatorHook roboArmAnimatorHook;
         [SerializeField] private Transform blackHoleCenter;
 
         [Header("Visual Beam (Intertwining Helical Beams)")]
@@ -459,13 +460,13 @@ namespace OrbitalPanopticon.Player
 
         private void FixedUpdate()
         {
-            if (OrbitalPanopticon.Core.UpgradeTreeManager.IsTreeOpen) return;
+            if (OrbitalPanopticon.Core.UpgradeTreeManager.IsTreeOpen || (OrbitalPanopticon.Core.PauseMenuController.Instance != null && OrbitalPanopticon.Core.PauseMenuController.Instance.IsGamePaused)) return;
             ApplyHoldingPhysics();
         }
 
         private void HandleInputs()
         {
-            if (OrbitalPanopticon.Core.UpgradeTreeManager.IsTreeOpen)
+            if (OrbitalPanopticon.Core.UpgradeTreeManager.IsTreeOpen || (OrbitalPanopticon.Core.PauseMenuController.Instance != null && OrbitalPanopticon.Core.PauseMenuController.Instance.IsGamePaused))
             {
                 _isGrabHeld = false;
                 return;
@@ -493,9 +494,23 @@ namespace OrbitalPanopticon.Player
             // Grab is only active if RMB is held AND the release lock is inactive
             _isGrabHeld = isRmbHeld && !_requireRmbRelease;
 
+            if (roboArmAnimatorHook == null && roboArmVisual != null)
+            {
+                roboArmAnimatorHook = roboArmVisual.GetComponentInChildren<RoboArmAnimatorHook>(true);
+            }
+            if (roboArmAnimatorHook != null)
+            {
+                roboArmAnimatorHook.SetPulling(_isGrabHeld);
+            }
+
             // Punting/Launching & Siphoning uses Left Mouse Button
             bool isLmbDown = mouse.leftButton.wasPressedThisFrame;
             bool isLmbHeld = mouse.leftButton.isPressed;
+
+            if (isLmbDown && roboArmAnimatorHook != null)
+            {
+                roboArmAnimatorHook.TriggerPunt();
+            }
 
             GameBalanceConfig config = GameManager.GameBalanceConfigInstance;
             if (config == null) return;

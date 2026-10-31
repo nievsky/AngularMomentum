@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f79bd7ddc954b4542868208842850006, type: 3}
   m_Name: GlobalFontConfig
   m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GlobalFontConfigSO
-  masterTMPFont: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  masterTMPFont: {fileID: 11400000, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
   masterLegacyFont: {fileID: 0}
   globalFontScaleMultiplier: 1
   globalCharacterSpacing: 0
