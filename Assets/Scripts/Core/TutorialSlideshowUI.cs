@@ -81,6 +81,21 @@ namespace OrbitalPanopticon.Core
             }
         }
 
+        private void LateUpdate()
+        {
+            if (IsTutorialOpen)
+            {
+                Time.timeScale = 0f;
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
+
+                if (tutorialWindowPanel != null)
+                {
+                    tutorialWindowPanel.transform.SetAsLastSibling();
+                }
+            }
+        }
+
         private void HandleLanguageChanged(GameLanguage lang)
         {
             UpdateSlideUI();
@@ -123,6 +138,7 @@ namespace OrbitalPanopticon.Core
             if (tutorialWindowPanel != null)
             {
                 tutorialWindowPanel.SetActive(true);
+                tutorialWindowPanel.transform.SetAsLastSibling();
             }
 
             if (tutorialCanvasGroup != null)
@@ -176,17 +192,12 @@ namespace OrbitalPanopticon.Core
 
             if (tutorialCanvasGroup != null)
             {
-                tutorialCanvasGroup.DOFade(0f, 0.35f)
-                    .SetUpdate(true)
-                    .OnComplete(() =>
-                    {
-                        if (tutorialWindowPanel != null)
-                        {
-                            tutorialWindowPanel.SetActive(false);
-                        }
-                    });
+                tutorialCanvasGroup.alpha = 0f;
+                tutorialCanvasGroup.interactable = false;
+                tutorialCanvasGroup.blocksRaycasts = false;
             }
-            else if (tutorialWindowPanel != null)
+
+            if (tutorialWindowPanel != null)
             {
                 tutorialWindowPanel.SetActive(false);
             }

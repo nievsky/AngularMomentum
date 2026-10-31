@@ -28,6 +28,14 @@ namespace OrbitalPanopticon.Gameplay
         [SerializeField] private float maxInitialSpeed = 6.0f;
         [SerializeField] private float maxAngularSpeed = 1.2f;
 
+        [Header("Scrap Asset Catalog")]
+        [SerializeField] private ScrapAssetCatalogSO scrapCatalog;
+        public ScrapAssetCatalogSO ScrapCatalog
+        {
+            get => scrapCatalog;
+            set => scrapCatalog = value;
+        }
+
         [Header("Available Prefabs & Weights")]
         [SerializeField] private List<ScrapSpawnEntry> spawnEntries = new List<ScrapSpawnEntry>();
 
@@ -161,11 +169,25 @@ namespace OrbitalPanopticon.Gameplay
 
             // Instantiate scrap
             Quaternion randomRot = Random.rotation;
-            ScrapItem scrap = Instantiate(selected.prefab, spawnPosition, randomRot, transform);
-
-            if (selected.scrapData != null)
+            ScrapItem scrap = null;
+            if (scrapCatalog == null) scrapCatalog = ScrapAssetCatalogSO.Instance;
+            int chosenTier = selected.scrapData != null ? selected.scrapData.Tier : 1;
+            if (scrapCatalog != null)
             {
-                scrap.Initialize(selected.scrapData);
+                scrap = scrapCatalog.CreateScrapInstanceForTier(chosenTier, transform);
+                if (scrap != null)
+                {
+                    scrap.transform.position = spawnPosition;
+                    scrap.transform.rotation = randomRot;
+                }
+            }
+            if (scrap == null)
+            {
+                scrap = Instantiate(selected.prefab, spawnPosition, randomRot, transform);
+                if (selected.scrapData != null)
+                {
+                    scrap.Initialize(selected.scrapData);
+                }
             }
 
             float chance = config != null ? config.valuableScrapSpawnChance : 0.25f;

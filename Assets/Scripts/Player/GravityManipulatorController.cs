@@ -448,6 +448,12 @@ namespace OrbitalPanopticon.Player
 
         private void Update()
         {
+            if (OrbitalPanopticon.Core.TutorialSlideshowUI.IsTutorialOpen || OrbitalPanopticon.Core.PauseMenuController.IsGamePaused || OrbitalPanopticon.Core.UpgradeTreeManager.IsTreeOpen)
+            {
+                _isGrabHeld = false;
+                return;
+            }
+
             // Fix 2: Purge invalid, destroyed, consumed, or fading items
             _heldItems.RemoveAll(x => x == null || !x.gameObject.activeInHierarchy || x.CurrentState == ScrapState.Consumed || x.CurrentState == ScrapState.FadingOut);
             RecalculateCargoMass();
@@ -460,13 +466,13 @@ namespace OrbitalPanopticon.Player
 
         private void FixedUpdate()
         {
-            if (OrbitalPanopticon.Core.UpgradeTreeManager.IsTreeOpen || OrbitalPanopticon.Core.PauseMenuController.IsGamePaused) return;
+            if (OrbitalPanopticon.Core.TutorialSlideshowUI.IsTutorialOpen || OrbitalPanopticon.Core.UpgradeTreeManager.IsTreeOpen || OrbitalPanopticon.Core.PauseMenuController.IsGamePaused) return;
             ApplyHoldingPhysics();
         }
 
         private void HandleInputs()
         {
-            if (OrbitalPanopticon.Core.UpgradeTreeManager.IsTreeOpen || OrbitalPanopticon.Core.PauseMenuController.IsGamePaused)
+            if (OrbitalPanopticon.Core.TutorialSlideshowUI.IsTutorialOpen || OrbitalPanopticon.Core.UpgradeTreeManager.IsTreeOpen || OrbitalPanopticon.Core.PauseMenuController.IsGamePaused)
             {
                 _isGrabHeld = false;
                 return;
@@ -580,7 +586,11 @@ namespace OrbitalPanopticon.Player
                 {
                     ReleaseAllHeld();
                 }
-                _currentPullTarget = null;
+                if (_currentPullTarget != null)
+                {
+                    _currentPullTarget.SetMassForManipulation(false);
+                    _currentPullTarget = null;
+                }
             }
 
             // Relativistic Auto-Magnetization (Player WOW-Perk)
@@ -613,6 +623,7 @@ namespace OrbitalPanopticon.Player
                 else
                 {
                     // Instant attraction without applying reaction impulse to player drone
+                    scrap.SetMassForManipulation(true);
                     Vector3 pullDir = (holdTargetPos - scrap.transform.position).normalized;
                     if (scrap.Rigidbody != null)
                     {
@@ -720,7 +731,16 @@ namespace OrbitalPanopticon.Player
                 }
             }
 
+            if (_currentPullTarget != null && _currentPullTarget != bestCandidate && !_heldItems.Contains(_currentPullTarget))
+            {
+                _currentPullTarget.SetMassForManipulation(false);
+            }
+
             _currentPullTarget = bestCandidate;
+            if (_currentPullTarget != null)
+            {
+                _currentPullTarget.SetMassForManipulation(true);
+            }
         }
 
         private void AttachHeldItem(ScrapItem scrap)
@@ -731,6 +751,7 @@ namespace OrbitalPanopticon.Player
             float alpha = config != null ? config.heldObjectAlpha : 0.42f;
 
             scrap.SetState(ScrapState.Held);
+            scrap.SetMassForManipulation(true);
             scrap.SetVisualAlpha(alpha);
             IgnoreHeldCollisions(scrap);
             _heldItems.Add(scrap);
@@ -1088,6 +1109,7 @@ namespace OrbitalPanopticon.Player
                 if (_heldItems[i] != null)
                 {
                     _heldItems[i].SetState(ScrapState.Floating);
+                    _heldItems[i].SetMassForManipulation(false);
                     _heldItems[i].SetVisualAlpha(1.0f);
                 }
             }

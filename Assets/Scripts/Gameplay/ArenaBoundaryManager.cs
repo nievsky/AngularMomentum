@@ -203,6 +203,12 @@ namespace OrbitalPanopticon.Gameplay
 
             Debug.LogWarning($"[ArenaBoundary] Player death / signal loss: {reason} at {deathPos}");
 
+            // Deduct Scrap Coin death penalty
+            if (QuotaAndScoreManager.Instance != null)
+            {
+                QuotaAndScoreManager.Instance.ApplyPlayerDeathPenalty();
+            }
+
             if (FMODAudioManager.Instance != null)
             {
                 FMODAudioManager.Instance.StopBoundaryWarning(FMOD.Studio.STOP_MODE.IMMEDIATE);

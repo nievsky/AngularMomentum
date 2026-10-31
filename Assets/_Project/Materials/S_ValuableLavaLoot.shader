@@ -2,6 +2,12 @@ Shader "OrbitalPanopticon/ValuableLavaLoot"
 {
     Properties
     {
+        [Header(Base Texture)]
+        _BaseMap ("Base Map", 2D) = "white" {}
+        _MainTex ("Legacy Main Tex", 2D) = "white" {}
+        _BaseColor ("Base Color Tint", Color) = (1, 1, 1, 1)
+        _Color ("Legacy Color Tint", Color) = (1, 1, 1, 1)
+
         [Header(Molten Magma Core)]
         [HDR] _MagmaCoreColor ("Magma Core Color (HDR)", Color) = (8.5, 6.5, 0.8, 1.0)
         [HDR] _MagmaMidColor ("Magma Mid Color (HDR)", Color) = (5.5, 1.2, 0.08, 1.0)
@@ -17,21 +23,14 @@ Shader "OrbitalPanopticon/ValuableLavaLoot"
         _CrackSoftness ("Crack Edge Softness", Range(0.01, 0.3)) = 0.08
         _EdgeGlowIntensity ("Crack Edge Glow", Range(0.0, 12.0)) = 6.0
 
-        [Header(Vertex Displacement Pulsing)]
-        _DisplacementAmount ("Vertex Displacement Amount", Range(0.0, 0.2)) = 0.045
-        _DisplacementSpeed ("Vertex Displacement Speed", Range(0.1, 5.0)) = 2.2
-        _DisplacementScale ("Vertex Displacement Frequency", Range(1.0, 15.0)) = 4.5
-
         [Header(Pulsing Heat Rim)]
         [HDR] _RimColor ("Fresnel Rim Color (HDR)", Color) = (6.0, 2.8, 0.3, 1.0)
-        _RimPower ("Fresnel Rim Power", Range(0.5, 6.0)) = 2.2
+        _RimPower ("Fresnel Rim Power", Range(0.5, 6.0)) = 2.5
         _RimIntensity ("Fresnel Rim Intensity", Range(0.0, 8.0)) = 4.0
         _PulseSpeed ("Heat Pulse Speed", Range(0.5, 10.0)) = 4.5
 
         [Header(Transparency and Fading)]
         _Alpha ("Global Transparency Alpha", Range(0.0, 1.0)) = 1.0
-        _BaseColor ("Base Color Tint", Color) = (1, 1, 1, 1)
-        _Color ("Legacy Color Tint", Color) = (1, 1, 1, 1)
     }
 
     SubShader
@@ -59,7 +58,14 @@ Shader "OrbitalPanopticon/ValuableLavaLoot"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
+            TEXTURE2D(_BaseMap);
+            SAMPLER(sampler_BaseMap);
+
             CBUFFER_START(UnityPerMaterial)
+                float4 _BaseMap_ST;
+                float4 _BaseColor;
+                float4 _Color;
+
                 float4 _MagmaCoreColor;
                 float4 _MagmaMidColor;
                 float _LavaScale;
@@ -73,18 +79,12 @@ Shader "OrbitalPanopticon/ValuableLavaLoot"
                 float _CrackSoftness;
                 float _EdgeGlowIntensity;
 
-                float _DisplacementAmount;
-                float _DisplacementSpeed;
-                float _DisplacementScale;
-
                 float4 _RimColor;
                 float _RimPower;
                 float _RimIntensity;
                 float _PulseSpeed;
 
                 float _Alpha;
-                float4 _BaseColor;
-                float4 _Color;
             CBUFFER_END
 
             struct Attributes
@@ -100,6 +100,7 @@ Shader "OrbitalPanopticon/ValuableLavaLoot"
                 float3 positionOS : TEXCOORD0;
                 float3 positionWS : TEXCOORD1;
                 float3 normalWS   : TEXCOORD2;
+                float2 uv         : TEXCOORD3;
             };
 
             // ---------------- 3D Procedural Hash and Noise ----------------
@@ -178,31 +179,28 @@ Shader "OrbitalPanopticon/ValuableLavaLoot"
             Varyings vert(Attributes input)
             {
                 Varyings output;
-
-                // Organic 3D Noise Vertex Displacement Pulsing
-                float3 dispCoord = input.positionOS.xyz * _DisplacementScale + float3(0.0, _Time.y * _DisplacementSpeed, 0.0);
-                float noiseDisp = (fbm3D(dispCoord) - 0.5) * 2.0 * _DisplacementAmount;
-                float breathing = sin(_Time.y * _PulseSpeed) * 0.012;
-                float totalDisp = noiseDisp + breathing;
-
-                float3 displacedOS = input.positionOS.xyz + input.normalOS * totalDisp;
-
+                // Zero vertex displacement: keep 100% true mesh geometry
                 output.positionOS = input.positionOS.xyz;
-                output.positionWS = TransformObjectToWorld(displacedOS);
+                output.positionWS = TransformObjectToWorld(input.positionOS.xyz);
                 output.positionCS = TransformWorldToHClip(output.positionWS);
                 output.normalWS = TransformObjectToWorldNormal(input.normalOS);
+                output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
                 return output;
             }
 
             float4 frag(Varyings input) : SV_Target
             {
+                // Layer 0 — Sample original model diffuse texture
+                float4 baseTex = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv) * _BaseColor * _Color;
+                float3 modelColor = baseTex.rgb;
+
                 // Layer 2 — Dark Basalt Crust (3D Voronoi Cellular Plates)
                 float cell = voronoi3D(input.positionOS * _CrustScale);
                 float cellPlate = 1.0 - cell;
                 float crustMask = smoothstep(_CrackWidth, _CrackWidth + _CrackSoftness, cellPlate);
                 float crackEdge = smoothstep(0.0, 0.45, 1.0 - abs(crustMask - 0.5) * 2.0);
 
-                // Layer 1 — Molten Magma Core (Flowing 3D Noise inside cracks)
+                // Layer 1 — Molten Magma Core (Flowing 3D Noise inside veins)
                 float3 flowOffset = float3(
                     _Time.y * _FlowSpeed * 0.4,
                     _Time.y * _FlowSpeed * 0.8,
@@ -213,8 +211,10 @@ Shader "OrbitalPanopticon/ValuableLavaLoot"
                 float3 magmaColor = lerp(_MagmaMidColor.rgb, _MagmaCoreColor.rgb, pow(lavaFbm, _MagmaContrast));
                 float3 crackGlow = _MagmaCoreColor.rgb * crackEdge * _EdgeGlowIntensity;
 
-                // Combine Volcanic Rock and Molten Rivers
-                float3 surfaceColor = lerp(magmaColor * _MagmaIntensity + crackGlow, _CrustColor.rgb, crustMask);
+                // Blend glowing magma veins OVER the model's original surface texture
+                float veinAmount = 1.0 - crustMask;
+                float3 surfaceColor = lerp(modelColor, magmaColor * _MagmaIntensity + crackGlow, veinAmount * 0.85);
+                surfaceColor += crackGlow * 0.5;
 
                 // Layer 3 — Pulsing Fresnel Heat Rim
                 float3 normalWS = normalize(input.normalWS);
@@ -224,7 +224,7 @@ Shader "OrbitalPanopticon/ValuableLavaLoot"
 
                 float pulse = (sin(_Time.y * _PulseSpeed) * 0.5 + 0.5);
                 float pulseMult = lerp(0.85, 1.35, pulse);
-                float3 rimEmission = _RimColor.rgb * (fresnel * _RimIntensity * pulseMult);
+                float3 rimEmission = _MagmaCoreColor.rgb * (fresnel * _RimIntensity * pulseMult);
 
                 // Final Combined HDR Color
                 float3 finalColor = surfaceColor + rimEmission;

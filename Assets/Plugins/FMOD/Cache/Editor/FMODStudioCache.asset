@@ -81,6 +81,33 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 510
+--- !u!114 &-7061914445993149545
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Player/Beam_Shock
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Player/Beam_Shock
+  Guid:
+    Data1: -601674861
+    Data2: 1204262701
+    Data3: -17583228
+    Data4: 1076307175
+  Banks:
+  - {fileID: 1206500338223914334}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 1042
 --- !u!114 &-6746631379814312950
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -803,6 +830,33 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 50
   Length: 851
+--- !u!114 &4297681670683708288
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/UI/UI_Percs
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/UI/UI_Percs
+  Guid:
+    Data1: -1853060599
+    Data2: 1149274639
+    Data3: -1226852435
+    Data4: -463493662
+  Banks:
+  - {fileID: 1206500338223914334}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 1025
 --- !u!114 &4503679319983954620
 MonoBehaviour:
   m_ObjectHideFlags: 0

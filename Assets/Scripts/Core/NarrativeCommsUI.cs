@@ -48,6 +48,16 @@ namespace OrbitalPanopticon.Core
             }
             Instance = this;
 
+            var config = GameManager.GameBalanceConfigInstance ?? GameBalanceConfig.Instance;
+            if (config != null && !config.enableNarrativeComms)
+            {
+                if (commsBoxContainer != null) commsBoxContainer.SetActive(false);
+                Transform existing = transform.Find("Panel_NarrativeComms");
+                if (existing != null) existing.gameObject.SetActive(false);
+                enabled = false;
+                return;
+            }
+
             _audioSource = GetComponent<AudioSource>();
             if (_audioSource == null)
             {
@@ -68,6 +78,16 @@ namespace OrbitalPanopticon.Core
 
         private void Start()
         {
+            var config = GameManager.GameBalanceConfigInstance ?? GameBalanceConfig.Instance;
+            if (config != null && !config.enableNarrativeComms)
+            {
+                if (commsBoxContainer != null) commsBoxContainer.SetActive(false);
+                Transform existing = transform.Find("Panel_NarrativeComms");
+                if (existing != null) existing.gameObject.SetActive(false);
+                enabled = false;
+                return;
+            }
+
             HookStageEvents();
 
             // Play Stage 1 Start Transmission after brief 1.2s delay
@@ -98,6 +118,9 @@ namespace OrbitalPanopticon.Core
 
         private IEnumerator DelayedStartTransmissionRoutine()
         {
+            var config = GameManager.GameBalanceConfigInstance ?? GameBalanceConfig.Instance;
+            if (config != null && !config.enableNarrativeComms) yield break;
+
             yield return new WaitForSeconds(1.2f);
             if (dialogueConfig != null)
             {
@@ -107,6 +130,9 @@ namespace OrbitalPanopticon.Core
 
         private void HandleStageAdvanced(int newStage)
         {
+            var config = GameManager.GameBalanceConfigInstance ?? GameBalanceConfig.Instance;
+            if (config != null && !config.enableNarrativeComms) return;
+
             if (dialogueConfig == null) return;
 
             switch (newStage)
@@ -125,6 +151,9 @@ namespace OrbitalPanopticon.Core
 
         public void PlayFinaleTransmission()
         {
+            var config = GameManager.GameBalanceConfigInstance ?? GameBalanceConfig.Instance;
+            if (config != null && !config.enableNarrativeComms) return;
+
             if (dialogueConfig != null)
             {
                 PlayTransmission(dialogueConfig.finaleAllBeamsOffline);
@@ -133,6 +162,9 @@ namespace OrbitalPanopticon.Core
 
         public void PlayTransmission(DialogueEntry entry)
         {
+            var config = GameManager.GameBalanceConfigInstance ?? GameBalanceConfig.Instance;
+            if (config != null && !config.enableNarrativeComms) return;
+
             if (entry == null || string.IsNullOrEmpty(entry.dialogueTextRU)) return;
 
             if (_transmissionCoroutine != null)
