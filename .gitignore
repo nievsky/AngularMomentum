@@ -116,3 +116,4 @@ ProjectSettings/Packages/com.unity.testtools.codecoverage/Settings.json
 ProjectSettings/Packages/com.unity.probuilder/Settings.json
 our_changes_backup.patch
 .backup_before_pull
+Assets/Plugins/FMOD/Cache/Editor/FMODStudioCache.asset

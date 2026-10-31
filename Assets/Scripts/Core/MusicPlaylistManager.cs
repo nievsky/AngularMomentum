@@ -17,14 +17,6 @@ namespace OrbitalPanopticon.Core
     {
         public static MusicPlaylistManager Instance { get; private set; }
 
-        public const string ParamStage = "Stage";
-
-        public enum MusicStage
-        {
-            Menu = 0,
-            Gameplay = 1
-        }
-
         public enum PlaylistType
         {
             MainMenu,
@@ -152,89 +144,11 @@ namespace OrbitalPanopticon.Core
             ResolveConfig();
             PlaylistType targetType = GetPlaylistTypeForScene(scene.name);
 
-            // Custom scene transition logic: seamless Stage parameter toggle vs fresh start
-            if (!_isInitialized)
-            {
-                _isInitialized = true;
-                PlayPlaylist(targetType, 0, false);
-                return;
-            }
-
-            // Case 1: Seamless transition from MainMenu to Gameplay
-            // We do NOT stop or crossfade: keep playing MusicGameplay and switch parameter Stage to Gameplay (1.0)
-            if (currentPlaylistType == PlaylistType.MainMenu && targetType == PlaylistType.Gameplay)
-            {
-                currentPlaylistType = PlaylistType.Gameplay;
-                currentTrackIndex = 0;
-                _isMusicStopped = false;
-
-                if (_activeFmodInstance.isValid())
-                {
-                    SetMusicStage(MusicStage.Gameplay);
-                    Debug.Log("<color=#33FF88>[MusicPlaylistManager] Seamless transition: switched MusicGameplay parameter 'Stage' to Gameplay (1.0)</color>");
-                    return;
-                }
-                else
-                {
-                    // If music was stopped or not valid, start Gameplay fresh
-                    PlayPlaylist(PlaylistType.Gameplay, 0, false);
-                    return;
-                }
-            }
-
-            // Case 2: Transitioning to MainMenu (from CreditsScene, Endgame, or returning from gameplay)
-            // The music must restart anew from the beginning with Stage = Menu (0.0).
-            // When returning from Credits, we add a customizable delay (default: 3s) so the credits track finishes fading out cleanly.
-            if (targetType == PlaylistType.MainMenu && currentPlaylistType != PlaylistType.MainMenu)
-            {
-                bool fromCredits = (currentPlaylistType == PlaylistType.Credits);
-                currentPlaylistType = PlaylistType.MainMenu;
-                currentTrackIndex = 0;
-                _isMusicStopped = false;
-
-                if (fromCredits)
-                {
-                    float delay = audioConfig != null ? audioConfig.creditsToMenuMusicDelay : 3.0f;
-                    if (_crossfadeCoroutine != null) StopCoroutine(_crossfadeCoroutine);
-                    _crossfadeCoroutine = StartCoroutine(DelayedStartMenuMusicRoutine(delay));
-                    Debug.Log($"<color=#33FF88>[MusicPlaylistManager] Transitioned from Credits to Main Menu: waiting {delay:F1}s before starting MusicGameplay (Menu stage)...</color>");
-                    return;
-                }
-                else
-                {
-                    CrossfadeToTrack(PlaylistType.MainMenu, 0);
-                    Debug.Log("<color=#33FF88>[MusicPlaylistManager] Transitioned to Main Menu: restarting MusicGameplay anew from beginning with Stage = Menu (0.0)</color>");
-                    return;
-                }
-            }
-            // Case 3: Any other transition (e.g. Gameplay to Credits)
-            if (targetType != currentPlaylistType)
+            // If switching to a new scene playlist type, crossfade to track 0
+            if (targetType != currentPlaylistType || !_isInitialized)
             {
                 _isInitialized = true;
                 CrossfadeToTrack(targetType, 0);
-            }
-        }
-
-        public void SetMusicStage(MusicStage stage)
-        {
-            SetMusicStage((float)stage);
-        }
-
-        public void SetMusicStage(float stageValue)
-        {
-            if (_activeFmodInstance.isValid())
-            {
-                string paramName = (audioConfig != null && !string.IsNullOrEmpty(audioConfig.paramMusicStage))
-                    ? audioConfig.paramMusicStage
-                    : ParamStage;
-
-                var res = _activeFmodInstance.setParameterByName(paramName, stageValue);
-                if (res != FMOD.RESULT.OK)
-                {
-                    _activeFmodInstance.setParameterByNameWithLabel(paramName, stageValue >= 0.5f ? "Gameplay" : "Menu");
-                }
-                _activeFmodInstance.setVolume(1f);
-                _activeFmodInstance.setPaused(false);
             }
         }
 
@@ -349,12 +263,7 @@ namespace OrbitalPanopticon.Core
             if (audioConfig == null) return null;
             switch (type)
             {
-                case PlaylistType.MainMenu:
-                    if (audioConfig.mainMenuMusicPlaylist != null && audioConfig.mainMenuMusicPlaylist.Length > 0 && HasValidFmodEvent(audioConfig.mainMenuMusicPlaylist))
-                    {
-                        return audioConfig.mainMenuMusicPlaylist;
-                    }
-                    return audioConfig.gameplayMusicPlaylist;
+                case PlaylistType.MainMenu: return audioConfig.mainMenuMusicPlaylist;
                 case PlaylistType.Credits: return audioConfig.creditsMusicPlaylist;
                 case PlaylistType.Gameplay:
                 default:
@@ -396,6 +305,14 @@ namespace OrbitalPanopticon.Core
                 yield return null;
             }
 
+            // 2. For gameplay music: wait until the player actually connects / starts the game
+            if (type == PlaylistType.Gameplay)
+            {
+                while (UIManager.Instance != null && !UIManager.Instance.IsOperatorConnected)
+                {
+                    yield return null;
+                }
+            }
 
             EventReference[] fmodList = GetFmodPlaylist(type);
             bool useFmod = fmodList != null && fmodList.Length > 0 && HasValidFmodEvent(fmodList);
@@ -410,17 +327,6 @@ namespace OrbitalPanopticon.Core
                 if (!targetRef.IsNull)
                 {
                     incomingInstance = RuntimeManager.CreateInstance(targetRef);
-
-                    // Set interactive Stage parameter if this event uses it
-                    if (type == PlaylistType.MainMenu || type == PlaylistType.Gameplay)
-                    {
-                        string stageParam = (audioConfig != null && !string.IsNullOrEmpty(audioConfig.paramMusicStage))
-                            ? audioConfig.paramMusicStage
-                            : ParamStage;
-                        float stageVal = (type == PlaylistType.Gameplay) ? 1.0f : 0.0f;
-                        incomingInstance.setParameterByName(stageParam, stageVal);
-                        incomingInstance.setParameterByNameWithLabel(stageParam, stageVal >= 0.5f ? "Gameplay" : "Menu");
-                    }
                     // If crossfading from another track, start volume at 0.
                     // If starting fresh (no previous music), start at full volume (1f) so FMOD's internal fade / intro plays unhindered!
                     incomingInstance.setVolume(hasOutgoing ? 0f : 1f);
@@ -559,90 +465,6 @@ namespace OrbitalPanopticon.Core
             isCrossfading = false;
             _crossfadeCoroutine = null;
             Debug.Log($"<color=#33FF88>[MusicPlaylistManager] Crossfaded to {type} [Track #{trackIndex + 1}]</color>");
-        }
-
-        /// <summary>
-        /// Waits for the credits track fadeout to finish in silence before restarting MusicGameplay (Menu stage).
-        /// </summary>
-        private IEnumerator DelayedStartMenuMusicRoutine(float delay)
-        {
-            isCrossfading = true;
-
-            // 1. Cleanly stop outgoing credits music with ALLOWFADEOUT so its tail finishes smoothly
-            if (_activeFmodInstance.isValid())
-            {
-                _activeFmodInstance.stop(FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
-                _activeFmodInstance.release();
-                _activeFmodInstance.clearHandle();
-            }
-
-            if (_fadingOutFmodInstance.isValid())
-            {
-                _fadingOutFmodInstance.stop(FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
-                _fadingOutFmodInstance.release();
-                _fadingOutFmodInstance.clearHandle();
-            }
-
-            if (_audioSourceA != null && _audioSourceA.isPlaying)
-            {
-                _audioSourceA.Stop();
-                _audioSourceA.volume = 0f;
-            }
-            if (_audioSourceB != null && _audioSourceB.isPlaying)
-            {
-                _audioSourceB.Stop();
-                _audioSourceB.volume = 0f;
-            }
-
-            // 2. Wait for delay in unscaled time so credits track finishes cleanly
-            float elapsed = 0f;
-            while (elapsed < delay)
-            {
-                // If user leaves Main Menu or starts game before delay completes, cancel
-                if (currentPlaylistType != PlaylistType.MainMenu)
-                {
-                    isCrossfading = false;
-                    _crossfadeCoroutine = null;
-                    yield break;
-                }
-                elapsed += Time.unscaledDeltaTime;
-                yield return null;
-            }
-
-            // 3. Double-check we are still in Main Menu before starting music
-            if (currentPlaylistType == PlaylistType.MainMenu && !_isMusicStopped)
-            {
-                EventReference[] fmodList = GetFmodPlaylist(PlaylistType.MainMenu);
-                bool useFmod = fmodList != null && fmodList.Length > 0 && HasValidFmodEvent(fmodList);
-
-                if (useFmod)
-                {
-                    EventReference targetRef = fmodList[0];
-                    if (!targetRef.IsNull)
-                    {
-                        EventInstance incoming = RuntimeManager.CreateInstance(targetRef);
-
-                        string stageParam = (audioConfig != null && !string.IsNullOrEmpty(audioConfig.paramMusicStage))
-                            ? audioConfig.paramMusicStage
-                            : ParamStage;
-
-                        incoming.setParameterByName(stageParam, 0.0f);
-                        incoming.setParameterByNameWithLabel(stageParam, "Menu");
-                        incoming.setVolume(1.0f);
-                        incoming.start();
-
-                        _activeFmodInstance = incoming;
-                        Debug.Log("<color=#33FF88>[MusicPlaylistManager] Delayed start complete: MusicGameplay started anew with Stage = Menu (0.0)</color>");
-                    }
-                }
-                else
-                {
-                    PlayPlaylist(PlaylistType.MainMenu, 0, false);
-                }
-            }
-
-            isCrossfading = false;
-            _crossfadeCoroutine = null;
         }
 
         /// <summary>
