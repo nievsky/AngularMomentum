@@ -227,14 +227,26 @@ namespace OrbitalPanopticon.Core
         private void LoadSettings()
         {
             // 1. Music Volume (Default: 100% / 1.0)
-            float musicVol = PlayerPrefs.GetFloat("Settings_MusicVolume", 1.0f);
-            if (musicVolumeSlider != null) musicVolumeSlider.value = musicVol;
+            float musicVol = Mathf.Clamp01(PlayerPrefs.GetFloat("Settings_MusicVolume", 1.0f));
+            if (musicVolumeSlider != null)
+            {
+                musicVolumeSlider.minValue = 0f;
+                musicVolumeSlider.maxValue = 1f;
+                musicVolumeSlider.wholeNumbers = false;
+                musicVolumeSlider.value = musicVol;
+            }
             if (musicVolumeValueText != null) musicVolumeValueText.text = $"{Mathf.RoundToInt(musicVol * 100f)}%";
             if (FMODAudioManager.Instance != null) FMODAudioManager.Instance.SetMusicVolume(musicVol);
 
             // 2. Sounds Volume (Default: 100% / 1.0)
-            float soundsVol = PlayerPrefs.GetFloat("Settings_SoundsVolume", 1.0f);
-            if (soundsVolumeSlider != null) soundsVolumeSlider.value = soundsVol;
+            float soundsVol = Mathf.Clamp01(PlayerPrefs.GetFloat("Settings_SoundsVolume", 1.0f));
+            if (soundsVolumeSlider != null)
+            {
+                soundsVolumeSlider.minValue = 0f;
+                soundsVolumeSlider.maxValue = 1f;
+                soundsVolumeSlider.wholeNumbers = false;
+                soundsVolumeSlider.value = soundsVol;
+            }
             AudioListener.volume = soundsVol;
             if (soundsVolumeValueText != null) soundsVolumeValueText.text = $"{Mathf.RoundToInt(soundsVol * 100f)}%";
             if (FMODAudioManager.Instance != null) FMODAudioManager.Instance.SetSoundsVolume(soundsVol);

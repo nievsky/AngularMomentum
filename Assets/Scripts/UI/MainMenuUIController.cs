@@ -434,11 +434,13 @@ namespace OrbitalPanopticon.UI
                 if (rtMusic != null) rtMusic.anchoredPosition = new Vector2(0f, 55f);
 
                 if (musicVolumeSlider == null) musicVolumeSlider = musicRow.GetComponentInChildren<Slider>();
-                if (musicVolumeValueText == null)
+                if (musicVolumeSlider != null)
                 {
-                    Transform valTr = musicRow.Find("ValueText");
-                    if (valTr != null) musicVolumeValueText = valTr.GetComponent<TextMeshProUGUI>();
+                    musicVolumeSlider.minValue = 0f;
+                    musicVolumeSlider.maxValue = 1f;
+                    musicVolumeSlider.wholeNumbers = false;
                 }
+
                 if (musicVolumeLabelText == null)
                 {
                     Transform lblTr = musicRow.Find("Label");
@@ -447,6 +449,23 @@ namespace OrbitalPanopticon.UI
                 if (musicVolumeLabelText != null)
                 {
                     musicVolumeLabelText.text = LocalizationManager.Get("MM_Settings_MusicVolume");
+                }
+
+                if (musicVolumeValueText == null)
+                {
+                    Transform valTr = musicRow.Find("Value") ?? musicRow.Find("ValueText") ?? musicRow.Find("Text_Value");
+                    if (valTr != null) musicVolumeValueText = valTr.GetComponent<TextMeshProUGUI>();
+                    if (musicVolumeValueText == null)
+                    {
+                        foreach (var tmp in musicRow.GetComponentsInChildren<TextMeshProUGUI>())
+                        {
+                            if (tmp != musicVolumeLabelText)
+                            {
+                                musicVolumeValueText = tmp;
+                                break;
+                            }
+                        }
+                    }
                 }
             }
 
@@ -471,6 +490,35 @@ namespace OrbitalPanopticon.UI
                 mouseRow.name = "Row_MouseSens";
                 RectTransform rtMouse = mouseRow.GetComponent<RectTransform>();
                 if (rtMouse != null) rtMouse.anchoredPosition = new Vector2(0f, -65f);
+
+                if (mouseSensSlider == null) mouseSensSlider = mouseRow.GetComponentInChildren<Slider>();
+                if (mouseSensSlider != null)
+                {
+                    mouseSensSlider.minValue = 0.2f;
+                    mouseSensSlider.maxValue = 5.0f;
+                    mouseSensSlider.wholeNumbers = false;
+                }
+                if (mouseSensLabelText == null)
+                {
+                    Transform lblTr = mouseRow.Find("Label");
+                    if (lblTr != null) mouseSensLabelText = lblTr.GetComponent<TextMeshProUGUI>();
+                }
+                if (mouseSensValueText == null)
+                {
+                    Transform valTr = mouseRow.Find("Value") ?? mouseRow.Find("ValueText") ?? mouseRow.Find("Text_Value");
+                    if (valTr != null) mouseSensValueText = valTr.GetComponent<TextMeshProUGUI>();
+                    if (mouseSensValueText == null)
+                    {
+                        foreach (var tmp in mouseRow.GetComponentsInChildren<TextMeshProUGUI>())
+                        {
+                            if (tmp != mouseSensLabelText)
+                            {
+                                mouseSensValueText = tmp;
+                                break;
+                            }
+                        }
+                    }
+                }
             }
 
             if (soundsRow == null && musicRow != null)
@@ -483,13 +531,32 @@ namespace OrbitalPanopticon.UI
                 if (rtSounds != null) rtSounds.anchoredPosition = new Vector2(0f, -5f);
 
                 soundsVolumeSlider = soundsGo.GetComponentInChildren<Slider>();
-                Transform valTr = soundsGo.transform.Find("ValueText");
-                if (valTr != null) soundsVolumeValueText = valTr.GetComponent<TextMeshProUGUI>();
+                if (soundsVolumeSlider != null)
+                {
+                    soundsVolumeSlider.minValue = 0f;
+                    soundsVolumeSlider.maxValue = 1f;
+                    soundsVolumeSlider.wholeNumbers = false;
+                }
+
                 Transform lblTr = soundsGo.transform.Find("Label");
                 if (lblTr != null) soundsVolumeLabelText = lblTr.GetComponent<TextMeshProUGUI>();
                 if (soundsVolumeLabelText != null)
                 {
                     soundsVolumeLabelText.text = LocalizationManager.Get("MM_Settings_SoundsVolume");
+                }
+
+                Transform valTr = soundsGo.transform.Find("Value") ?? soundsGo.transform.Find("ValueText") ?? soundsGo.transform.Find("Text_Value");
+                if (valTr != null) soundsVolumeValueText = valTr.GetComponent<TextMeshProUGUI>();
+                if (soundsVolumeValueText == null)
+                {
+                    foreach (var tmp in soundsGo.GetComponentsInChildren<TextMeshProUGUI>())
+                    {
+                        if (tmp != soundsVolumeLabelText)
+                        {
+                            soundsVolumeValueText = tmp;
+                            break;
+                        }
+                    }
                 }
             }
             else if (soundsRow != null)
@@ -498,11 +565,13 @@ namespace OrbitalPanopticon.UI
                 if (rtSounds != null) rtSounds.anchoredPosition = new Vector2(0f, -5f);
 
                 if (soundsVolumeSlider == null) soundsVolumeSlider = soundsRow.GetComponentInChildren<Slider>();
-                if (soundsVolumeValueText == null)
+                if (soundsVolumeSlider != null)
                 {
-                    Transform valTr = soundsRow.Find("ValueText");
-                    if (valTr != null) soundsVolumeValueText = valTr.GetComponent<TextMeshProUGUI>();
+                    soundsVolumeSlider.minValue = 0f;
+                    soundsVolumeSlider.maxValue = 1f;
+                    soundsVolumeSlider.wholeNumbers = false;
                 }
+
                 if (soundsVolumeLabelText == null)
                 {
                     Transform lblTr = soundsRow.Find("Label");
@@ -512,22 +581,40 @@ namespace OrbitalPanopticon.UI
                 {
                     soundsVolumeLabelText.text = LocalizationManager.Get("MM_Settings_SoundsVolume");
                 }
+
+                if (soundsVolumeValueText == null)
+                {
+                    Transform valTr = soundsRow.Find("Value") ?? soundsRow.Find("ValueText") ?? soundsRow.Find("Text_Value");
+                    if (valTr != null) soundsVolumeValueText = valTr.GetComponent<TextMeshProUGUI>();
+                    if (soundsVolumeValueText == null)
+                    {
+                        foreach (var tmp in soundsRow.GetComponentsInChildren<TextMeshProUGUI>())
+                        {
+                            if (tmp != soundsVolumeLabelText)
+                            {
+                                soundsVolumeValueText = tmp;
+                                break;
+                            }
+                        }
+                    }
+                }
             }
         }
-
-
 
         private void LoadSettings()
         {
             EnsureVolumeSliders();
 
             // 1. Music Volume (Default: 100% / 1.0)
-            float musicVol = PlayerPrefs.GetFloat("Settings_MusicVolume", 1.0f);
+            float musicVol = Mathf.Clamp01(PlayerPrefs.GetFloat("Settings_MusicVolume", 1.0f));
             if (musicVolumeSlider != null)
             {
                 musicVolumeSlider.minValue = 0f;
                 musicVolumeSlider.maxValue = 1f;
+                musicVolumeSlider.wholeNumbers = false;
                 musicVolumeSlider.value = musicVol;
+                musicVolumeSlider.onValueChanged.RemoveAllListeners();
+                musicVolumeSlider.onValueChanged.AddListener(OnMusicVolumeChanged);
             }
             if (musicVolumeValueText != null)
             {
@@ -539,12 +626,15 @@ namespace OrbitalPanopticon.UI
             }
 
             // 2. Sounds Volume (Default: 100% / 1.0)
-            float soundsVol = PlayerPrefs.GetFloat("Settings_SoundsVolume", 1.0f);
+            float soundsVol = Mathf.Clamp01(PlayerPrefs.GetFloat("Settings_SoundsVolume", 1.0f));
             if (soundsVolumeSlider != null)
             {
                 soundsVolumeSlider.minValue = 0f;
                 soundsVolumeSlider.maxValue = 1f;
+                soundsVolumeSlider.wholeNumbers = false;
                 soundsVolumeSlider.value = soundsVol;
+                soundsVolumeSlider.onValueChanged.RemoveAllListeners();
+                soundsVolumeSlider.onValueChanged.AddListener(OnSoundsVolumeChanged);
             }
             if (soundsVolumeValueText != null)
             {
@@ -560,7 +650,12 @@ namespace OrbitalPanopticon.UI
             float sens = PlayerPrefs.GetFloat("Settings_MouseSens", 1.8f);
             if (mouseSensSlider != null)
             {
+                mouseSensSlider.minValue = 0.2f;
+                mouseSensSlider.maxValue = 5.0f;
+                mouseSensSlider.wholeNumbers = false;
                 mouseSensSlider.value = sens;
+                mouseSensSlider.onValueChanged.RemoveAllListeners();
+                mouseSensSlider.onValueChanged.AddListener(OnMouseSensChanged);
             }
             if (mouseSensValueText != null)
             {

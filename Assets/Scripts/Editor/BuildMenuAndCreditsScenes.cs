@@ -189,10 +189,10 @@ namespace OrbitalPanopticon.Editor
             sTitleTxt.color = new Color(0.2f, 0.9f, 1f, 1f);
 
             // Volume Slider
-            var musicControls = CreateSliderRow(settingsPanelGo.transform, new Vector2(0f, 55f), "Громкость музыки (Music):", 0f, 1f, 1.0f);
-            var soundsControls = CreateSliderRow(settingsPanelGo.transform, new Vector2(0f, -5f), "Громкость звуков (Sounds):", 0f, 1f, 1.0f);
+            var musicControls = CreateSliderRow(settingsPanelGo.transform, new Vector2(0f, 55f), "Громкость музыки:", 0f, 1f, 1.0f);
+            var soundsControls = CreateSliderRow(settingsPanelGo.transform, new Vector2(0f, -5f), "Громкость звуков:", 0f, 1f, 1.0f);
             // Mouse Sens Slider
-            var sensControls = CreateSliderRow(settingsPanelGo.transform, new Vector2(0f, -65f), "Чувствительность мыши (Sens):", 0.2f, 5.0f, 1.8f);
+            var sensControls = CreateSliderRow(settingsPanelGo.transform, new Vector2(0f, -65f), "Чувствительность мыши:", 0.2f, 5.0f, 1.8f);
 
             // Close Settings Button
             var closeSettingsBtn = CreateMenuButton(settingsPanelGo.transform, new Vector2(0f, -135f), "ЗАКРЫТЬ", new Color(1f, 0.85f, 0.2f), 180f, 42f);
