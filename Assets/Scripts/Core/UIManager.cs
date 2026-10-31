@@ -380,6 +380,27 @@ namespace OrbitalPanopticon.Core
             }
         }
 
+        /// <summary>
+        /// Triggers a sharp red punch scale tween on the Scrap Coins HUD counter when coins are lost on death.
+        /// </summary>
+        public void TriggerScrapCoinsLossPunch()
+        {
+            if (scrapCoinsBadge != null)
+            {
+                scrapCoinsBadge.transform.DOKill();
+                scrapCoinsBadge.transform.localScale = Vector3.one;
+                scrapCoinsBadge.transform.DOPunchScale(Vector3.one * 0.25f, 0.35f, 7, 0.6f).SetUpdate(true);
+            }
+
+            if (scrapCoinsText != null)
+            {
+                scrapCoinsText.DOKill();
+                Color normalColor = new Color(1.0f, 0.88f, 0.25f);
+                scrapCoinsText.color = new Color(1.0f, 0.15f, 0.15f);
+                scrapCoinsText.DOColor(normalColor, 0.5f).SetUpdate(true);
+            }
+        }
+
         private static void SafeDestroy(GameObject go)
         {
             if (go == null) return;

@@ -229,6 +229,8 @@ GameObject:
   - component: {fileID: 11652984}
   - component: {fileID: 11652985}
   - component: {fileID: 11652986}
+  - component: {fileID: 11652987}
+  - component: {fileID: 11652988}
   m_Layer: 0
   m_Name: Label
   m_TagString: Untagged
@@ -404,9 +406,6 @@ MonoBehaviour:
   m_Script: {fileID: 1396755900}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GlobalFontTracker
-  originalFontSize: 12
-  originalCharacterSpacing: 0
-  isInitialized: 1
 --- !u!114 &11652982
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -419,9 +418,6 @@ MonoBehaviour:
   m_Script: {fileID: 1706434901}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GlobalFontTracker
-  originalFontSize: 12
-  originalCharacterSpacing: 0
-  isInitialized: 1
 --- !u!114 &11652983
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -434,9 +430,6 @@ MonoBehaviour:
   m_Script: {fileID: 2109968880}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GlobalFontTracker
-  originalFontSize: 12
-  originalCharacterSpacing: 0
-  isInitialized: 1
 --- !u!114 &11652984
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -449,9 +442,6 @@ MonoBehaviour:
   m_Script: {fileID: 502174695}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GlobalFontTracker
-  originalFontSize: 12
-  originalCharacterSpacing: 0
-  isInitialized: 1
 --- !u!114 &11652985
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -464,9 +454,6 @@ MonoBehaviour:
   m_Script: {fileID: 299578977}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GlobalFontTracker
-  originalFontSize: 12
-  originalCharacterSpacing: 0
-  isInitialized: 1
 --- !u!114 &11652986
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -477,6 +464,33 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 1371207877}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GlobalFontTracker
+--- !u!114 &11652987
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 11652974}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 751878200}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GlobalFontTracker
+  originalFontSize: 12
+  originalCharacterSpacing: 0
+  isInitialized: 1
+--- !u!114 &11652988
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 11652974}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 1422073698}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GlobalFontTracker
   originalFontSize: 12
@@ -956,6 +970,7 @@ MonoBehaviour:
   minInitialSpeed: 3
   maxInitialSpeed: 6.5
   maxAngularSpeed: 1.2
+  scrapCatalog: {fileID: 0}
   spawnEntries:
   - prefab: {fileID: 1332304283896392702, guid: 70d9e569d7a1f6a4bb3100f039438064, type: 3}
     scrapData: {fileID: 11400000, guid: ae3464068661b2e4fae0c0ee5f245cca, type: 2}
@@ -2393,6 +2408,21 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 1594941148794604764, guid: 09bd71492c1d0ad4b8283f43d109c1de, type: 3}
   m_PrefabInstance: {fileID: 700340294}
   m_PrefabAsset: {fileID: 0}
+--- !u!115 &751878200
+MonoScript:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  serializedVersion: 7
+  m_DefaultReferences: {}
+  m_Icon: {fileID: 0}
+  m_Type: 0
+  m_ExecutionOrder: 0
+  m_ClassName: GlobalFontTracker
+  m_Namespace: OrbitalPanopticon.Core
+  m_AssemblyName: Assembly-CSharp
 --- !u!1 &773512919
 GameObject:
   m_ObjectHideFlags: 0
@@ -4550,6 +4580,21 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1420728432}
   m_CullTransparentMesh: 1
+--- !u!115 &1422073698
+MonoScript:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  serializedVersion: 7
+  m_DefaultReferences: {}
+  m_Icon: {fileID: 0}
+  m_Type: 0
+  m_ExecutionOrder: 0
+  m_ClassName: GlobalFontTracker
+  m_Namespace: OrbitalPanopticon.Core
+  m_AssemblyName: Assembly-CSharp
 --- !u!1 &1446420427
 GameObject:
   m_ObjectHideFlags: 0
@@ -5443,7 +5488,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1858790267}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 2.8, y: 2.8, z: 2.8}
   m_ConstrainProportionsScale: 0

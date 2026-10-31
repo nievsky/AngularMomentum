@@ -81,27 +81,14 @@ public class SceneTransitionManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Configures the transition Canvas to use ScreenSpaceCamera so URP post-processing (Bloom, ACES)
-    /// actively blazes and glows on the HDR fiery dissolve edge.
-    /// Falls back to ScreenSpaceOverlay if no camera is available.
+    /// Enforces ScreenSpaceOverlay with maximum sorting order (32767) so the dissolve transition
+    /// renders above all other canvases and UI elements in all scenes.
     /// </summary>
     public void UpdateCanvasCamera()
     {
         if (_transitionCanvas == null) return;
-
-        Camera cam = Camera.main;
-        if (cam != null)
-        {
-            _transitionCanvas.renderMode = RenderMode.ScreenSpaceCamera;
-            _transitionCanvas.worldCamera = cam;
-            _transitionCanvas.planeDistance = 0.35f;
-            _transitionCanvas.sortingOrder = 9999;
-        }
-        else
-        {
-            _transitionCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            _transitionCanvas.sortingOrder = 9999;
-        }
+        _transitionCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        _transitionCanvas.sortingOrder = 32767;
     }
 
     public void BuildTransitionUI()
@@ -112,12 +99,13 @@ public class SceneTransitionManager : MonoBehaviour
             return;
         }
 
-        // 1. Create Top-Sorting Canvas (ScreenSpaceCamera with fallback)
+        // 1. Create Top-Sorting Canvas (ScreenSpaceOverlay with sortingOrder 32767)
         GameObject canvasGo = new GameObject("Transition_Canvas");
         canvasGo.transform.SetParent(transform, false);
 
         _transitionCanvas = canvasGo.AddComponent<Canvas>();
-        UpdateCanvasCamera();
+        _transitionCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        _transitionCanvas.sortingOrder = 32767;
 
         var scaler = canvasGo.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;

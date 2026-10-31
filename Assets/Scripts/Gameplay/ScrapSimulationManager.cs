@@ -17,6 +17,14 @@ namespace OrbitalPanopticon.Gameplay
             [Range(1, 100)] public int weight;
         }
 
+        [Header("Asset Catalog")]
+        [SerializeField] private ScrapAssetCatalogSO scrapCatalog;
+        public ScrapAssetCatalogSO ScrapCatalog
+        {
+            get => scrapCatalog;
+            set => scrapCatalog = value;
+        }
+
         [Header("Pool Setup")]
         [SerializeField] private int prewarmPoolSize = 100;
         [SerializeField] private Transform poolRoot;
@@ -95,6 +103,48 @@ namespace OrbitalPanopticon.Gameplay
 
         private void PrewarmPool()
         {
+            if (scrapCatalog == null)
+            {
+                scrapCatalog = ScrapAssetCatalogSO.Instance;
+            }
+
+            if (scrapCatalog != null)
+            {
+                // Prewarm across tiers using ScrapAssetCatalogSO (Tier 1: 50%, Tier 2: 30%, Tier 3: 12%, Tier 4: 8%)
+                int[] tierWeights = new int[] { 50, 30, 12, 8 };
+                int totalTierWeight = 100;
+
+                for (int i = 0; i < prewarmPoolSize; i++)
+                {
+                    int roll = Random.Range(0, totalTierWeight);
+                    int chosenTier = 1;
+                    int accum = 0;
+                    for (int t = 0; t < tierWeights.Length; t++)
+                    {
+                        accum += tierWeights[t];
+                        if (roll < accum)
+                        {
+                            chosenTier = t + 1;
+                            break;
+                        }
+                    }
+
+                    ScrapItem scrap = scrapCatalog.CreateScrapInstanceForTier(chosenTier, poolRoot);
+                    if (scrap != null)
+                    {
+                        scrap.name = $"{scrap.name}_Pooled_{i:D3}";
+                        scrap.ResetForPool();
+                        scrap.IgnorePlayerCollision();
+                        scrap.gameObject.SetActive(false);
+                        _scrapPool.Enqueue(scrap);
+                    }
+                }
+
+                UpdateStats();
+                Debug.Log($"<color=#00FFAA>[ScrapSimulationManager] Pre-warmed pool with {_scrapPool.Count} scrap items via ScrapAssetCatalogSO.</color>");
+                return;
+            }
+
             if (poolEntries == null || poolEntries.Count == 0 || _totalWeight <= 0)
             {
                 Debug.LogWarning("[ScrapSimulationManager] Cannot prewarm pool: pool entries missing or zero weight.");
@@ -254,6 +304,12 @@ namespace OrbitalPanopticon.Gameplay
                 }
             }
 
+            if (scrap == null && scrapCatalog != null)
+            {
+                int tier = Random.Range(1, maxTier + 1);
+                scrap = scrapCatalog.CreateScrapInstanceForTier(tier, poolRoot);
+            }
+
             if (scrap == null) return null;
 
             // Compute random position in spherical shell (mildly flattened on Y for cohesive orbital plane)
@@ -268,6 +324,7 @@ namespace OrbitalPanopticon.Gameplay
             scrap.transform.rotation = Random.rotation;
 
             scrap.ResetForPool();
+            scrap.IgnorePlayerCollision();
             scrap.HomeOrbitRadius = radius;
 
             float chance = config != null ? config.valuableScrapSpawnChance : 0.25f;
@@ -324,6 +381,12 @@ namespace OrbitalPanopticon.Gameplay
                 {
                     _scrapPool.Enqueue(candidate);
                 }
+            }
+
+            if (scrap == null && scrapCatalog != null)
+            {
+                int tier = Random.Range(1, maxTier + 1);
+                scrap = scrapCatalog.CreateScrapInstanceForTier(tier, poolRoot);
             }
 
             if (scrap == null) return null;

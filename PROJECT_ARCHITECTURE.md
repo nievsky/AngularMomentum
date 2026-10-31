@@ -112,10 +112,10 @@ The game is structured into a clean 3-scene flow configured in `EditorBuildSetti
 
 ### 3.1 Scene Transition Manager (`SceneTransitionManager.cs`)
 * **Global Singleton**: Instantiated via `[RuntimeInitializeOnLoadMethod(BeforeSceneLoad)]`, marked with `DontDestroyOnLoad`.
-* **Top-Sorting Overlay & URP Bloom Integration**: Dedicated `Transition_Canvas` configured as `RenderMode.ScreenSpaceCamera` bound to `Camera.main` at `planeDistance = 0.35f` (`sortingOrder = 9999`) with fallback to `ScreenSpaceOverlay`. This ensures URP post-processing (Bloom, ACES tonemapping) directly catches the HDR fiery dissolve edge.
+* **Top-Sorting Overlay Rendering**: Dedicated `Transition_Canvas` configured as `RenderMode.ScreenSpaceOverlay` with `sortingOrder = 32767` (maximum 16-bit integer sorting order). This ensures the fiery dissolve curtain and blackout fill ALWAYS render strictly on top of all HUD, tutorial windows, pause menus, and world canvases in all scenes.
 * **Fiery Orange HDR Dissolve Shader (`S_ScreenDissolve.shader`)**:
   * Multi-layer burning edge gradient: scorching white-yellow core (`[HDR] _EdgeCoreColor = (8.0, 4.5, 1.0, 1.0)`), fiery orange-red flame (`[HDR] _EdgeOuterColor = (4.5, 0.9, 0.05, 1.0)`), and expanding heat halo (`_SoftGlowWidth = 0.16f`, `_DissolveEdgeWidth = 0.09f`).
-  * Driven by `_DissolveProgress` (`0.0` = completely clear/invisible, `1.0` = completely solid black).
+  * Driven by `_DissolveProgress` (`0.0` = completely clear/invisible with fragment `discard`, `1.0` = 100% solid pitch-black `float4(0, 0, 0, 1)` completely obscuring the screen).
   * Automatically pulses post-processing bloom (`bloomBoost: 2.2f`) via `PostProcessingToolkitController.Instance.TriggerImpactPulse()` on transitions.
 * **Game Launch Boot Dissolve-In**:
   * On initial boot, starts at `_DissolveProgress = 1.0f` (solid black overlay) and waits **2 settling frames** behind the curtain for cameras, skybox, and post-processing to initialize.
@@ -131,7 +131,7 @@ The game is structured into a clean 3-scene flow configured in `EditorBuildSetti
 * **Live 3D Simulation Background**: Space skybox, `BlackHoleSystem` at `(0,0,0)`, and pre-warmed `ScrapSpawner` (40 debris items orbiting and spiraling inward).
 * **Cinematic Orbit Camera**: [`MenuCameraOrbit.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/UI/MenuCameraOrbit.cs) orbiting the singularity at radius `32f` and speed `4.0 deg/s`.
 * **Menu Canvas (`MainMenuUIController.cs`)**:
-  * Game Title: `"ORBITAL PANOPTICON"` / Subtitle: `"SURVEILLANCE SECTOR #042"`.
+  * Game Title: **`"ANGULAR MOMENTUM"`** (subtitle clutter cleared and deactivated).
   * 4 Navigation Buttons:
     1. **`[НАЧАТЬ ИГРУ]`**: Calls `SceneTransitionManager.Instance.TransitionToScene("GameplayScene")`.
     2. **`[НАСТРОЙКИ]`**: Opens collapsible Settings sub-panel for Master Volume (`AudioListener.volume`) and Mouse Sensitivity saved to `PlayerPrefs`.
@@ -780,6 +780,73 @@ Located at [`Assets/_Project/Scripts/Editor/AssetAutoIntegrationPipeline.cs`](fi
     - `[ НАЧАТЬ ИГРУ ]` (`StartGameFromTutorial()`, visible on Slide 4 with green/gold accent styling).
 - **Game Start Transition**:
   - Closes modal with unscaled DOTween fade (`0.35s`), restores `Time.timeScale = 1f`, locks cursor (`Cursor.lockState = CursorLockMode.Locked`), and automatically triggers [`UIManager.Instance.ConnectOperator()`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/UIManager.cs) to initialize drone flight.
+
+### 5.16 One-Click Scrap Asset Catalog & Automatic Component Wrapper
+
+#### 1. Drag-and-Drop Catalog Asset ([`ScrapAssetCatalogSO.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Gameplay/ScrapAssetCatalogSO.cs))
+- **Asset Location**: [`Assets/_Project/ScriptableObjects/ScrapAssetCatalog.asset`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/ScriptableObjects/ScrapAssetCatalog.asset)
+- **Zero Friction Workflow**:
+  - Artists/designers drag any 3D FBX or model prefab with assigned materials directly into `customScrapAssets`.
+  - Select its **Tier** (`1` to `4` via inspector slider) and optional `customScaleMultiplier`.
+  - No need to manually add `Rigidbody`, `GravityBody`, `ScrapItem`, colliders, or VFX components to art files.
+- **Reliable Fallback Pipeline**:
+  - Stores dedicated references to 4 default primitive prefabs (`Scrap_Tier1_Bolt.prefab`, `Scrap_Tier2_Satellite.prefab`, `Scrap_Tier3_Fridge.prefab`, `Scrap_Tier4_Anomaly.prefab`).
+  - If no custom models are defined for a given tier, the simulation automatically falls back to the default primitive without errors.
+
+#### 2. Automatic Runtime Physics & Shader Wrapper (`ConfigureScrapInstance`)
+- **Physics Root Assembly**:
+  - Automatically builds a clean root GameObject with `Rigidbody` (`useGravity = false`, `continuous` collision detection, `interpolate`) and `GravityBody`.
+  - Creates a dedicated `VisualRoot` child and instantiates the artist's model inside.
+  - Strips any conflicting static colliders embedded in child 3D geometry.
+  - Calculates combined 3D `Renderer.bounds`, auto-normalizes import scale disparity (preventing microscopic or giant FBXs), and fits a smooth `SphereCollider` perfectly centered on the model.
+- **Automatic Molten Lava Shader & Particle Setup**:
+  - Automatically caches the artist's original PBR materials across all child `MeshRenderer` instances as `_cachedDefaultMaterials`.
+  - **Normal Scrap (`isValuableScrap == false`)**: Renders with the artist's original PBR materials and textures.
+  - **Valuable Magma Scrap (`isValuableScrap == true`)**: Instantly swaps all child renderers to [`M_ValuableLavaLoot.mat`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/Materials/M_ValuableLavaLoot.mat) with pulsing noise vertex displacement and activates [`VFX_ValuableLavaEmbers.prefab`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/Prefabs/VFX_ValuableLavaEmbers.prefab) ribbon particle trails.
+  - **Accretion Vortex Wake**: Automatically equips [`TrailRenderer`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Gameplay/ScrapItem.cs) with HDR plasma wake trails when launched or entering the accretion vortex.
+
+#### 3. Simulation & Spawner Integration ([`ScrapSimulationManager.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Gameplay/ScrapSimulationManager.cs))
+- `ScrapSimulationManager.cs` references `ScrapAssetCatalogSO` to pre-warm the pool and spawn orbital debris dynamically across unlocked tiers.
+- If custom models are present for a tier, one is picked randomly; otherwise the default placeholder is spawned.
+
+### 5.17 Player Death Scrap Penalty, Overloaded Broken Overseer Eyes & Sweeping Red Laser Hazard
+
+#### 1. Configurable Scrap Coin Penalty on Player Death
+- **Game Balance Config**:
+  - `deathScrapCoinPenalty = 40` (declared in `GameBalanceConfig.cs`, tunable in Inspector via `GameBalanceConfig.asset`).
+- **Economy Integration ([`QuotaAndScoreManager.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/QuotaAndScoreManager.cs))**:
+  - `ApplyPlayerDeathPenalty()` safely deducts `deathScrapCoinPenalty` from `scrapCoins` (`scrapCoins = Mathf.Max(0, scrapCoins - penalty)`), guaranteeing coins never drop below zero.
+  - Calls `UIManager.Instance.TriggerScrapCoinsLossPunch()` to flash the HUD Scrap Coins badge and text red with a juicy DOTween punch scale.
+- **Unified Death Bottleneck ([`ArenaBoundaryManager.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Gameplay/ArenaBoundaryManager.cs))**:
+  - Hooked directly inside `HandlePlayerDeath()`, guaranteeing the deduction is consistently applied across **all** causes of player death:
+    1. Falling past the Event Horizon into the central Black Hole (`OnPlayerConsumedByBlackHole`).
+    2. Flying past the 50m arena boundary threshold (`TriggerSignalLoss`).
+    3. Sustaining 3 hits from containment beams or sweeping red plasma lasers (`OnPlayerHitByBeam`).
+
+#### 2. Overloaded Broken Corporate Overseer Eyes & Sweeping Red Laser Hazard
+- **Continuous Overloaded Orbit**:
+  - When a Stage target is met and `OverseerContainmentEye.BreakContainmentLock()` shatters an Eye's lock, the Eye does **not** stop moving.
+  - It accelerates its orbit around the Black Hole: `brokenEyeOrbitSpeedMultiplier = 1.45f` (e.g. accelerating from `3.5 deg/s` to `~5.075 deg/s`).
+- **Periodic Diameter Sweep Pattern**:
+  - Each broken Eye maintains an internal sweep timer (`_redLaserTimer`) counting to `redLaserSweepInterval = 30.0s`.
+  - Staggered by `(eyeIndex * 7.5f) % 30f` so multiple broken Eyes do not fire at the exact same moment.
+  - Sweep axis is randomly selected between horizontal (orbit Up axis) or vertical (orbit Right axis) across `[-55°, +55°]`.
+- **Telegraph Warning Phase (`redLaserTelegraphDuration = 2.0s`)**:
+  - Pupil point light and emissive core pulse intense warning crimson (`[HDR] Color(6.0, 0.1, 0.15, 1.0)`).
+  - Displays a thin, faint warning beam (`startWidth = 0.25f`, `alpha = 0.35`) pointing along the sweep starting angle across the entire arena diameter (`160m`).
+- **Active Plasma Sweep Phase (`redLaserSweepDuration = 6.5s`)**:
+  - Expands beam width to `1.4m` with high opacity and initiates smooth diameter rotation across `110°` (`[-55°, +55°]`).
+  - Triggers subtle continuous camera shudder via [`CameraShakeController.Instance.TriggerContinuousRumble(0.08f)`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Player/CameraShakeController.cs).
+  - 3D line segment distance check detects if the player drone enters within `redLaserHitRadius = 2.0m`:
+    - Delivers a gentle repulsive impulse away from the beam.
+    - Counts toward the 3-hit drone destruction limit, triggering signal loss and the death scrap penalty if 3 hits are reached.
+- **Custom Plasma Laser Shader & Material**:
+  - [`S_RedSweepingLaser.shader`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/Materials/S_RedSweepingLaser.shader): Unlit additive HLSL shader with scorching white-hot core, dynamic scrolling sinusoidal plasma waves along UV.x, and bloom-inducing fiery red outer halo.
+  - [`M_RedSweepingLaser.mat`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/Materials/M_RedSweepingLaser.mat): Fully configured material asset with HDR emission colors.
+
+#### 3. Narrative Comms Toggle
+- Added `enableNarrativeComms = false` toggle in `GameBalanceConfig.cs` and `GameBalanceConfig.asset`.
+- When set to `false`, [`NarrativeCommsUI.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/NarrativeCommsUI.cs) immediately suppresses all Star Fox radio dialogue popups, ensuring a clean, distraction-free cockpit experience.
 
 ---
 

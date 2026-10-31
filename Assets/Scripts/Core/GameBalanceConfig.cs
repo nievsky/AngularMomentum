@@ -36,6 +36,9 @@ namespace OrbitalPanopticon.Core
         [Range(0.1f, 2.0f)]
         public float globalSimulationSpeed = 0.5f;
 
+        [Tooltip("Whether Narrative Comms (in-game transmission popups) are enabled.")]
+        public bool enableNarrativeComms = false;
+
         // =========================================================================
         // 1. Black Hole & Two-Zone Physics
         // =========================================================================
@@ -95,6 +98,15 @@ namespace OrbitalPanopticon.Core
         [Range(0.1f, 2.0f)]
         public float playerGravityMultiplier = 0.65f;
 
+        [Header("Spaghettification & Consumption")]
+        [Tooltip("Mild, believable elongation along the fall vector during spaghettification.")]
+        [Range(1.0f, 3.0f)]
+        public float spaghettifyStretchMultiplier = 1.65f;
+
+        [Tooltip("Gentle narrowing multiplier on perpendicular axes during spaghettification.")]
+        [Range(0.1f, 1.0f)]
+        public float spaghettifyThinnessMultiplier = 0.55f;
+
         // Legacy / Compatibility fields
         [HideInInspector] public float gravityConstantG = 1200f;
         [HideInInspector] public float minGravityDistance = 4.5f;
@@ -106,6 +118,10 @@ namespace OrbitalPanopticon.Core
         // 2. Drone Inertia & Movement (Outer Wilds Feel)
         // =========================================================================
         [Header("2. Drone Inertia & Movement (Outer Wilds Feel)")]
+        [Header("Death Scrap Penalty")]
+        [Tooltip("Flat amount of Scrap Coins lost on death (never drops below 0).")]
+        public int deathScrapCoinPenalty = 40;
+
         [Tooltip("Mouse look sensitivity for FPV pitch and yaw control.")]
         [Range(0.2f, 5.0f)]
         public float mouseSensitivity = 1.8f;
@@ -368,6 +384,25 @@ namespace OrbitalPanopticon.Core
             new Vector3(0.1f, 1f, -0.35f),
             new Vector3(-0.25f, 1f, -0.2f)
         };
+
+        [Header("Overloaded Broken Overseer Eye Patrol & Red Laser")]
+        [Tooltip("Moves faster along its orbit after breaking containment lock.")]
+        public float brokenEyeOrbitSpeedMultiplier = 1.45f;
+
+        [Tooltip("Seconds between red laser sweep attacks per broken Eye.")]
+        public float redLaserSweepInterval = 30.0f;
+
+        [Tooltip("Warning charge-up glow before the sweeping red laser starts.")]
+        public float redLaserTelegraphDuration = 2.0f;
+
+        [Tooltip("Duration of the sweeping red laser attack across the sphere diameter.")]
+        public float redLaserSweepDuration = 6.5f;
+
+        [Tooltip("Collision/hit radius around the sweeping red laser line.")]
+        public float redLaserHitRadius = 2.0f;
+
+        [Tooltip("Continuous subtle camera rumble intensity while the sweeping red laser is firing.")]
+        public float redLaserCameraShakeIntensity = 0.08f;
 
         // Compatibility accessors
         public float maxBlackHoleMass => (stageMassTargets != null && stageMassTargets.Length > 0) ? stageMassTargets[stageMassTargets.Length - 1] : 120000f;

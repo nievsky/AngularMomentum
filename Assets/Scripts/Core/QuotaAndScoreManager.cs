@@ -84,6 +84,29 @@ namespace OrbitalPanopticon.Core
             }
         }
 
+        /// <summary>
+        /// Deducts configurable death penalty from player's Scrap Coins upon death (never drops below 0),
+        /// updating UI and triggering a red punch animation.
+        /// </summary>
+        public void ApplyPlayerDeathPenalty()
+        {
+            GameBalanceConfig config = GameManager.GameBalanceConfigInstance ?? GameBalanceConfig.Instance;
+            int penalty = config != null ? config.deathScrapCoinPenalty : 40;
+            if (penalty > 0)
+            {
+                int prevCoins = scrapCoins;
+                scrapCoins = Mathf.Max(0, scrapCoins - penalty);
+                OnScoreAdded?.Invoke(0f, scrapCoins);
+
+                if (UIManager.Instance != null)
+                {
+                    UIManager.Instance.TriggerScrapCoinsLossPunch();
+                }
+
+                Debug.Log($"<color=#FF3344>[DEATH PENALTY] Player lost {prevCoins - scrapCoins} Scrap Coins. Remaining: {scrapCoins}</color>");
+            }
+        }
+
         private void Awake()
         {
             if (Instance != null && Instance != this)

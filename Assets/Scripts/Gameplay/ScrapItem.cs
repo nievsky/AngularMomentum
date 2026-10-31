@@ -106,6 +106,14 @@ namespace OrbitalPanopticon.Gameplay
             set => valuableEmbersPrefab = value;
         }
 
+        [Header("Visual Scale Cache")]
+        [SerializeField] private Vector3 initialVisualScale = Vector3.one;
+        public Vector3 InitialVisualScale
+        {
+            get => initialVisualScale;
+            set => initialVisualScale = value;
+        }
+
         private float _fadeDuration = 1.8f;
         private float _fadeElapsed = 0f;
         private float _currentAlpha = 1f;
@@ -224,11 +232,46 @@ namespace OrbitalPanopticon.Gameplay
 
         public float TotalValue => BaseValue * orbitalBonusMultiplier;
 
+        public float BaseMass => scrapData != null ? scrapData.Mass : 1f;
+
+        public void SetMassForManipulation(bool isManipulated)
+        {
+            var r = Rigidbody;
+            if (r != null)
+            {
+                r.mass = isManipulated ? 0.01f : BaseMass;
+            }
+        }
+
+        public void IgnorePlayerCollision()
+        {
+            var drone = OrbitalPanopticon.Player.DroneController.Instance;
+            if (drone == null)
+            {
+                var playerObj = GameObject.FindWithTag("Player") ?? GameObject.Find("PlayerDrone");
+                if (playerObj != null) drone = playerObj.GetComponent<OrbitalPanopticon.Player.DroneController>();
+            }
+            if (drone != null)
+            {
+                Collider[] playerCols = drone.GetComponentsInChildren<Collider>(true);
+                Collider[] scrapCols = GetComponentsInChildren<Collider>(true);
+                for (int p = 0; p < playerCols.Length; p++)
+                {
+                    if (playerCols[p] == null) continue;
+                    for (int s = 0; s < scrapCols.Length; s++)
+                    {
+                        if (scrapCols[s] == null) continue;
+                        UnityEngine.Physics.IgnoreCollision(scrapCols[s], playerCols[p], true);
+                    }
+                }
+            }
+        }
+
         public float Mass
         {
             get
             {
-                float m = scrapData != null ? scrapData.Mass : (rb != null ? rb.mass : 1f);
+                float m = scrapData != null ? scrapData.Mass : (rb != null && rb.mass > 0.05f ? rb.mass : 1f);
                 if (isValuableScrap)
                 {
                     var cfg = OrbitalPanopticon.Core.GameManager.GameBalanceConfigInstance;
@@ -239,8 +282,8 @@ namespace OrbitalPanopticon.Gameplay
         }
 
         public bool IsInAccretionZone => isInAccretionZone;
-        public Rigidbody Rigidbody => rb;
-        public GravityBody GravityBody => gravityBody;
+        public Rigidbody Rigidbody => rb != null ? rb : (rb = GetComponent<Rigidbody>());
+        public GravityBody GravityBody => gravityBody != null ? gravityBody : (gravityBody = GetComponent<GravityBody>());
 
         private void CacheOriginalMaterials()
         {
@@ -295,6 +338,19 @@ namespace OrbitalPanopticon.Gameplay
                         if (_cachedRenderers[i] != null)
                         {
                             _cachedRenderers[i].sharedMaterial = valuableLavaMaterial;
+
+                            if (_cachedDefaultMaterials != null && i < _cachedDefaultMaterials.Length && _cachedDefaultMaterials[i] != null)
+                            {
+                                Texture origTex = _cachedDefaultMaterials[i].HasProperty("_BaseMap") ? _cachedDefaultMaterials[i].GetTexture("_BaseMap") : (_cachedDefaultMaterials[i].HasProperty("_MainTex") ? _cachedDefaultMaterials[i].GetTexture("_MainTex") : null);
+                                if (origTex != null)
+                                {
+                                    MaterialPropertyBlock mpb = new MaterialPropertyBlock();
+                                    _cachedRenderers[i].GetPropertyBlock(mpb);
+                                    mpb.SetTexture("_BaseMap", origTex);
+                                    mpb.SetTexture("_MainTex", origTex);
+                                    _cachedRenderers[i].SetPropertyBlock(mpb);
+                                }
+                            }
                         }
                     }
                 }
@@ -388,11 +444,11 @@ namespace OrbitalPanopticon.Gameplay
             lr.endWidth = 0.05f;
 
 #if UNITY_EDITOR
-            lr.material = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Materials/M_ValuableScrapGlow.mat");
+            lr.sharedMaterial = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Materials/M_ValuableScrapGlow.mat");
 #endif
-            if (lr.material == null)
+            if (lr.sharedMaterial == null)
             {
-                lr.material = Resources.Load<Material>("M_ValuableScrapGlow");
+                lr.sharedMaterial = Resources.Load<Material>("M_ValuableScrapGlow");
             }
 
             float radius = 1.35f;
@@ -415,6 +471,12 @@ namespace OrbitalPanopticon.Gameplay
                 mainRenderer = visualRoot.GetComponentInChildren<Renderer>();
             }
 
+            if (visualRoot != null && initialVisualScale == Vector3.one && visualRoot.localScale != Vector3.one)
+            {
+                initialVisualScale = visualRoot.localScale;
+            }
+
+            IgnorePlayerCollision();
             CacheOriginalMaterials();
 
             _propertyBlock = new MaterialPropertyBlock();
@@ -427,6 +489,11 @@ namespace OrbitalPanopticon.Gameplay
             {
                 UpdateGravityForState();
             }
+        }
+
+        private void Start()
+        {
+            IgnorePlayerCollision();
         }
 
         /// <summary>
@@ -813,11 +880,12 @@ namespace OrbitalPanopticon.Gameplay
             {
                 visualRoot.localPosition = Vector3.zero;
                 visualRoot.localRotation = Quaternion.identity;
-                if (scrapData != null)
-                {
-                    visualRoot.localScale = scrapData.BaseScale;
-                }
+                visualRoot.localScale = (initialVisualScale != Vector3.zero) ? initialVisualScale : (scrapData != null ? scrapData.BaseScale : Vector3.one);
             }
+
+            transform.rotation = Quaternion.identity;
+            SetMassForManipulation(false);
+            IgnorePlayerCollision();
 
             ResetVisualHeat();
             UpdateGravityForState();
@@ -841,7 +909,11 @@ namespace OrbitalPanopticon.Gameplay
 
             if (visualRoot != null)
             {
-                visualRoot.localScale = scrapData.BaseScale;
+                if (initialVisualScale == Vector3.one && scrapData.BaseScale != Vector3.one)
+                {
+                    initialVisualScale = scrapData.BaseScale;
+                }
+                visualRoot.localScale = initialVisualScale;
             }
 
             UpdateGravityForState();
@@ -851,6 +923,15 @@ namespace OrbitalPanopticon.Gameplay
         {
             currentState = newState;
             UpdateGravityForState();
+
+            if (currentState == ScrapState.Held)
+            {
+                SetMassForManipulation(true);
+            }
+            else if (currentState == ScrapState.Floating || currentState == ScrapState.Launched)
+            {
+                SetMassForManipulation(false);
+            }
 
             if (currentState == ScrapState.Held || currentState == ScrapState.Launched)
             {

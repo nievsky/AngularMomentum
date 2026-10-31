@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: GameBalanceConfig
   m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GameBalanceConfig
   globalSimulationSpeed: 0.5
+  enableNarrativeComms: 0
   clockwiseOrbit: 1
   accretionThresholdRadius: 9.25
   eventHorizonRadius: 1
@@ -27,11 +28,14 @@ MonoBehaviour:
   verticalFlattenStrength: 6
   gravityWellRadius: 45
   playerGravityMultiplier: 0.65
+  spaghettifyStretchMultiplier: 1.65
+  spaghettifyThinnessMultiplier: 0.55
   gravityConstantG: 1200
   minGravityDistance: 4.5
   orbitalGuidanceStrength: 2.5
   inwardSpiralDecay: 0.85
   maxSafeVelocity: 45
+  deathScrapCoinPenalty: 40
   mouseSensitivity: 1.8
   baseThrusterAcceleration: 7.5
   verticalThrusterAcceleration: 6
@@ -116,6 +120,12 @@ MonoBehaviour:
   - {x: -0.3, y: 1, z: 0.2}
   - {x: 0.1, y: 1, z: -0.35}
   - {x: -0.25, y: 1, z: -0.2}
+  brokenEyeOrbitSpeedMultiplier: 1.45
+  redLaserSweepInterval: 30
+  redLaserTelegraphDuration: 2
+  redLaserSweepDuration: 6.5
+  redLaserHitRadius: 2
+  redLaserCameraShakeIntensity: 0.08
   quotasToTriggerFinale: 8
   blackHoleScalePerQuota: 0.35
   playerWowOverdriveDuration: 6

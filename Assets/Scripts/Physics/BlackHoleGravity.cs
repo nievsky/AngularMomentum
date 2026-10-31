@@ -412,7 +412,6 @@ namespace OrbitalPanopticon.Physics
 
             Vector3 center = centerPoint != null ? centerPoint.position : transform.position;
             Vector3 startPos = body.transform.position;
-            Vector3 targetScale = new Vector3(0.2f, 0.2f, 4.5f);
 
             // Disable physical colliders
             Collider[] colliders = body.GetComponentsInChildren<Collider>();
@@ -429,12 +428,26 @@ namespace OrbitalPanopticon.Physics
                 body.Rigidbody.isKinematic = true;
             }
 
-            // Find visual root for scaling
+            // Find visual root for scaling and initial visual scale
             Transform visualTransform = body.transform.Find("VisualRoot");
             if (visualTransform == null) visualTransform = body.transform;
-            Vector3 startScale = visualTransform.localScale;
 
-            const float duration = 0.35f;
+            ScrapItem scrap = body.GetComponent<ScrapItem>();
+            Vector3 initialVisualScale = (scrap != null && scrap.InitialVisualScale != Vector3.zero)
+                ? scrap.InitialVisualScale
+                : visualTransform.localScale;
+
+            GameBalanceConfig config = GameManager.GameBalanceConfigInstance ?? GameBalanceConfig.Instance;
+            float stretchMult = config != null ? config.spaghettifyStretchMultiplier : 1.65f;
+            float thinnessMult = config != null ? config.spaghettifyThinnessMultiplier : 0.55f;
+
+            Vector3 targetScale = new Vector3(
+                initialVisualScale.x * thinnessMult,
+                initialVisualScale.y * thinnessMult,
+                initialVisualScale.z * stretchMult
+            );
+
+            const float duration = 0.32f;
             float elapsed = 0f;
 
             while (elapsed < duration && body != null)
@@ -443,19 +456,32 @@ namespace OrbitalPanopticon.Physics
                 float t = Mathf.Clamp01(elapsed / duration);
 
                 // Smooth inward pull
-                body.transform.position = Vector3.Lerp(startPos, center, t);
+                body.transform.position = Vector3.Lerp(startPos, center, Mathf.SmoothStep(0f, 1f, t));
 
-                // Look toward black hole singularity
+                // Continuously compute direction straight toward Black Hole center
                 Vector3 toHole = center - body.transform.position;
-                if (toHole.sqrMagnitude > 0.001f)
+                if (toHole.sqrMagnitude > 0.0001f)
                 {
-                    body.transform.rotation = Quaternion.LookRotation(toHole.normalized);
+                    Vector3 dirToHole = toHole.normalized;
+                    body.transform.rotation = Quaternion.Slerp(
+                        body.transform.rotation,
+                        Quaternion.LookRotation(dirToHole),
+                        Mathf.Clamp01(t * 15f * Time.deltaTime + 0.05f)
+                    );
                 }
 
-                // Spaghettification stretch
-                visualTransform.localScale = Vector3.Lerp(startScale, targetScale, t);
+                // Interpolate visualRoot.localScale relative to initialVisualScale
+                Vector3 currentStretchedScale = Vector3.Lerp(initialVisualScale, targetScale, Mathf.SmoothStep(0f, 1f, t));
+                if (elapsed >= (duration - 0.08f))
+                {
+                    float fadeT = Mathf.Clamp01((elapsed - (duration - 0.08f)) / 0.08f);
+                    visualTransform.localScale = Vector3.Lerp(currentStretchedScale, Vector3.zero, fadeT);
+                }
+                else
+                {
+                    visualTransform.localScale = currentStretchedScale;
+                }
 
-                ScrapItem scrap = body.GetComponent<ScrapItem>();
                 if (scrap != null)
                 {
                     scrap.TriggerSpaghettifyBurst(t);
@@ -480,7 +506,6 @@ namespace OrbitalPanopticon.Physics
                 _trackedBodies.Remove(body);
                 _consumingBodies.Remove(body);
 
-                ScrapItem scrap = body.GetComponent<ScrapItem>();
                 if (scrap != null && ScrapSimulationManager.Instance != null)
                 {
                     ScrapSimulationManager.Instance.ReturnToPool(scrap);

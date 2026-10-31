@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: GameBalanceConfig
   m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GameBalanceConfig
   globalSimulationSpeed: 0.5
+  enableNarrativeComms: 0
   clockwiseOrbit: 1
   accretionThresholdRadius: 15
   eventHorizonRadius: 3.5
@@ -27,11 +28,14 @@ MonoBehaviour:
   verticalFlattenStrength: 6
   gravityWellRadius: 45
   playerGravityMultiplier: 0.65
+  spaghettifyStretchMultiplier: 1.65
+  spaghettifyThinnessMultiplier: 0.55
   gravityConstantG: 1200
   minGravityDistance: 4.5
   orbitalGuidanceStrength: 2.5
   inwardSpiralDecay: 0.85
   maxSafeVelocity: 45
+  deathScrapCoinPenalty: 100
   mouseSensitivity: 1.8
   baseThrusterAcceleration: 7.5
   verticalThrusterAcceleration: 6
@@ -71,6 +75,7 @@ MonoBehaviour:
   cameraSpotRadiusAtTarget: 2.5
   overseerOrbitSpeed: 2
   overseerTrackingSpeed: 1.5
+  overseerIdleInterval: 10
   baseQuotaTarget: 500
   quotaGrowthMultiplier: 1.75
   heatDecayDelay: 4.5
@@ -115,6 +120,12 @@ MonoBehaviour:
   - {x: -0.3, y: 1, z: 0.2}
   - {x: 0.1, y: 1, z: -0.35}
   - {x: -0.25, y: 1, z: -0.2}
+  brokenEyeOrbitSpeedMultiplier: 1.45
+  redLaserSweepInterval: 30
+  redLaserTelegraphDuration: 2
+  redLaserSweepDuration: 6.5
+  redLaserHitRadius: 2
+  redLaserCameraShakeIntensity: 0.08
   quotasToTriggerFinale: 8
   blackHoleScalePerQuota: 0.35
   playerWowOverdriveDuration: 6
@@ -128,4 +139,10 @@ MonoBehaviour:
   - CONTAINMENT LOCK EYE-02
   - CONTAINMENT LOCK EYE-03
   - CONTAINMENT LOCK EYE-04
+  beamKnockbackImpulse: 4.5
   enableDebugShortcuts: 1
+  vfxPullBeamAsset: {fileID: 0}
+  vfxPuntShockwaveAsset: {fileID: 0}
+  vfxSpaghettifyVortexAsset: {fileID: 0}
+  vfxValuableLootAuraAsset: {fileID: 0}
+  vfxDashThrusterAsset: {fileID: 0}

@@ -270,17 +270,23 @@ namespace OrbitalPanopticon.Player
                 mainCamera.transform.localRotation = Quaternion.Euler(currentPitch, 0f, 0f);
             }
 
-            LockCursor();
+            if (!OrbitalPanopticon.Core.TutorialSlideshowUI.IsTutorialOpen)
+            {
+                LockCursor();
+            }
         }
 
         private void OnEnable()
         {
-            LockCursor();
+            if (!OrbitalPanopticon.Core.TutorialSlideshowUI.IsTutorialOpen)
+            {
+                LockCursor();
+            }
         }
 
         private void OnApplicationFocus(bool hasFocus)
         {
-            if (hasFocus && isControlEnabled)
+            if (hasFocus && isControlEnabled && !OrbitalPanopticon.Core.TutorialSlideshowUI.IsTutorialOpen)
             {
                 LockCursor();
             }
@@ -288,6 +294,7 @@ namespace OrbitalPanopticon.Player
 
         private void LockCursor()
         {
+            if (OrbitalPanopticon.Core.TutorialSlideshowUI.IsTutorialOpen) return;
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }

@@ -155,51 +155,59 @@ Shader "UI/ScreenDissolve"
                 noiseUV.x *= aspect;
 
                 float n = fbm(noiseUV * max(1.0, _NoiseScale));
-
                 float edge = max(0.005, _DissolveEdgeWidth);
-                float softGlow = max(edge, _SoftGlowWidth);
 
-                // Black solid fill behind the burning front
-                float fill = smoothstep(n - 0.01, n + 0.01, progress);
+                // 1. Dissolved region: 100% solid pitch-black
+                if (n < progress)
+                {
+                    #ifdef UNITY_UI_CLIP_RECT
+                    float clipVal = UnityGet2DClipping(IN.worldPosition.xy, _ClipRect);
+                    return fixed4(0, 0, 0, clipVal);
+                    #else
+                    return fixed4(0, 0, 0, 1);
+                    #endif
+                }
 
-                // Distance to burn front (positive = ahead into transparent area, negative = behind in black fill)
-                float dist = n - progress;
-                float coreDist = abs(dist);
+                // 2. Undissolved region: 100% transparent
+                if (n > progress + edge)
+                {
+                    return fixed4(0, 0, 0, 0);
+                }
 
-                // 1. Inner Scorching Core (bright white-yellow HDR: 8.0, 4.5, 1.0)
-                float coreFactor = saturate(1.0 - (coreDist / (edge * 0.45)));
-                coreFactor = pow(coreFactor, 2.5);
+                // 3. Fiery Orange Border: strictly along [progress, progress + edge]
+                float t = saturate((n - progress) / edge); // 0 at inner edge (next to black), 1 at outer edge
 
-                // 2. Fiery Orange-Red Outer Flame (4.5, 0.9, 0.05)
-                float flameFactor = saturate(1.0 - (coreDist / edge));
-                flameFactor = pow(flameFactor, 1.8);
+                // Bright white-yellow inner core (#FFF0A0)
+                float3 coreColor = _EdgeCoreColor.rgb;
+                // Blazing orange-red outer flame (#FF4500)
+                float3 outerColor = _EdgeOuterColor.rgb;
+                // Deep ember red for outer fringe
+                float3 emberRed = float3(0.75, 0.1, 0.02);
 
-                // 3. Wide Soft Heat Halo (blooming ambient glow expanding ahead of burn)
-                float haloDist = max(0.0, dist);
-                float haloFactor = saturate(1.0 - (haloDist / softGlow));
-                haloFactor = pow(haloFactor, 2.8) * 0.65;
+                float3 fireRgb;
+                if (t < 0.28)
+                {
+                    fireRgb = lerp(coreColor, outerColor, t / 0.28);
+                }
+                else
+                {
+                    fireRgb = lerp(outerColor, emberRed, (t - 0.28) / 0.72);
+                }
 
-                // Combine multi-layer fiery gradient
-                float3 coreCol = _EdgeCoreColor.rgb * coreFactor;
-                float3 flameCol = _EdgeOuterColor.rgb * flameFactor;
-                float3 haloCol = _EdgeOuterColor.rgb * haloFactor;
-
-                float3 fireRgb = coreCol + flameCol + haloCol;
-                float fireAlpha = saturate(flameFactor + haloFactor + coreFactor);
-
-                // Burnt area is pitch black, with fiery edge overlaid
-                float3 finalRgb = fireRgb;
-                float finalAlpha = saturate(fill + fireAlpha);
+                // Soft alpha falloff as it meets the undissolved world
+                // At t = 0 (meeting black fill), alpha is solid 1.0
+                // At t = 1 (outer edge), alpha falls smoothly to 0.0
+                float fireAlpha = saturate(1.0 - pow(t, 1.4));
 
                 #ifdef UNITY_UI_CLIP_RECT
-                finalAlpha *= UnityGet2DClipping(IN.worldPosition.xy, _ClipRect);
+                fireAlpha *= UnityGet2DClipping(IN.worldPosition.xy, _ClipRect);
                 #endif
 
                 #ifdef UNITY_UI_ALPHACLIP
-                clip(finalAlpha - 0.001);
+                clip(fireAlpha - 0.001);
                 #endif
 
-                return fixed4(finalRgb, finalAlpha);
+                return fixed4(fireRgb, fireAlpha);
             }
             ENDCG
         }

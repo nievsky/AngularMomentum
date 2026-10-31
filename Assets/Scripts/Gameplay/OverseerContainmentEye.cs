@@ -32,6 +32,13 @@ namespace OrbitalPanopticon.Gameplay
         [SerializeField] private bool isLockBroken = false;
         public bool isConsumedOrCollapsing = false;
 
+        [Header("Overloaded Broken Eye Red Laser")]
+        [SerializeField] private LineRenderer redSweepingLaserBeam;
+        [SerializeField] private Material redLaserMaterial;
+        private float _redLaserTimer = 0f;
+        private Coroutine _redLaserSweepCoroutine;
+        private bool _isSweepingLaserActive = false;
+
         [Header("Idle Audio Settings")]
         [Tooltip("Periodicity slider in seconds between Overseer Idle sounds across active eyes. Default: 10s (rare).")]
         [Range(2f, 60f)]
@@ -95,6 +102,19 @@ namespace OrbitalPanopticon.Gameplay
             }
         }
 
+        private static void SafeDestroy(UnityEngine.Object obj)
+        {
+            if (obj == null) return;
+#if UNITY_EDITOR
+            if (!Application.isPlaying)
+                DestroyImmediate(obj);
+            else
+                Destroy(obj);
+#else
+            Destroy(obj);
+#endif
+        }
+
         private void Awake()
         {
             if (visualRoot == null) visualRoot = transform.Find("VisualRoot");
@@ -104,13 +124,13 @@ namespace OrbitalPanopticon.Gameplay
             var colliders = GetComponentsInChildren<Collider>(true);
             foreach (var col in colliders)
             {
-                Destroy(col);
+                SafeDestroy(col);
             }
 
             var canvas = GetComponentInChildren<Canvas>(true);
             if (canvas != null)
             {
-                Destroy(canvas.gameObject);
+                SafeDestroy(canvas.gameObject);
             }
 
             if (pupilLight == null) pupilLight = GetComponentInChildren<Light>(true);
@@ -124,6 +144,7 @@ namespace OrbitalPanopticon.Gameplay
             _renderers = visualRoot.GetComponentsInChildren<Renderer>(true);
 
             SetupContainmentBeam();
+            SetupRedSweepingLaser();
         }
 
         private void OnEnable()
@@ -138,6 +159,16 @@ namespace OrbitalPanopticon.Gameplay
 
         private void OnDisable()
         {
+            if (_redLaserSweepCoroutine != null)
+            {
+                StopCoroutine(_redLaserSweepCoroutine);
+                _redLaserSweepCoroutine = null;
+            }
+            if (redSweepingLaserBeam != null)
+            {
+                redSweepingLaserBeam.enabled = false;
+            }
+
             _activeEyes.Remove(this);
             if (_coroutineRunner == this)
             {
@@ -153,6 +184,16 @@ namespace OrbitalPanopticon.Gameplay
 
         private void OnDestroy()
         {
+            if (_redLaserSweepCoroutine != null)
+            {
+                StopCoroutine(_redLaserSweepCoroutine);
+                _redLaserSweepCoroutine = null;
+            }
+            if (redSweepingLaserBeam != null)
+            {
+                redSweepingLaserBeam.enabled = false;
+            }
+
             _activeEyes.Remove(this);
             if (_coroutineRunner == this)
             {
@@ -268,6 +309,8 @@ namespace OrbitalPanopticon.Gameplay
             FindSceneReferences();
             ConfigureOrbitGeometry();
             ApplyVisualScale();
+            SetupRedSweepingLaser();
+            _redLaserTimer = (eyeIndex * 7.5f) % 30f;
         }
 
         public void InitializeEye(int index)
@@ -275,7 +318,9 @@ namespace OrbitalPanopticon.Gameplay
             eyeIndex = index;
             ConfigureOrbitGeometry();
             SetupContainmentBeam();
+            SetupRedSweepingLaser();
             ApplyVisualScale();
+            _redLaserTimer = (eyeIndex * 7.5f) % 30f;
         }
 
         private void FindSceneReferences()
@@ -330,7 +375,7 @@ namespace OrbitalPanopticon.Gameplay
 
             // Beam is strictly visual: ensure NO collider or physics trigger exists
             var existingCol = containmentBeam.GetComponent<Collider>();
-            if (existingCol != null) Destroy(existingCol);
+            if (existingCol != null) SafeDestroy(existingCol);
 
             containmentBeam.positionCount = 2;
             containmentBeam.startWidth = beamStartWidth;
@@ -361,15 +406,71 @@ namespace OrbitalPanopticon.Gameplay
             containmentBeam.enabled = !isLockBroken;
         }
 
+        public void SetupRedSweepingLaser()
+        {
+            if (redSweepingLaserBeam == null)
+            {
+                Transform beamT = transform.Find("RedSweepingLaserBeam");
+                if (beamT != null)
+                {
+                    redSweepingLaserBeam = beamT.GetComponent<LineRenderer>();
+                }
+            }
+
+            if (redSweepingLaserBeam == null)
+            {
+                GameObject beamGo = new GameObject("RedSweepingLaserBeam");
+                beamGo.transform.SetParent(transform, false);
+                redSweepingLaserBeam = beamGo.AddComponent<LineRenderer>();
+            }
+
+            var existingCol = redSweepingLaserBeam.GetComponent<Collider>();
+            if (existingCol != null) SafeDestroy(existingCol);
+
+            redSweepingLaserBeam.positionCount = 2;
+            redSweepingLaserBeam.startWidth = 1.4f;
+            redSweepingLaserBeam.endWidth = 1.4f;
+            redSweepingLaserBeam.useWorldSpace = true;
+            redSweepingLaserBeam.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            redSweepingLaserBeam.receiveShadows = false;
+
+            if (redLaserMaterial == null)
+            {
+#if UNITY_EDITOR
+                redLaserMaterial = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Materials/M_RedSweepingLaser.mat");
+#endif
+                if (redLaserMaterial == null) redLaserMaterial = Resources.Load<Material>("M_RedSweepingLaser");
+                if (redLaserMaterial == null)
+                {
+                    Shader s = Shader.Find("OrbitalPanopticon/RedSweepingLaser") ?? Shader.Find("Universal Render Pipeline/Unlit");
+                    redLaserMaterial = new Material(s);
+                    redLaserMaterial.name = "M_RedSweepingLaser";
+                }
+            }
+
+            redSweepingLaserBeam.sharedMaterial = redLaserMaterial;
+            redSweepingLaserBeam.enabled = false;
+        }
+
         private void Update()
         {
             // Dynamically synchronize visual scale every frame from GameBalanceConfig
             ApplyVisualScale();
 
-            if (!isConsumedOrCollapsing && !isLockBroken)
+            if (!isConsumedOrCollapsing)
             {
-                UpdateOrbitalMovement();
-                CheckBeamPlayerHazard();
+                if (!isLockBroken)
+                {
+                    UpdateOrbitalMovement(1.0f);
+                    CheckBeamPlayerHazard();
+                }
+                else
+                {
+                    GameBalanceConfig config = GameManager.GameBalanceConfigInstance;
+                    float brokenSpeedMult = config != null ? config.brokenEyeOrbitSpeedMultiplier : 1.45f;
+                    UpdateOrbitalMovement(brokenSpeedMult);
+                    UpdateOverloadedRedLaser();
+                }
             }
 
             LookTowardCenterAndPlayer();
@@ -483,7 +584,7 @@ namespace OrbitalPanopticon.Gameplay
             UpdateContainmentBeam();
         }
 
-        private void UpdateOrbitalMovement()
+        private void UpdateOrbitalMovement(float speedMultiplier = 1.0f)
         {
             GameBalanceConfig config = GameManager.GameBalanceConfigInstance;
             float orbitRadius = config != null ? config.overseerOrbitRadius : 78.0f;
@@ -491,7 +592,7 @@ namespace OrbitalPanopticon.Gameplay
             float simSpeed = config != null ? config.globalSimulationSpeed : 1.0f;
 
             // Increment orbital angle in degrees
-            _orbitAngle += angularSpeed * simSpeed * Time.deltaTime;
+            _orbitAngle += angularSpeed * speedMultiplier * simSpeed * Time.deltaTime;
 
             // Fetch orbital normal axis from config
             Vector3 normalAxis = Vector3.up;
@@ -510,6 +611,157 @@ namespace OrbitalPanopticon.Gameplay
 
             Vector3 center = centerReference != null ? centerReference.position : Vector3.zero;
             transform.position = center + (orbitDir * orbitRadius);
+        }
+
+        private void UpdateOverloadedRedLaser()
+        {
+            if (!isLockBroken || isConsumedOrCollapsing || _isSweepingLaserActive) return;
+
+            GameBalanceConfig config = GameManager.GameBalanceConfigInstance;
+            float interval = config != null ? config.redLaserSweepInterval : 30.0f;
+
+            _redLaserTimer += Time.deltaTime;
+            if (_redLaserTimer >= interval)
+            {
+                _redLaserTimer = 0f;
+                if (_redLaserSweepCoroutine != null) StopCoroutine(_redLaserSweepCoroutine);
+                _redLaserSweepCoroutine = StartCoroutine(ExecuteRedLaserDiameterSweep());
+            }
+        }
+
+        private IEnumerator ExecuteRedLaserDiameterSweep()
+        {
+            _isSweepingLaserActive = true;
+            GameBalanceConfig config = GameManager.GameBalanceConfigInstance;
+            float telegraphDuration = config != null ? config.redLaserTelegraphDuration : 2.0f;
+            float sweepDuration = config != null ? config.redLaserSweepDuration : 6.5f;
+            float hitRadius = config != null ? config.redLaserHitRadius : 2.0f;
+            float shakeIntensity = config != null ? config.redLaserCameraShakeIntensity : 0.08f;
+
+            Vector3 blackHoleCenter = centerReference != null ? centerReference.position : Vector3.zero;
+            Vector3 eyeToCenter = (blackHoleCenter - transform.position).normalized;
+
+            // 1) Choose Sweep Plane: Randomly pick Horizontal or Vertical diameter sweep
+            bool isHorizontalSweep = UnityEngine.Random.value > 0.5f;
+            Vector3 sweepAxis;
+            if (isHorizontalSweep)
+            {
+                sweepAxis = Vector3.up;
+            }
+            else
+            {
+                Vector3 rightDir = Vector3.Cross(Vector3.up, eyeToCenter).normalized;
+                sweepAxis = rightDir.sqrMagnitude > 0.001f ? rightDir : Vector3.right;
+            }
+
+            bool reverseDirection = UnityEngine.Random.value > 0.5f;
+            float startAngle = reverseDirection ? 55f : -55f;
+            float endAngle = reverseDirection ? -55f : 55f;
+
+            if (redSweepingLaserBeam == null) SetupRedSweepingLaser();
+
+            // 2) Telegraph Phase (redLaserTelegraphDuration = 2.0s):
+            // Pulse Eye's red emissive core brightly and display thin faint warning laser line along start angle
+            if (redSweepingLaserBeam != null)
+            {
+                redSweepingLaserBeam.startWidth = 0.15f;
+                redSweepingLaserBeam.endWidth = 0.15f;
+                redSweepingLaserBeam.startColor = new Color(1f, 0.15f, 0.15f, 0.35f);
+                redSweepingLaserBeam.endColor = new Color(1f, 0.15f, 0.15f, 0.35f);
+                Vector3 startSweepDir = Quaternion.AngleAxis(startAngle, sweepAxis) * eyeToCenter;
+                redSweepingLaserBeam.SetPosition(0, PupilPosition);
+                redSweepingLaserBeam.SetPosition(1, PupilPosition + (startSweepDir * 160f));
+                redSweepingLaserBeam.enabled = true;
+            }
+
+            float elapsed = 0f;
+            while (elapsed < telegraphDuration && !isConsumedOrCollapsing)
+            {
+                elapsed += Time.deltaTime;
+                float tTele = elapsed / telegraphDuration;
+
+                if (pupilLight != null)
+                {
+                    float strobe = (Mathf.Sin(elapsed * 28f) > 0f) ? 35f : 12f;
+                    pupilLight.intensity = Mathf.Lerp(16f, 42f, tTele) + strobe * 0.25f;
+                    pupilLight.color = Color.red;
+                }
+
+                if (redSweepingLaserBeam != null)
+                {
+                    eyeToCenter = (blackHoleCenter - transform.position).normalized;
+                    Vector3 currentStartDir = Quaternion.AngleAxis(startAngle, sweepAxis) * eyeToCenter;
+                    redSweepingLaserBeam.SetPosition(0, PupilPosition);
+                    redSweepingLaserBeam.SetPosition(1, PupilPosition + (currentStartDir * 160f));
+                }
+
+                yield return null;
+            }
+
+            // 3) Active Sweep Phase (redLaserSweepDuration = 6.5s):
+            // High-intensity wide plasma beam sweeping across sphere diameter
+            if (redSweepingLaserBeam != null)
+            {
+                redSweepingLaserBeam.startWidth = 1.8f;
+                redSweepingLaserBeam.endWidth = 1.8f;
+                redSweepingLaserBeam.startColor = Color.white;
+                redSweepingLaserBeam.endColor = Color.white;
+            }
+
+            elapsed = 0f;
+            while (elapsed < sweepDuration && !isConsumedOrCollapsing)
+            {
+                elapsed += Time.deltaTime;
+                float tSweep = Mathf.Clamp01(elapsed / sweepDuration);
+                float smoothT = Mathf.SmoothStep(0f, 1f, tSweep);
+
+                eyeToCenter = (blackHoleCenter - transform.position).normalized;
+                float currentAngle = Mathf.Lerp(startAngle, endAngle, smoothT);
+                Vector3 currentSweepDir = Quaternion.AngleAxis(currentAngle, sweepAxis) * eyeToCenter;
+
+                Vector3 beamStart = PupilPosition;
+                Vector3 beamEnd = beamStart + (currentSweepDir * 160f);
+
+                if (redSweepingLaserBeam != null)
+                {
+                    redSweepingLaserBeam.SetPosition(0, beamStart);
+                    redSweepingLaserBeam.SetPosition(1, beamEnd);
+                }
+
+                if (CameraShakeController.Instance != null)
+                {
+                    CameraShakeController.Instance.TriggerShake(Time.deltaTime * 1.5f, shakeIntensity);
+                }
+
+                // Check distance from PlayerDrone to active red laser line segment
+                DroneController drone = DroneController.Instance;
+                if (drone != null && drone.IsControlEnabled && drone.BeamHitCooldownTimer <= 0f)
+                {
+                    Vector3 dronePos = drone.transform.position;
+                    Vector3 closestPoint = GetClosestPointOnSegment(dronePos, beamStart, beamEnd, out float segT);
+                    float dist = Vector3.Distance(dronePos, closestPoint);
+                    if (dist < hitRadius)
+                    {
+                        OnPlayerHitByBeam(drone, closestPoint, beamStart, beamEnd);
+                    }
+                }
+
+                yield return null;
+            }
+
+            if (redSweepingLaserBeam != null)
+            {
+                redSweepingLaserBeam.enabled = false;
+            }
+
+            if (pupilLight != null)
+            {
+                pupilLight.intensity = 18f;
+                pupilLight.color = Color.red;
+            }
+
+            _isSweepingLaserActive = false;
+            _redLaserSweepCoroutine = null;
         }
 
         private void LookTowardCenterAndPlayer()
@@ -575,6 +827,7 @@ namespace OrbitalPanopticon.Gameplay
         {
             if (isLockBroken) return;
             isLockBroken = true;
+            _redLaserTimer = (eyeIndex * 7.5f) % 30f;
 
             if (_coroutineRunner == this)
             {
