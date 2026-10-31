@@ -294,8 +294,35 @@ MonoBehaviour:
   IsOneShot: 0
   Parameters: []
   MinDistance: 1
-  MaxDistance: 60
+  MaxDistance: 25
   Length: 27960
+--- !u!114 &-2228203435325223119
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Player/Beam_Shock
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Player/Beam_Shock
+  Guid:
+    Data1: -601674861
+    Data2: 1204262701
+    Data3: -17583228
+    Data4: 1076307175
+  Banks:
+  - {fileID: 1206500338223914334}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 1042
 --- !u!114 &-1999112365666556362
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -439,13 +466,15 @@ MonoBehaviour:
   - {fileID: 5192459365280330695}
   - {fileID: 7188343739678186844}
   - {fileID: -2967011709845850287}
+  - {fileID: 1057024829194591358}
+  - {fileID: -2228203435325223119}
   EditorParameters: []
   MasterBanks:
   - {fileID: 1206500338223914334}
   StringsBanks:
   - {fileID: 384512280698726887}
   cacheVersion: 131848
-  cacheTime: 639290685889113794
+  cacheTime: 639290836678856341
   SerializableEventsDict:
   - key: event:/Blackhole/Singularity_Hum
     index: 0
@@ -483,6 +512,10 @@ MonoBehaviour:
     index: 16
   - key: event:/UI/UI_Transition
     index: 17
+  - key: event:/UI/UI_Percs
+    index: 18
+  - key: event:/Player/Beam_Shock
+    index: 19
 --- !u!114 &250376656742973212
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -525,12 +558,12 @@ MonoBehaviour:
   Path: Assets/FMOD/Desktop/Master.strings.bank
   Name: Master.strings
   StudioPath: bank:/Master.strings
-  lastModified: 639290685889113794
+  lastModified: 639290836678856341
   FileSizes:
   - Name: Desktop
-    Value: 1864
+    Value: 1952
   - Name: WEB
-    Value: 1864
+    Value: 1952
   Exists: 1
 --- !u!114 &452124941215673372
 MonoBehaviour:
@@ -586,6 +619,33 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 7000
+--- !u!114 &1057024829194591358
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/UI/UI_Percs
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/UI/UI_Percs
+  Guid:
+    Data1: -1853060599
+    Data2: 1149274639
+    Data3: -1226852435
+    Data4: -463493662
+  Banks:
+  - {fileID: 1206500338223914334}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 1025
 --- !u!114 &1206500338223914334
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -601,12 +661,12 @@ MonoBehaviour:
   Path: Assets/FMOD/Desktop/Master.bank
   Name: Master
   StudioPath: bank:/Master
-  lastModified: 639290685889041642
+  lastModified: 639290836678821313
   FileSizes:
   - Name: Desktop
-    Value: 7932832
+    Value: 8079168
   - Name: WEB
-    Value: 7932832
+    Value: 8079168
   Exists: 1
 --- !u!114 &1606418619250310922
 MonoBehaviour:
