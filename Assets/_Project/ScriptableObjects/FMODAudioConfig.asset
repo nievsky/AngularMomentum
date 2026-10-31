@@ -217,11 +217,11 @@ MonoBehaviour:
     Path: 
   terminalToggleOneShot:
     Guid:
-      Data1: 998915765
-      Data2: 1225845168
-      Data3: -609946459
-      Data4: 1252837148
-    Path: event:/UI/UI_Hover
+      Data1: -1853060599
+      Data2: 1149274639
+      Data3: -1226852435
+      Data4: -463493662
+    Path: event:/UI/UI_Percs
   upgradeBuyOneShot:
     Guid:
       Data1: 1731100502
