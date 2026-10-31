@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using OrbitalPanopticon.UI;
+using OrbitalPanopticon.Core;
 
 namespace OrbitalPanopticon.Editor
 {
