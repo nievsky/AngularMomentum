@@ -393,19 +393,45 @@ namespace OrbitalPanopticon.UI
             }
         }
 
+        [ContextMenu("Setup Dual Volume Sliders")]
         public void EnsureVolumeSliders()
         {
+            if (settingsPanel == null)
+            {
+                var panelTr = transform.Find("Panel_Settings");
+                if (panelTr != null) settingsPanel = panelTr.gameObject;
+            }
             if (settingsPanel == null) return;
 
             Transform musicRow = settingsPanel.transform.Find("Row_MusicVolume");
             if (musicRow == null) musicRow = settingsPanel.transform.Find("Row_MasterVolume");
+            if (musicRow == null && musicVolumeSlider != null)
+            {
+                musicRow = musicVolumeSlider.transform.parent;
+            }
+            if (musicRow == null)
+            {
+                foreach (Transform child in settingsPanel.transform)
+                {
+                    if (child == null) continue;
+                    if (child.name.Contains("Sens") || child.name.Contains("Чувствительность") ||
+                        child.name.Contains("Title") || child.name.Contains("Close") || child.name.Contains("Btn"))
+                        continue;
+                    if (child.GetComponentInChildren<Slider>() != null)
+                    {
+                        musicRow = child;
+                        break;
+                    }
+                }
+            }
+
             Transform soundsRow = settingsPanel.transform.Find("Row_SoundsVolume");
 
             if (musicRow != null)
             {
                 musicRow.name = "Row_MusicVolume";
                 RectTransform rtMusic = musicRow.GetComponent<RectTransform>();
-                if (rtMusic != null) rtMusic.anchoredPosition = new Vector2(0f, 60f);
+                if (rtMusic != null) rtMusic.anchoredPosition = new Vector2(0f, 55f);
 
                 if (musicVolumeSlider == null) musicVolumeSlider = musicRow.GetComponentInChildren<Slider>();
                 if (musicVolumeValueText == null)
@@ -418,6 +444,33 @@ namespace OrbitalPanopticon.UI
                     Transform lblTr = musicRow.Find("Label");
                     if (lblTr != null) musicVolumeLabelText = lblTr.GetComponent<TextMeshProUGUI>();
                 }
+                if (musicVolumeLabelText != null)
+                {
+                    musicVolumeLabelText.text = LocalizationManager.Get("MM_Settings_MusicVolume");
+                }
+            }
+
+            Transform mouseRow = settingsPanel.transform.Find("Row_MouseSens");
+            if (mouseRow == null)
+            {
+                if (mouseSensSlider != null) mouseRow = mouseSensSlider.transform.parent;
+                if (mouseRow == null)
+                {
+                    foreach (Transform child in settingsPanel.transform)
+                    {
+                        if (child != null && (child.name.Contains("Sens") || child.name.Contains("Чувствительность")))
+                        {
+                            mouseRow = child;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (mouseRow != null)
+            {
+                mouseRow.name = "Row_MouseSens";
+                RectTransform rtMouse = mouseRow.GetComponent<RectTransform>();
+                if (rtMouse != null) rtMouse.anchoredPosition = new Vector2(0f, -65f);
             }
 
             if (soundsRow == null && musicRow != null)
@@ -427,23 +480,23 @@ namespace OrbitalPanopticon.UI
                 soundsRow = soundsGo.transform;
 
                 RectTransform rtSounds = soundsRow.GetComponent<RectTransform>();
-                if (rtSounds != null) rtSounds.anchoredPosition = new Vector2(0f, 0f);
+                if (rtSounds != null) rtSounds.anchoredPosition = new Vector2(0f, -5f);
 
                 soundsVolumeSlider = soundsGo.GetComponentInChildren<Slider>();
                 Transform valTr = soundsGo.transform.Find("ValueText");
                 if (valTr != null) soundsVolumeValueText = valTr.GetComponent<TextMeshProUGUI>();
                 Transform lblTr = soundsGo.transform.Find("Label");
                 if (lblTr != null) soundsVolumeLabelText = lblTr.GetComponent<TextMeshProUGUI>();
-
-                Transform mouseRow = settingsPanel.transform.Find("Row_MouseSens");
-                if (mouseRow != null)
+                if (soundsVolumeLabelText != null)
                 {
-                    RectTransform rtMouse = mouseRow.GetComponent<RectTransform>();
-                    if (rtMouse != null) rtMouse.anchoredPosition = new Vector2(0f, -60f);
+                    soundsVolumeLabelText.text = LocalizationManager.Get("MM_Settings_SoundsVolume");
                 }
             }
             else if (soundsRow != null)
             {
+                RectTransform rtSounds = soundsRow.GetComponent<RectTransform>();
+                if (rtSounds != null) rtSounds.anchoredPosition = new Vector2(0f, -5f);
+
                 if (soundsVolumeSlider == null) soundsVolumeSlider = soundsRow.GetComponentInChildren<Slider>();
                 if (soundsVolumeValueText == null)
                 {
@@ -455,8 +508,14 @@ namespace OrbitalPanopticon.UI
                     Transform lblTr = soundsRow.Find("Label");
                     if (lblTr != null) soundsVolumeLabelText = lblTr.GetComponent<TextMeshProUGUI>();
                 }
+                if (soundsVolumeLabelText != null)
+                {
+                    soundsVolumeLabelText.text = LocalizationManager.Get("MM_Settings_SoundsVolume");
+                }
             }
         }
+
+
 
         private void LoadSettings()
         {
@@ -582,7 +641,13 @@ namespace OrbitalPanopticon.UI
 
             if (settingsPanel != null)
             {
-                settingsPanel.SetActive(!settingsPanel.activeSelf);
+                bool willOpen = !settingsPanel.activeSelf;
+                if (willOpen)
+                {
+                    EnsureVolumeSliders();
+                    LoadSettings();
+                }
+                settingsPanel.SetActive(willOpen);
             }
         }
 

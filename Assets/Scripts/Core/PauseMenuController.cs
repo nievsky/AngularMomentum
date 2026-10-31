@@ -31,15 +31,18 @@ namespace OrbitalPanopticon.Core
         [SerializeField] private TextMeshProUGUI quitText;
 
         [Header("Settings Controls")]
-        [SerializeField] private Slider masterVolumeSlider;
-        [SerializeField] private TextMeshProUGUI masterVolumeValueText;
+        [SerializeField] private Slider musicVolumeSlider;
+        [SerializeField] private TextMeshProUGUI musicVolumeValueText;
+        [SerializeField] private Slider soundsVolumeSlider;
+        [SerializeField] private TextMeshProUGUI soundsVolumeValueText;
         [SerializeField] private Slider mouseSensSlider;
         [SerializeField] private TextMeshProUGUI mouseSensValueText;
         [SerializeField] private Button closeSettingsButton;
 
         [Header("Settings Texts")]
         [SerializeField] private TextMeshProUGUI settingsTitleText;
-        [SerializeField] private TextMeshProUGUI masterVolumeLabelText;
+        [SerializeField] private TextMeshProUGUI musicVolumeLabelText;
+        [SerializeField] private TextMeshProUGUI soundsVolumeLabelText;
         [SerializeField] private TextMeshProUGUI mouseSensLabelText;
         [SerializeField] private TextMeshProUGUI closeSettingsText;
 
@@ -202,10 +205,16 @@ namespace OrbitalPanopticon.Core
                 closeSettingsButton.onClick.AddListener(() => OpenSettings(false));
             }
 
-            if (masterVolumeSlider != null)
+            if (musicVolumeSlider != null)
             {
-                masterVolumeSlider.onValueChanged.RemoveAllListeners();
-                masterVolumeSlider.onValueChanged.AddListener(OnMasterVolumeChanged);
+                musicVolumeSlider.onValueChanged.RemoveAllListeners();
+                musicVolumeSlider.onValueChanged.AddListener(OnMusicVolumeChanged);
+            }
+
+            if (soundsVolumeSlider != null)
+            {
+                soundsVolumeSlider.onValueChanged.RemoveAllListeners();
+                soundsVolumeSlider.onValueChanged.AddListener(OnSoundsVolumeChanged);
             }
 
             if (mouseSensSlider != null)
@@ -217,11 +226,20 @@ namespace OrbitalPanopticon.Core
 
         private void LoadSettings()
         {
-            float volume = PlayerPrefs.GetFloat("Settings_MasterVolume", 0.85f);
-            if (masterVolumeSlider != null) masterVolumeSlider.value = volume;
-            AudioListener.volume = volume;
-            if (masterVolumeValueText != null) masterVolumeValueText.text = $"{Mathf.RoundToInt(volume * 100f)}%";
+            // 1. Music Volume (Default: 100% / 1.0)
+            float musicVol = PlayerPrefs.GetFloat("Settings_MusicVolume", 1.0f);
+            if (musicVolumeSlider != null) musicVolumeSlider.value = musicVol;
+            if (musicVolumeValueText != null) musicVolumeValueText.text = $"{Mathf.RoundToInt(musicVol * 100f)}%";
+            if (FMODAudioManager.Instance != null) FMODAudioManager.Instance.SetMusicVolume(musicVol);
 
+            // 2. Sounds Volume (Default: 100% / 1.0)
+            float soundsVol = PlayerPrefs.GetFloat("Settings_SoundsVolume", 1.0f);
+            if (soundsVolumeSlider != null) soundsVolumeSlider.value = soundsVol;
+            AudioListener.volume = soundsVol;
+            if (soundsVolumeValueText != null) soundsVolumeValueText.text = $"{Mathf.RoundToInt(soundsVol * 100f)}%";
+            if (FMODAudioManager.Instance != null) FMODAudioManager.Instance.SetSoundsVolume(soundsVol);
+
+            // 3. Mouse Sensitivity
             float sens = PlayerPrefs.GetFloat("Settings_MouseSens", 1.8f);
             if (mouseSensSlider != null) mouseSensSlider.value = sens;
             if (mouseSensValueText != null) mouseSensValueText.text = sens.ToString("F1");
@@ -230,11 +248,23 @@ namespace OrbitalPanopticon.Core
             if (config != null) config.mouseSensitivity = sens;
         }
 
-        private void OnMasterVolumeChanged(float val)
+        private void OnMusicVolumeChanged(float val)
         {
+            val = Mathf.Clamp01(val);
+            PlayerPrefs.SetFloat("Settings_MusicVolume", val);
+            PlayerPrefs.Save();
+            if (musicVolumeValueText != null) musicVolumeValueText.text = $"{Mathf.RoundToInt(val * 100f)}%";
+            if (FMODAudioManager.Instance != null) FMODAudioManager.Instance.SetMusicVolume(val);
+        }
+
+        private void OnSoundsVolumeChanged(float val)
+        {
+            val = Mathf.Clamp01(val);
             AudioListener.volume = val;
-            PlayerPrefs.SetFloat("Settings_MasterVolume", val);
-            if (masterVolumeValueText != null) masterVolumeValueText.text = $"{Mathf.RoundToInt(val * 100f)}%";
+            PlayerPrefs.SetFloat("Settings_SoundsVolume", val);
+            PlayerPrefs.Save();
+            if (soundsVolumeValueText != null) soundsVolumeValueText.text = $"{Mathf.RoundToInt(val * 100f)}%";
+            if (FMODAudioManager.Instance != null) FMODAudioManager.Instance.SetSoundsVolume(val);
         }
 
         private void OnMouseSensChanged(float val)
@@ -255,7 +285,8 @@ namespace OrbitalPanopticon.Core
             if (quitText != null) quitText.text = LocalizationManager.Get("PAUSE_Quit");
 
             if (settingsTitleText != null) settingsTitleText.text = LocalizationManager.Get("MM_Settings_Title");
-            if (masterVolumeLabelText != null) masterVolumeLabelText.text = LocalizationManager.Get("MM_Settings_Volume");
+            if (musicVolumeLabelText != null) musicVolumeLabelText.text = LocalizationManager.Get("MM_Settings_MusicVolume");
+            if (soundsVolumeLabelText != null) soundsVolumeLabelText.text = LocalizationManager.Get("MM_Settings_SoundsVolume");
             if (mouseSensLabelText != null) mouseSensLabelText.text = LocalizationManager.Get("MM_Settings_Sens");
             if (closeSettingsText != null) closeSettingsText.text = LocalizationManager.Get("MM_Settings_Close");
         }
@@ -415,41 +446,59 @@ namespace OrbitalPanopticon.Core
                 settingsTitleText.fontStyle = FontStyles.Bold;
                 settingsTitleText.color = new Color(0.2f, 0.92f, 1f);
 
-                // Master Volume Row
-                GameObject volLabelGo = new GameObject("Label_Volume", typeof(RectTransform), typeof(TextMeshProUGUI));
-                volLabelGo.transform.SetParent(sGo.transform, false);
-                RectTransform vlRt = volLabelGo.GetComponent<RectTransform>();
-                vlRt.anchorMin = new Vector2(0f, 1f);
-                vlRt.anchorMax = new Vector2(1f, 1f);
-                vlRt.pivot = new Vector2(0f, 1f);
-                vlRt.anchoredPosition = new Vector2(40f, -80f);
-                vlRt.sizeDelta = new Vector2(-80f, 24f);
+                // Music Volume Row
+                GameObject musicLabelGo = new GameObject("Label_MusicVolume", typeof(RectTransform), typeof(TextMeshProUGUI));
+                musicLabelGo.transform.SetParent(sGo.transform, false);
+                RectTransform mlRt = musicLabelGo.GetComponent<RectTransform>();
+                mlRt.anchorMin = new Vector2(0f, 1f);
+                mlRt.anchorMax = new Vector2(1f, 1f);
+                mlRt.pivot = new Vector2(0f, 1f);
+                mlRt.anchoredPosition = new Vector2(40f, -65f);
+                mlRt.sizeDelta = new Vector2(-80f, 22f);
 
-                masterVolumeLabelText = volLabelGo.GetComponent<TextMeshProUGUI>();
-                masterVolumeLabelText.text = "Громкость звука (Master Volume):";
-                masterVolumeLabelText.fontSize = 13;
-                masterVolumeLabelText.color = Color.white;
+                musicVolumeLabelText = musicLabelGo.GetComponent<TextMeshProUGUI>();
+                musicVolumeLabelText.text = LocalizationManager.Get("MM_Settings_MusicVolume");
+                musicVolumeLabelText.fontSize = 12;
+                musicVolumeLabelText.color = Color.white;
 
-                // Slider Volume
-                GameObject vsGo = CreateSimpleSlider(sGo.transform, "Slider_Volume", new Vector2(0f, -114f), new Vector2(300f, 20f), 0f, 1f, out masterVolumeSlider, out masterVolumeValueText);
+                // Slider Music
+                GameObject msGo = CreateSimpleSlider(sGo.transform, "Slider_MusicVolume", new Vector2(0f, -90f), new Vector2(300f, 18f), 0f, 1f, out musicVolumeSlider, out musicVolumeValueText);
+
+                // Sounds Volume Row
+                GameObject soundsLabelGo = new GameObject("Label_SoundsVolume", typeof(RectTransform), typeof(TextMeshProUGUI));
+                soundsLabelGo.transform.SetParent(sGo.transform, false);
+                RectTransform slRt = soundsLabelGo.GetComponent<RectTransform>();
+                slRt.anchorMin = new Vector2(0f, 1f);
+                slRt.anchorMax = new Vector2(1f, 1f);
+                slRt.pivot = new Vector2(0f, 1f);
+                slRt.anchoredPosition = new Vector2(40f, -122f);
+                slRt.sizeDelta = new Vector2(-80f, 22f);
+
+                soundsVolumeLabelText = soundsLabelGo.GetComponent<TextMeshProUGUI>();
+                soundsVolumeLabelText.text = LocalizationManager.Get("MM_Settings_SoundsVolume");
+                soundsVolumeLabelText.fontSize = 12;
+                soundsVolumeLabelText.color = Color.white;
+
+                // Slider Sounds
+                GameObject ssGo = CreateSimpleSlider(sGo.transform, "Slider_SoundsVolume", new Vector2(0f, -147f), new Vector2(300f, 18f), 0f, 1f, out soundsVolumeSlider, out soundsVolumeValueText);
 
                 // Mouse Sens Row
                 GameObject sensLabelGo = new GameObject("Label_Sens", typeof(RectTransform), typeof(TextMeshProUGUI));
                 sensLabelGo.transform.SetParent(sGo.transform, false);
-                RectTransform slRt = sensLabelGo.GetComponent<RectTransform>();
-                slRt.anchorMin = new Vector2(0f, 1f);
-                slRt.anchorMax = new Vector2(1f, 1f);
-                slRt.pivot = new Vector2(0f, 1f);
-                slRt.anchoredPosition = new Vector2(40f, -160f);
-                slRt.sizeDelta = new Vector2(-80f, 24f);
+                RectTransform senslRt = sensLabelGo.GetComponent<RectTransform>();
+                senslRt.anchorMin = new Vector2(0f, 1f);
+                senslRt.anchorMax = new Vector2(1f, 1f);
+                senslRt.pivot = new Vector2(0f, 1f);
+                senslRt.anchoredPosition = new Vector2(40f, -179f);
+                senslRt.sizeDelta = new Vector2(-80f, 22f);
 
                 mouseSensLabelText = sensLabelGo.GetComponent<TextMeshProUGUI>();
-                mouseSensLabelText.text = "Чувствительность мыши (Sens):";
-                mouseSensLabelText.fontSize = 13;
+                mouseSensLabelText.text = LocalizationManager.Get("MM_Settings_Sens");
+                mouseSensLabelText.fontSize = 12;
                 mouseSensLabelText.color = Color.white;
 
                 // Slider Sens
-                GameObject ssGo = CreateSimpleSlider(sGo.transform, "Slider_Sens", new Vector2(0f, -194f), new Vector2(300f, 20f), 0.2f, 5f, out mouseSensSlider, out mouseSensValueText);
+                GameObject sensSliderGo = CreateSimpleSlider(sGo.transform, "Slider_Sens", new Vector2(0f, -204f), new Vector2(300f, 18f), 0.2f, 5f, out mouseSensSlider, out mouseSensValueText);
 
                 // Close Settings Button
                 GameObject closeBtnGo = new GameObject("Btn_CloseSettings", typeof(RectTransform), typeof(Image), typeof(Button), typeof(Outline), typeof(UIButtonTweenAnimator));
@@ -556,13 +605,23 @@ namespace OrbitalPanopticon.Core
                             closeSettingsText = cbTr.GetComponentInChildren<TextMeshProUGUI>();
                         }
                     }
-                    if (masterVolumeSlider == null)
+                    if (musicVolumeSlider == null)
                     {
-                        Transform vsTr = settingsSubPanel.transform.Find("Slider_Volume");
+                        Transform vsTr = settingsSubPanel.transform.Find("Slider_MusicVolume");
+                        if (vsTr == null) vsTr = settingsSubPanel.transform.Find("Slider_Volume");
                         if (vsTr != null)
                         {
-                            masterVolumeSlider = vsTr.GetComponent<Slider>();
-                            masterVolumeValueText = vsTr.GetComponentInChildren<TextMeshProUGUI>();
+                            musicVolumeSlider = vsTr.GetComponent<Slider>();
+                            musicVolumeValueText = vsTr.GetComponentInChildren<TextMeshProUGUI>();
+                        }
+                    }
+                    if (soundsVolumeSlider == null)
+                    {
+                        Transform ssTr = settingsSubPanel.transform.Find("Slider_SoundsVolume");
+                        if (ssTr != null)
+                        {
+                            soundsVolumeSlider = ssTr.GetComponent<Slider>();
+                            soundsVolumeValueText = ssTr.GetComponentInChildren<TextMeshProUGUI>();
                         }
                     }
                     if (mouseSensSlider == null)
