@@ -4266,13 +4266,16 @@ MonoBehaviour:
   settingsText: {fileID: 1389544769}
   mainMenuText: {fileID: 1624234111}
   quitText: {fileID: 601175192}
-  masterVolumeSlider: {fileID: 1504475740}
-  masterVolumeValueText: {fileID: 1990035837}
+  musicVolumeSlider: {fileID: 1504475740}
+  musicVolumeValueText: {fileID: 1990035837}
+  soundsVolumeSlider: {fileID: 0}
+  soundsVolumeValueText: {fileID: 0}
   mouseSensSlider: {fileID: 641387489}
   mouseSensValueText: {fileID: 1305664352}
   closeSettingsButton: {fileID: 1339938962}
   settingsTitleText: {fileID: 194053169}
-  masterVolumeLabelText: {fileID: 1844400015}
+  musicVolumeLabelText: {fileID: 1844400015}
+  soundsVolumeLabelText: {fileID: 0}
   mouseSensLabelText: {fileID: 201300036}
   closeSettingsText: {fileID: 907135471}
 --- !u!114 &343821897
@@ -15538,7 +15541,7 @@ GameObject:
   - component: {fileID: 1504475739}
   - component: {fileID: 1504475740}
   m_Layer: 0
-  m_Name: Slider_Volume
+  m_Name: Slider_MusicVolume
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -18971,7 +18974,7 @@ GameObject:
   - component: {fileID: 1844400018}
   - component: {fileID: 1844400019}
   m_Layer: 0
-  m_Name: Label_Volume
+  m_Name: Label_MusicVolume
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

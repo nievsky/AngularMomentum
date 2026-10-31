@@ -36,11 +36,16 @@ namespace OrbitalPanopticon.Editor
                 menuController.EnsureVolumeSliders();
                 EditorUtility.SetDirty(menuController);
                 EditorSceneManager.MarkSceneDirty(menuController.gameObject.scene);
-                Debug.Log("<color=#33FF88>[Setup] Dual Volume Sliders successfully configured in scene!</color>");
+                Debug.Log("<color=#33FF88>[Setup] Dual Volume Sliders configured in Main Menu scene!</color>");
             }
-            else
+
+            var pauseController = Object.FindAnyObjectByType<PauseMenuController>();
+            if (pauseController != null)
             {
-                Debug.LogWarning("[Setup] MainMenuUIController not found in the active scene.");
+                pauseController.EnsureSettingsSubPanelControls();
+                EditorUtility.SetDirty(pauseController);
+                EditorSceneManager.MarkSceneDirty(pauseController.gameObject.scene);
+                Debug.Log("<color=#33FF88>[Setup] Dual Volume Sliders configured in In-Game Pause Menu scene!</color>");
             }
         }
     }

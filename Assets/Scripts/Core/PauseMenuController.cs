@@ -59,6 +59,7 @@ namespace OrbitalPanopticon.Core
             Instance = this;
 
             EnsurePauseMenuHierarchy();
+            EnsureSettingsSubPanelControls();
             SetupButtonListeners();
             LoadSettings();
 
@@ -149,6 +150,12 @@ namespace OrbitalPanopticon.Core
 
         public void OpenSettings(bool open)
         {
+            if (open)
+            {
+                EnsureSettingsSubPanelControls();
+                LoadSettings();
+                UpdateLocalizedTexts();
+            }
             if (settingsSubPanel != null)
             {
                 settingsSubPanel.SetActive(open);
@@ -608,44 +615,211 @@ namespace OrbitalPanopticon.Core
 
                 if (settingsSubPanel != null)
                 {
-                    if (closeSettingsButton == null)
-                    {
-                        Transform cbTr = settingsSubPanel.transform.Find("Btn_CloseSettings");
-                        if (cbTr != null)
-                        {
-                            closeSettingsButton = cbTr.GetComponent<Button>();
-                            closeSettingsText = cbTr.GetComponentInChildren<TextMeshProUGUI>();
-                        }
-                    }
-                    if (musicVolumeSlider == null)
-                    {
-                        Transform vsTr = settingsSubPanel.transform.Find("Slider_MusicVolume");
-                        if (vsTr == null) vsTr = settingsSubPanel.transform.Find("Slider_Volume");
-                        if (vsTr != null)
-                        {
-                            musicVolumeSlider = vsTr.GetComponent<Slider>();
-                            musicVolumeValueText = vsTr.GetComponentInChildren<TextMeshProUGUI>();
-                        }
-                    }
-                    if (soundsVolumeSlider == null)
-                    {
-                        Transform ssTr = settingsSubPanel.transform.Find("Slider_SoundsVolume");
-                        if (ssTr != null)
-                        {
-                            soundsVolumeSlider = ssTr.GetComponent<Slider>();
-                            soundsVolumeValueText = ssTr.GetComponentInChildren<TextMeshProUGUI>();
-                        }
-                    }
-                    if (mouseSensSlider == null)
-                    {
-                        Transform msTr = settingsSubPanel.transform.Find("Slider_Sens");
-                        if (msTr != null)
-                        {
-                            mouseSensSlider = msTr.GetComponent<Slider>();
-                            mouseSensValueText = msTr.GetComponentInChildren<TextMeshProUGUI>();
-                        }
-                    }
+                    EnsureSettingsSubPanelControls();
                 }
+            }
+        }
+
+        [ContextMenu("Setup In-Game Dual Sliders")]
+        public void EnsureSettingsSubPanelControls()
+        {
+            if (settingsSubPanel == null && pauseMenuPanel != null)
+            {
+                Transform sTr = pauseMenuPanel.transform.Find("Panel_SettingsSub");
+                if (sTr != null) settingsSubPanel = sTr.gameObject;
+            }
+            if (settingsSubPanel == null) return;
+
+            Transform sPanelTr = settingsSubPanel.transform;
+
+            // 1. Settings Title
+            Transform titleTr = sPanelTr.Find("Text_Title");
+            if (titleTr == null) titleTr = sPanelTr.Find("Title");
+            if (titleTr != null)
+            {
+                settingsTitleText = titleTr.GetComponent<TextMeshProUGUI>();
+                if (settingsTitleText != null) settingsTitleText.text = LocalizationManager.Get("MM_Settings_Title");
+            }
+
+            // 2. Identify / Convert Music Volume Row (replacing old Master Volume)
+            Transform musicSliderTr = sPanelTr.Find("Slider_MusicVolume");
+            if (musicSliderTr == null) musicSliderTr = sPanelTr.Find("Slider_Volume");
+            if (musicSliderTr != null)
+            {
+                musicSliderTr.name = "Slider_MusicVolume";
+                RectTransform rt = musicSliderTr.GetComponent<RectTransform>();
+                if (rt != null)
+                {
+                    rt.anchorMin = new Vector2(0.5f, 1f);
+                    rt.anchorMax = new Vector2(0.5f, 1f);
+                    rt.pivot = new Vector2(0.5f, 1f);
+                    rt.anchoredPosition = new Vector2(0f, -90f);
+                    rt.sizeDelta = new Vector2(300f, 18f);
+                }
+
+                musicVolumeSlider = musicSliderTr.GetComponent<Slider>();
+                if (musicVolumeSlider != null)
+                {
+                    musicVolumeSlider.minValue = 0f;
+                    musicVolumeSlider.maxValue = 1f;
+                    musicVolumeSlider.wholeNumbers = false;
+                }
+                musicVolumeValueText = musicSliderTr.GetComponentInChildren<TextMeshProUGUI>();
+            }
+
+            Transform musicLabelTr = sPanelTr.Find("Label_MusicVolume");
+            if (musicLabelTr == null) musicLabelTr = sPanelTr.Find("Label_Volume");
+            if (musicLabelTr != null)
+            {
+                musicLabelTr.name = "Label_MusicVolume";
+                RectTransform rt = musicLabelTr.GetComponent<RectTransform>();
+                if (rt != null)
+                {
+                    rt.anchorMin = new Vector2(0f, 1f);
+                    rt.anchorMax = new Vector2(1f, 1f);
+                    rt.pivot = new Vector2(0f, 1f);
+                    rt.anchoredPosition = new Vector2(40f, -65f);
+                    rt.sizeDelta = new Vector2(-80f, 22f);
+                }
+
+                musicVolumeLabelText = musicLabelTr.GetComponent<TextMeshProUGUI>();
+                if (musicVolumeLabelText != null)
+                {
+                    musicVolumeLabelText.text = LocalizationManager.Get("MM_Settings_MusicVolume");
+                }
+            }
+
+            // 3. Identify / Create Sounds Volume Row
+            Transform soundsSliderTr = sPanelTr.Find("Slider_SoundsVolume");
+            Transform soundsLabelTr = sPanelTr.Find("Label_SoundsVolume");
+
+            if (soundsSliderTr == null && musicSliderTr != null)
+            {
+                GameObject ssGo = Instantiate(musicSliderTr.gameObject, sPanelTr);
+                ssGo.name = "Slider_SoundsVolume";
+                soundsSliderTr = ssGo.transform;
+            }
+
+            if (soundsSliderTr != null)
+            {
+                RectTransform rt = soundsSliderTr.GetComponent<RectTransform>();
+                if (rt != null)
+                {
+                    rt.anchorMin = new Vector2(0.5f, 1f);
+                    rt.anchorMax = new Vector2(0.5f, 1f);
+                    rt.pivot = new Vector2(0.5f, 1f);
+                    rt.anchoredPosition = new Vector2(0f, -147f);
+                    rt.sizeDelta = new Vector2(300f, 18f);
+                }
+
+                soundsVolumeSlider = soundsSliderTr.GetComponent<Slider>();
+                if (soundsVolumeSlider != null)
+                {
+                    soundsVolumeSlider.minValue = 0f;
+                    soundsVolumeSlider.maxValue = 1f;
+                    soundsVolumeSlider.wholeNumbers = false;
+                }
+                soundsVolumeValueText = soundsSliderTr.GetComponentInChildren<TextMeshProUGUI>();
+            }
+
+            if (soundsLabelTr == null && musicLabelTr != null)
+            {
+                GameObject slGo = Instantiate(musicLabelTr.gameObject, sPanelTr);
+                slGo.name = "Label_SoundsVolume";
+                soundsLabelTr = slGo.transform;
+            }
+
+            if (soundsLabelTr != null)
+            {
+                RectTransform rt = soundsLabelTr.GetComponent<RectTransform>();
+                if (rt != null)
+                {
+                    rt.anchorMin = new Vector2(0f, 1f);
+                    rt.anchorMax = new Vector2(1f, 1f);
+                    rt.pivot = new Vector2(0f, 1f);
+                    rt.anchoredPosition = new Vector2(40f, -122f);
+                    rt.sizeDelta = new Vector2(-80f, 22f);
+                }
+
+                soundsVolumeLabelText = soundsLabelTr.GetComponent<TextMeshProUGUI>();
+                if (soundsVolumeLabelText != null)
+                {
+                    soundsVolumeLabelText.text = LocalizationManager.Get("MM_Settings_SoundsVolume");
+                }
+            }
+
+            // 4. Reposition Mouse Sens Row
+            Transform sensLabelTr = sPanelTr.Find("Label_Sens");
+            if (sensLabelTr != null)
+            {
+                RectTransform rt = sensLabelTr.GetComponent<RectTransform>();
+                if (rt != null)
+                {
+                    rt.anchorMin = new Vector2(0f, 1f);
+                    rt.anchorMax = new Vector2(1f, 1f);
+                    rt.pivot = new Vector2(0f, 1f);
+                    rt.anchoredPosition = new Vector2(40f, -179f);
+                    rt.sizeDelta = new Vector2(-80f, 22f);
+                }
+
+                mouseSensLabelText = sensLabelTr.GetComponent<TextMeshProUGUI>();
+                if (mouseSensLabelText != null)
+                {
+                    mouseSensLabelText.text = LocalizationManager.Get("MM_Settings_Sens");
+                }
+            }
+
+            Transform sensSliderTr = sPanelTr.Find("Slider_Sens");
+            if (sensSliderTr != null)
+            {
+                RectTransform rt = sensSliderTr.GetComponent<RectTransform>();
+                if (rt != null)
+                {
+                    rt.anchorMin = new Vector2(0.5f, 1f);
+                    rt.anchorMax = new Vector2(0.5f, 1f);
+                    rt.pivot = new Vector2(0.5f, 1f);
+                    rt.anchoredPosition = new Vector2(0f, -204f);
+                    rt.sizeDelta = new Vector2(300f, 18f);
+                }
+
+                mouseSensSlider = sensSliderTr.GetComponent<Slider>();
+                if (mouseSensSlider != null)
+                {
+                    mouseSensSlider.minValue = 0.2f;
+                    mouseSensSlider.maxValue = 5.0f;
+                    mouseSensSlider.wholeNumbers = false;
+                }
+                mouseSensValueText = sensSliderTr.GetComponentInChildren<TextMeshProUGUI>();
+            }
+
+            // 5. Close Button
+            Transform closeBtnTr = sPanelTr.Find("Btn_CloseSettings");
+            if (closeBtnTr != null)
+            {
+                RectTransform rt = closeBtnTr.GetComponent<RectTransform>();
+                if (rt != null)
+                {
+                    rt.anchoredPosition = new Vector2(0f, 28f);
+                }
+                closeSettingsButton = closeBtnTr.GetComponent<Button>();
+                closeSettingsText = closeBtnTr.GetComponentInChildren<TextMeshProUGUI>();
+            }
+
+            // 6. Bind Listeners
+            if (musicVolumeSlider != null)
+            {
+                musicVolumeSlider.onValueChanged.RemoveAllListeners();
+                musicVolumeSlider.onValueChanged.AddListener(OnMusicVolumeChanged);
+            }
+            if (soundsVolumeSlider != null)
+            {
+                soundsVolumeSlider.onValueChanged.RemoveAllListeners();
+                soundsVolumeSlider.onValueChanged.AddListener(OnSoundsVolumeChanged);
+            }
+            if (mouseSensSlider != null)
+            {
+                mouseSensSlider.onValueChanged.RemoveAllListeners();
+                mouseSensSlider.onValueChanged.AddListener(OnMouseSensChanged);
             }
         }
 
