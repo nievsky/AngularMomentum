@@ -12,7 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 13bd5e1cfe97bb34dbf88ca053bd67c3, type: 3}
   m_Name: FMODAudioConfig
   m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.FMODAudioConfigSO
-  mainMenuMusicPlaylist: []
+  mainMenuMusicPlaylist:
+  - Guid:
+      Data1: 240368200
+      Data2: 1248749185
+      Data3: 436691867
+      Data4: -1852162274
+    Path: event:/MusicGameplay
   gameplayMusicPlaylist:
   - Guid:
       Data1: 240368200
@@ -31,6 +37,7 @@ MonoBehaviour:
   fallbackGameplayClips: []
   fallbackCreditsClips: []
   musicCrossfadeDuration: 2.2
+  creditsToMenuMusicDelay: 3
   spaceAmbienceLoop:
     Guid:
       Data1: 315629800
@@ -82,11 +89,11 @@ MonoBehaviour:
     Path: event:/Boss/Overseer_Destroyed
   containmentBeamShockOneShot:
     Guid:
-      Data1: -1039808365
-      Data2: 1146740612
-      Data3: 193796537
-      Data4: 762955554
-    Path: event:/Weapon/GravityGun_Hold_Punt
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
   overseerIdleOneShot:
     Guid:
       Data1: 56212931
@@ -126,11 +133,11 @@ MonoBehaviour:
     Path: 
   dissolveTransitionOneShot:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 473943001
+      Data2: 1310978597
+      Data3: 1439570086
+      Data4: -1549184889
+    Path: event:/UI/UI_Transition
   thrusterLoop:
     Guid:
       Data1: -1060347334
@@ -173,6 +180,27 @@ MonoBehaviour:
       Data3: -1174031993
       Data4: -1451889056
     Path: event:/Player/Signal_Lost_Respawn
+  uiHoverOneShot:
+    Guid:
+      Data1: 998915765
+      Data2: 1225845168
+      Data3: -609946459
+      Data4: 1252837148
+    Path: event:/UI/UI_Hover
+  uiClickOneShot:
+    Guid:
+      Data1: 1731100502
+      Data2: 1242249591
+      Data3: 1730220711
+      Data4: -1923227270
+    Path: event:/UI/UI_Click
+  uiStartGameOneShot:
+    Guid:
+      Data1: -236313212
+      Data2: 1280658727
+      Data3: 1296440712
+      Data4: 956845345
+    Path: event:/UI/UI_NewGame
   scorePopupOneShot:
     Guid:
       Data1: 0
@@ -189,20 +217,23 @@ MonoBehaviour:
     Path: 
   terminalToggleOneShot:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 998915765
+      Data2: 1225845168
+      Data3: -609946459
+      Data4: 1252837148
+    Path: event:/UI/UI_Hover
   upgradeBuyOneShot:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: 1731100502
+      Data2: 1242249591
+      Data3: 1730220711
+      Data4: -1923227270
+    Path: event:/UI/UI_Click
   paramBlackHoleStage: BlackHoleStage
   paramDistanceToHole: DistanceToHole
   paramDroneSpeed: DroneSpeed
   paramActiveBeams: ActiveContainmentBeams
   paramComboLevel: ComboLevel
+  paramMusicStage: Stage
+  vcaMusicPath: vca:/Music
+  vcaSoundsPath: vca:/Sounds

@@ -84,10 +84,14 @@ namespace OrbitalPanopticon.Core
             ResolveReferences();
             SceneManager.sceneLoaded += OnSceneLoaded;
             OverseerContainmentEye.OnOverseerIdleEmitted += HandleOverseerIdle;
+            OrbitalPanopticon.UI.MainMenuUIController.OnButtonHovered += HandleUiHover;
+            OrbitalPanopticon.UI.MainMenuUIController.OnButtonClicked += HandleUiClick;
+            OrbitalPanopticon.UI.MainMenuUIController.OnStartGameClicked += HandleUiStartGame;
         }
 
         private void Start()
         {
+            ApplySavedVolumes();
             InitializeLoops();
         }
 
@@ -156,14 +160,20 @@ namespace OrbitalPanopticon.Core
         {
             if (audioConfig == null) return;
 
-            // 1. Space Ambience Loop (2D persistent background)
+            string activeScene = SceneManager.GetActiveScene().name;
+            bool isGameplay = activeScene.Contains("Gameplay") || activeScene.Contains("Outdoor");
+
+            // 1. Space Ambience Loop (2D persistent background) - only started in gameplay scenes!
             if (!audioConfig.spaceAmbienceLoop.IsNull)
             {
                 _spaceAmbienceInstance = RuntimeManager.CreateInstance(audioConfig.spaceAmbienceLoop);
-                _spaceAmbienceInstance.start();
+                if (isGameplay)
+                {
+                    _spaceAmbienceInstance.start();
+                }
             }
 
-            // 2. Singularity Hum Loop (3D at Black Hole center)
+            // 2. Singularity Hum Loop (3D at Black Hole center) - only started in gameplay scenes!
             if (!audioConfig.singularityHumLoop.IsNull)
             {
                 _singularityHumInstance = RuntimeManager.CreateInstance(audioConfig.singularityHumLoop);
@@ -171,10 +181,13 @@ namespace OrbitalPanopticon.Core
                 {
                     _singularityHumInstance.set3DAttributes(RuntimeUtils.To3DAttributes(blackHoleTransform.position));
                 }
-                _singularityHumInstance.start();
+                if (isGameplay)
+                {
+                    _singularityHumInstance.start();
+                }
             }
 
-            // 3. Containment Beam Hum Loop (Ambient hum of active Eye beams)
+            // 3. Containment Beam Hum Loop (Ambient hum of active Eye beams) - only started in gameplay scenes!
             if (!audioConfig.containmentBeamHumLoop.IsNull)
             {
                 _containmentBeamHumInstance = RuntimeManager.CreateInstance(audioConfig.containmentBeamHumLoop);
@@ -182,7 +195,10 @@ namespace OrbitalPanopticon.Core
                 {
                     _containmentBeamHumInstance.set3DAttributes(RuntimeUtils.To3DAttributes(blackHoleTransform.position));
                 }
-                _containmentBeamHumInstance.start();
+                if (isGameplay)
+                {
+                    _containmentBeamHumInstance.start();
+                }
             }
 
             // 4. Thruster Engine Loop (prepared, started on player input)
@@ -426,10 +442,83 @@ namespace OrbitalPanopticon.Core
             if (playlistManager != null) playlistManager.PlayPreviousTrack();
         }
 
+        public void SetMusicStage(MusicPlaylistManager.MusicStage stage)
+        {
+            if (playlistManager != null) playlistManager.SetMusicStage(stage);
+        }
+
+        public void SetMusicStage(float stage)
+        {
+            if (playlistManager != null) playlistManager.SetMusicStage(stage);
+        }
+
         public void StopMusic(FMOD.Studio.STOP_MODE stopMode = FMOD.Studio.STOP_MODE.ALLOWFADEOUT)
         {
             if (playlistManager != null) playlistManager.StopMusic(stopMode);
         }
+
+        #endregion
+
+        #region VCA Volume Control API
+
+        public void ApplySavedVolumes()
+        {
+            float musicVol = PlayerPrefs.GetFloat("Settings_MusicVolume", 1.0f);
+            float soundsVol = PlayerPrefs.GetFloat("Settings_SoundsVolume", 1.0f);
+
+            SetMusicVolume(musicVol);
+            SetSoundsVolume(soundsVol);
+        }
+
+        public void SetMusicVolume(float volume)
+        {
+            volume = Mathf.Clamp01(volume);
+            PlayerPrefs.SetFloat("Settings_MusicVolume", volume);
+            PlayerPrefs.Save();
+
+            try
+            {
+                string path = (audioConfig != null && !string.IsNullOrEmpty(audioConfig.vcaMusicPath))
+                    ? audioConfig.vcaMusicPath
+                    : "vca:/Music";
+                var vca = RuntimeManager.GetVCA(path);
+                if (vca.isValid())
+                {
+                    vca.setVolume(volume);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[FMODAudioManager] Failed to set Music VCA volume: {ex.Message}");
+            }
+        }
+
+        public void SetSoundsVolume(float volume)
+        {
+            volume = Mathf.Clamp01(volume);
+            PlayerPrefs.SetFloat("Settings_SoundsVolume", volume);
+            PlayerPrefs.Save();
+            AudioListener.volume = volume;
+
+            try
+            {
+                string path = (audioConfig != null && !string.IsNullOrEmpty(audioConfig.vcaSoundsPath))
+                    ? audioConfig.vcaSoundsPath
+                    : "vca:/Sounds";
+                var vca = RuntimeManager.GetVCA(path);
+                if (vca.isValid())
+                {
+                    vca.setVolume(volume);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[FMODAudioManager] Failed to set Sounds VCA volume: {ex.Message}");
+            }
+        }
+
+        public float GetMusicVolume() => PlayerPrefs.GetFloat("Settings_MusicVolume", 1.0f);
+        public float GetSoundsVolume() => PlayerPrefs.GetFloat("Settings_SoundsVolume", 1.0f);
 
         #endregion
 
@@ -599,6 +688,48 @@ namespace OrbitalPanopticon.Core
             if (audioConfig != null) PlayOneShot(audioConfig.valuableScrapConsumeOneShot, position);
         }
 
+        private float _lastUiClickTime = -1f;
+        private float _lastUiHoverTime = -1f;
+        private float _lastUiStartGameTime = -1f;
+        private const float UiSoundMinInterval = 0.05f; // 50ms cooldown to eliminate flanging / duplicate clicks
+
+        private void HandleUiHover() => PlayUiHover();
+        private void HandleUiClick() => PlayUiClick();
+        private void HandleUiStartGame() => PlayUiStartGame();
+
+        public void PlayUiHover(Vector3 position = default)
+        {
+            if (Time.unscaledTime - _lastUiHoverTime < UiSoundMinInterval) return;
+            _lastUiHoverTime = Time.unscaledTime;
+
+            if (audioConfig != null && !audioConfig.uiHoverOneShot.IsNull)
+            {
+                PlayOneShot(audioConfig.uiHoverOneShot, position);
+            }
+        }
+
+        public void PlayUiClick(Vector3 position = default)
+        {
+            if (Time.unscaledTime - _lastUiClickTime < UiSoundMinInterval) return;
+            _lastUiClickTime = Time.unscaledTime;
+
+            if (audioConfig != null && !audioConfig.uiClickOneShot.IsNull)
+            {
+                PlayOneShot(audioConfig.uiClickOneShot, position);
+            }
+        }
+
+        public void PlayUiStartGame(Vector3 position = default)
+        {
+            if (Time.unscaledTime - _lastUiStartGameTime < UiSoundMinInterval) return;
+            _lastUiStartGameTime = Time.unscaledTime;
+
+            if (audioConfig != null && !audioConfig.uiStartGameOneShot.IsNull)
+            {
+                PlayOneShot(audioConfig.uiStartGameOneShot, position);
+            }
+        }
+
         public void PlayTerminalToggle()
         {
             if (audioConfig != null) PlayOneShot(audioConfig.terminalToggleOneShot);
@@ -738,6 +869,9 @@ namespace OrbitalPanopticon.Core
         {
             SceneManager.sceneLoaded -= OnSceneLoaded;
             OverseerContainmentEye.OnOverseerIdleEmitted -= HandleOverseerIdle;
+            OrbitalPanopticon.UI.MainMenuUIController.OnButtonHovered -= HandleUiHover;
+            OrbitalPanopticon.UI.MainMenuUIController.OnButtonClicked -= HandleUiClick;
+            OrbitalPanopticon.UI.MainMenuUIController.OnStartGameClicked -= HandleUiStartGame;
 
             ReleaseInstance(ref _spaceAmbienceInstance);
             ReleaseInstance(ref _singularityHumInstance);

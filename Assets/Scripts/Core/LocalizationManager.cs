@@ -51,6 +51,8 @@ namespace OrbitalPanopticon.Core
             { "MM_Quit", ("ВЫЙТИ ИЗ ИГРЫ", "QUIT GAME") },
             { "MM_Settings_Title", ("НАСТРОЙКИ СИСТЕМЫ", "SYSTEM SETTINGS") },
             { "MM_Settings_Volume", ("Громкость звука (Master Volume):", "Master Volume:") },
+            { "MM_Settings_MusicVolume", ("Громкость музыки (Music):", "Music Volume:") },
+            { "MM_Settings_SoundsVolume", ("Громкость звуков (Sounds):", "Sound Effects (SFX):") },
             { "MM_Settings_Sens", ("Чувствительность мыши (Sens):", "Mouse Sensitivity:") },
             { "MM_Settings_Close", ("ЗАКРЫТЬ", "CLOSE") },
 

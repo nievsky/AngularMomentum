@@ -35,6 +35,10 @@ namespace OrbitalPanopticon.Core
         [Range(0.5f, 10f)]
         public float musicCrossfadeDuration = 2.2f;
 
+        [Tooltip("Delay in seconds before starting Main Menu music when returning from Credits scene, allowing credits music to fade out cleanly.")]
+        [Range(0f, 10f)]
+        public float creditsToMenuMusicDelay = 3.0f;
+
         [Header("1. Black Hole & Ambience")]
         [Tooltip("Ambient background drone loop (2D)")]
         public EventReference spaceAmbienceLoop;
@@ -107,6 +111,15 @@ namespace OrbitalPanopticon.Core
         public EventReference signalLostRespawnOneShot;
 
         [Header("4. Economy & UI")]
+        [Tooltip("Button hover sound for main menu and interactive UI elements")]
+        public EventReference uiHoverOneShot;
+
+        [Tooltip("Standard button click sound for menus and settings")]
+        public EventReference uiClickOneShot;
+
+        [Tooltip("Special sound played when clicking Start Game")]
+        public EventReference uiStartGameOneShot;
+
         [Tooltip("Score popup chime on quota deposit or point gain")]
         public EventReference scorePopupOneShot;
 
@@ -134,5 +147,15 @@ namespace OrbitalPanopticon.Core
 
         [Tooltip("Player Quota / Combo Level (integer scale)")]
         public string paramComboLevel = "ComboLevel";
+
+        [Tooltip("Local parameter on MusicGameplay event for switching stages (0 = Menu, 1 = Gameplay)")]
+        public string paramMusicStage = "Stage";
+
+        [Header("6. FMOD VCA Paths")]
+        [Tooltip("VCA path for controlling background music volume")]
+        public string vcaMusicPath = "vca:/Music";
+
+        [Tooltip("VCA path for controlling SFX and game sound volume")]
+        public string vcaSoundsPath = "vca:/Sounds";
     }
 }

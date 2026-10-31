@@ -189,12 +189,13 @@ namespace OrbitalPanopticon.Editor
             sTitleTxt.color = new Color(0.2f, 0.9f, 1f, 1f);
 
             // Volume Slider
-            var volControls = CreateSliderRow(settingsPanelGo.transform, new Vector2(0f, 40f), "Громкость звука (Master Volume):", 0f, 1f, 0.85f);
+            var musicControls = CreateSliderRow(settingsPanelGo.transform, new Vector2(0f, 55f), "Громкость музыки (Music):", 0f, 1f, 1.0f);
+            var soundsControls = CreateSliderRow(settingsPanelGo.transform, new Vector2(0f, -5f), "Громкость звуков (Sounds):", 0f, 1f, 1.0f);
             // Mouse Sens Slider
-            var sensControls = CreateSliderRow(settingsPanelGo.transform, new Vector2(0f, -40f), "Чувствительность мыши (Sens):", 0.2f, 5.0f, 1.8f);
+            var sensControls = CreateSliderRow(settingsPanelGo.transform, new Vector2(0f, -65f), "Чувствительность мыши (Sens):", 0.2f, 5.0f, 1.8f);
 
             // Close Settings Button
-            var closeSettingsBtn = CreateMenuButton(settingsPanelGo.transform, new Vector2(0f, -125f), "ЗАКРЫТЬ", new Color(1f, 0.85f, 0.2f), 180f, 42f);
+            var closeSettingsBtn = CreateMenuButton(settingsPanelGo.transform, new Vector2(0f, -135f), "ЗАКРЫТЬ", new Color(1f, 0.85f, 0.2f), 180f, 42f);
 
             // MainMenuUIController
             GameObject menuCtrlGo = new GameObject("MainMenuController");
@@ -205,8 +206,10 @@ namespace OrbitalPanopticon.Editor
             menuCtrlSo.FindProperty("creditsButton").objectReferenceValue = creditsBtn;
             menuCtrlSo.FindProperty("quitButton").objectReferenceValue = quitBtn;
             menuCtrlSo.FindProperty("settingsPanel").objectReferenceValue = settingsPanelGo;
-            menuCtrlSo.FindProperty("masterVolumeSlider").objectReferenceValue = volControls.slider;
-            menuCtrlSo.FindProperty("masterVolumeValueText").objectReferenceValue = volControls.valueText;
+            menuCtrlSo.FindProperty("musicVolumeSlider").objectReferenceValue = musicControls.slider;
+            menuCtrlSo.FindProperty("musicVolumeValueText").objectReferenceValue = musicControls.valueText;
+            menuCtrlSo.FindProperty("soundsVolumeSlider").objectReferenceValue = soundsControls.slider;
+            menuCtrlSo.FindProperty("soundsVolumeValueText").objectReferenceValue = soundsControls.valueText;
             menuCtrlSo.FindProperty("mouseSensSlider").objectReferenceValue = sensControls.slider;
             menuCtrlSo.FindProperty("mouseSensValueText").objectReferenceValue = sensControls.valueText;
             menuCtrlSo.FindProperty("closeSettingsButton").objectReferenceValue = closeSettingsBtn;
