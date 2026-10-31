@@ -84,8 +84,14 @@ namespace OrbitalPanopticon.Gameplay
             SyncConfigValues();
         }
 
+        private void OnDisable()
+        {
+            ClearWarning();
+        }
+
         private void OnDestroy()
         {
+            ClearWarning();
             if (Instance == this)
             {
                 Instance = null;
@@ -169,6 +175,11 @@ namespace OrbitalPanopticon.Gameplay
                 currentWarningTimer = warningDuration;
                 OnBoundaryWarningChanged?.Invoke(false, 0f, 0f);
             }
+
+            if (FMODAudioManager.Instance != null)
+            {
+                FMODAudioManager.Instance.StopBoundaryWarning(FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
+            }
         }
 
         public void OnPlayerConsumedByBlackHole(Vector3 deathPos)
@@ -194,7 +205,7 @@ namespace OrbitalPanopticon.Gameplay
 
             if (FMODAudioManager.Instance != null)
             {
-                FMODAudioManager.Instance.PlaySignalLostRespawn(deathPos);
+                FMODAudioManager.Instance.StopBoundaryWarning(FMOD.Studio.STOP_MODE.IMMEDIATE);
             }
 
             // 1) Spawn dummy visual prop at deathPos so the Black Hole spaghettifies the dummy wreckage and awards scrap points
@@ -228,6 +239,12 @@ namespace OrbitalPanopticon.Gameplay
 
             // Show SignalLostOverlay UI
             OnSignalLost?.Invoke(reason);
+
+            if (FMODAudioManager.Instance != null)
+            {
+                Vector3 soundPos = playerDrone != null ? playerDrone.transform.position : deathPos;
+                FMODAudioManager.Instance.PlaySignalLostRespawn(soundPos);
+            }
 
             // Unlock player input after 1.2f seconds
             StartCoroutine(RespawnUnlockRoutine());

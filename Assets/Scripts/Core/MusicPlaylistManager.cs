@@ -70,7 +70,7 @@ namespace OrbitalPanopticon.Core
                 _isInitialized = true;
                 string activeSceneName = SceneManager.GetActiveScene().name;
                 PlaylistType sceneType = GetPlaylistTypeForScene(activeSceneName);
-                PlayPlaylist(sceneType, 0, true);
+                PlayPlaylist(sceneType, 0, false);
             }
         }
 
@@ -295,8 +295,24 @@ namespace OrbitalPanopticon.Core
             isCrossfading = true;
             duration = Mathf.Max(0.05f, duration);
 
+            // 1. Wait for scene dissolve transition to complete so music doesn't play in black screen
+            while (SceneTransitionManager.Instance != null && SceneTransitionManager.Instance.IsTransitioning)
+            {
+                yield return null;
+            }
+
+            // 2. For gameplay music: wait until the player actually connects / starts the game
+            if (type == PlaylistType.Gameplay)
+            {
+                while (UIManager.Instance != null && !UIManager.Instance.IsOperatorConnected)
+                {
+                    yield return null;
+                }
+            }
+
             EventReference[] fmodList = GetFmodPlaylist(type);
             bool useFmod = fmodList != null && fmodList.Length > 0 && HasValidFmodEvent(fmodList);
+            bool hasOutgoing = (_activeFmodInstance.isValid()) || (_activeAudioSource != null && _activeAudioSource.isPlaying);
 
             if (useFmod)
             {
@@ -307,7 +323,9 @@ namespace OrbitalPanopticon.Core
                 if (!targetRef.IsNull)
                 {
                     incomingInstance = RuntimeManager.CreateInstance(targetRef);
-                    incomingInstance.setVolume(0f);
+                    // If crossfading from another track, start volume at 0.
+                    // If starting fresh (no previous music), start at full volume (1f) so FMOD's internal fade / intro plays unhindered!
+                    incomingInstance.setVolume(hasOutgoing ? 0f : 1f);
                     incomingInstance.start();
                 }
 
@@ -320,41 +338,46 @@ namespace OrbitalPanopticon.Core
                     _fadingOutAudioSource = _activeAudioSource;
                 }
 
-                float elapsed = 0f;
-                while (elapsed < duration)
+                if (hasOutgoing)
                 {
-                    elapsed += Time.unscaledDeltaTime;
-                    float t = Mathf.Clamp01(elapsed / duration);
+                    float elapsed = 0f;
+                    while (elapsed < duration)
+                    {
+                        elapsed += Time.unscaledDeltaTime;
+                        float t = Mathf.Clamp01(elapsed / duration);
+                        // Equal-power / sinusoidal perceptual audio curve (prevents abrupt linear volume jump)
+                        float inVol = Mathf.Sin(t * Mathf.PI * 0.5f);
+                        float outVol = Mathf.Cos(t * Mathf.PI * 0.5f);
 
+                        if (_fadingOutFmodInstance.isValid())
+                        {
+                            _fadingOutFmodInstance.setVolume(outVol);
+                        }
+                        if (_activeFmodInstance.isValid())
+                        {
+                            _activeFmodInstance.setVolume(inVol);
+                        }
+                        if (_fadingOutAudioSource != null)
+                        {
+                            _fadingOutAudioSource.volume = outVol;
+                        }
+
+                        yield return null;
+                    }
+
+                    // Clean up outgoing FMOD instance
                     if (_fadingOutFmodInstance.isValid())
                     {
-                        _fadingOutFmodInstance.setVolume(1f - t);
+                        _fadingOutFmodInstance.stop(FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
+                        _fadingOutFmodInstance.release();
                     }
-                    if (_activeFmodInstance.isValid())
-                    {
-                        _activeFmodInstance.setVolume(t);
-                    }
+
                     if (_fadingOutAudioSource != null)
                     {
-                        _fadingOutAudioSource.volume = 1f - t;
+                        _fadingOutAudioSource.Stop();
+                        _fadingOutAudioSource.volume = 0f;
+                        _fadingOutAudioSource = null;
                     }
-
-                    yield return null;
-                }
-
-                // Clean up outgoing FMOD instance
-                if (_fadingOutFmodInstance.isValid())
-                {
-                    _fadingOutFmodInstance.setVolume(0f);
-                    _fadingOutFmodInstance.stop(FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
-                    _fadingOutFmodInstance.release();
-                }
-
-                if (_fadingOutAudioSource != null)
-                {
-                    _fadingOutAudioSource.Stop();
-                    _fadingOutAudioSource.volume = 0f;
-                    _fadingOutAudioSource = null;
                 }
 
                 if (_activeFmodInstance.isValid())
@@ -397,18 +420,20 @@ namespace OrbitalPanopticon.Core
                 {
                     elapsed += Time.unscaledDeltaTime;
                     float t = Mathf.Clamp01(elapsed / duration);
+                    float inVol = Mathf.Sin(t * Mathf.PI * 0.5f);
+                    float outVol = Mathf.Cos(t * Mathf.PI * 0.5f);
 
                     if (_fadingOutAudioSource != null && _fadingOutAudioSource.isPlaying)
                     {
-                        _fadingOutAudioSource.volume = 1f - t;
+                        _fadingOutAudioSource.volume = outVol;
                     }
                     if (_fadingOutFmodInstance.isValid())
                     {
-                        _fadingOutFmodInstance.setVolume(1f - t);
+                        _fadingOutFmodInstance.setVolume(outVol);
                     }
                     if (_activeAudioSource != null && targetClip != null)
                     {
-                        _activeAudioSource.volume = t;
+                        _activeAudioSource.volume = inVol;
                     }
 
                     yield return null;
@@ -423,7 +448,6 @@ namespace OrbitalPanopticon.Core
 
                 if (_fadingOutFmodInstance.isValid())
                 {
-                    _fadingOutFmodInstance.setVolume(0f);
                     _fadingOutFmodInstance.stop(FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
                     _fadingOutFmodInstance.release();
                 }

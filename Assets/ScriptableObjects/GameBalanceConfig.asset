@@ -15,7 +15,7 @@ MonoBehaviour:
   globalSimulationSpeed: 0.5
   clockwiseOrbit: 1
   accretionThresholdRadius: 9.25
-  eventHorizonRadius: 0.58
+  eventHorizonRadius: 1
   outerZoneDriftSpeed: 2.2
   outerZoneOrbitSpring: 1.5
   innerMinSwirlSpeed: 16
@@ -129,3 +129,8 @@ MonoBehaviour:
   - CONTAINMENT LOCK EYE-03
   - CONTAINMENT LOCK EYE-04
   enableDebugShortcuts: 1
+  vfxPullBeamAsset: {fileID: 0}
+  vfxPuntShockwaveAsset: {fileID: 0}
+  vfxSpaghettifyVortexAsset: {fileID: 0}
+  vfxValuableLootAuraAsset: {fileID: 0}
+  vfxDashThrusterAsset: {fileID: 0}
