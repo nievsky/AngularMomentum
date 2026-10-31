@@ -39,6 +39,8 @@ namespace OrbitalPanopticon.Core
         private EventInstance _thrusterInstance;
         private EventInstance _gravityGunHoldInstance;
         private EventInstance _criticalMassAlarmInstance;
+        private EventInstance _boundaryWarningInstance;
+        private EventInstance _signalLostRespawnInstance;
 
         // Loop state flags
         private bool _isGravityHoldingActive = false;
@@ -322,6 +324,19 @@ namespace OrbitalPanopticon.Core
             {
                 _thrusterInstance.set3DAttributes(RuntimeUtils.To3DAttributes(playerPos));
             }
+
+            // 5. Boundary Warning & Signal Lost 3D positions
+            if (playerDrone != null)
+            {
+                if (_boundaryWarningInstance.isValid())
+                {
+                    _boundaryWarningInstance.set3DAttributes(RuntimeUtils.To3DAttributes(playerPos));
+                }
+                if (_signalLostRespawnInstance.isValid())
+                {
+                    _signalLostRespawnInstance.set3DAttributes(RuntimeUtils.To3DAttributes(playerPos));
+                }
+            }
         }
 
         private void SetParameter(string paramName, float value)
@@ -417,12 +432,84 @@ namespace OrbitalPanopticon.Core
 
         public void PlayBoundaryWarning(Vector3 position = default)
         {
-            if (audioConfig != null) PlayOneShot(audioConfig.boundaryWarningBeep, position);
+            StopBoundaryWarning(FMOD.Studio.STOP_MODE.IMMEDIATE);
+            EventReference eventRef = (audioConfig != null && !audioConfig.boundaryWarningBeep.IsNull)
+                ? audioConfig.boundaryWarningBeep
+                : RuntimeManager.PathToEventReference("event:/Player/Boundary_Warning_Beep");
+
+            if (!eventRef.IsNull)
+            {
+                try
+                {
+                    _boundaryWarningInstance = RuntimeManager.CreateInstance(eventRef);
+                    if (position != default)
+                    {
+                        _boundaryWarningInstance.set3DAttributes(RuntimeUtils.To3DAttributes(position));
+                    }
+                    _boundaryWarningInstance.start();
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning($"[FMODAudioManager] Failed to play Boundary Warning: {e.Message}");
+                }
+            }
+        }
+
+        public void StopBoundaryWarning(FMOD.Studio.STOP_MODE stopMode = FMOD.Studio.STOP_MODE.ALLOWFADEOUT)
+        {
+            if (_boundaryWarningInstance.isValid())
+            {
+                _boundaryWarningInstance.stop(stopMode);
+                _boundaryWarningInstance.release();
+                _boundaryWarningInstance.clearHandle();
+            }
+
+            StopAllInstancesOfEvent("event:/Player/Boundary_Warning_Beep", stopMode);
+            if (audioConfig != null && !audioConfig.boundaryWarningBeep.IsNull)
+            {
+                StopAllInstancesOfEvent(audioConfig.boundaryWarningBeep, stopMode);
+            }
         }
 
         public void PlaySignalLostRespawn(Vector3 position = default)
         {
-            if (audioConfig != null) PlayOneShot(audioConfig.signalLostRespawnOneShot, position);
+            StopSignalLostRespawn(FMOD.Studio.STOP_MODE.IMMEDIATE);
+            EventReference eventRef = (audioConfig != null && !audioConfig.signalLostRespawnOneShot.IsNull)
+                ? audioConfig.signalLostRespawnOneShot
+                : RuntimeManager.PathToEventReference("event:/Player/Signal_Lost_Respawn");
+
+            if (!eventRef.IsNull)
+            {
+                try
+                {
+                    _signalLostRespawnInstance = RuntimeManager.CreateInstance(eventRef);
+                    if (position != default)
+                    {
+                        _signalLostRespawnInstance.set3DAttributes(RuntimeUtils.To3DAttributes(position));
+                    }
+                    _signalLostRespawnInstance.start();
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning($"[FMODAudioManager] Failed to play Signal Lost / Respawn: {e.Message}");
+                }
+            }
+        }
+
+        public void StopSignalLostRespawn(FMOD.Studio.STOP_MODE stopMode = FMOD.Studio.STOP_MODE.ALLOWFADEOUT)
+        {
+            if (_signalLostRespawnInstance.isValid())
+            {
+                _signalLostRespawnInstance.stop(stopMode);
+                _signalLostRespawnInstance.release();
+                _signalLostRespawnInstance.clearHandle();
+            }
+
+            StopAllInstancesOfEvent("event:/Player/Signal_Lost_Respawn", stopMode);
+            if (audioConfig != null && !audioConfig.signalLostRespawnOneShot.IsNull)
+            {
+                StopAllInstancesOfEvent(audioConfig.signalLostRespawnOneShot, stopMode);
+            }
         }
 
         public void PlayScorePopup(Vector3 position = default)
@@ -470,6 +557,8 @@ namespace OrbitalPanopticon.Core
             ReleaseInstance(ref _thrusterInstance);
             ReleaseInstance(ref _gravityGunHoldInstance);
             ReleaseInstance(ref _criticalMassAlarmInstance);
+            ReleaseInstance(ref _boundaryWarningInstance);
+            ReleaseInstance(ref _signalLostRespawnInstance);
 
             if (Instance == this) Instance = null;
         }
@@ -480,6 +569,47 @@ namespace OrbitalPanopticon.Core
             {
                 instance.stop(FMOD.Studio.STOP_MODE.IMMEDIATE);
                 instance.release();
+                instance.clearHandle();
+            }
+        }
+
+        private void StopAllInstancesOfEvent(EventReference eventRef, FMOD.Studio.STOP_MODE stopMode)
+        {
+            if (eventRef.IsNull) return;
+            try
+            {
+                EventDescription desc = RuntimeManager.GetEventDescription(eventRef);
+                StopAllInstancesOfDescription(desc, stopMode);
+            }
+            catch (Exception) { }
+        }
+
+        private void StopAllInstancesOfEvent(string eventPath, FMOD.Studio.STOP_MODE stopMode)
+        {
+            if (string.IsNullOrEmpty(eventPath)) return;
+            try
+            {
+                EventDescription desc = RuntimeManager.GetEventDescription(eventPath);
+                StopAllInstancesOfDescription(desc, stopMode);
+            }
+            catch (Exception) { }
+        }
+
+        private void StopAllInstancesOfDescription(EventDescription desc, FMOD.Studio.STOP_MODE stopMode)
+        {
+            if (desc.isValid())
+            {
+                if (desc.getInstanceList(out EventInstance[] instances) == FMOD.RESULT.OK && instances != null)
+                {
+                    for (int i = 0; i < instances.Length; i++)
+                    {
+                        if (instances[i].isValid())
+                        {
+                            instances[i].stop(stopMode);
+                            instances[i].release();
+                        }
+                    }
+                }
             }
         }
     }

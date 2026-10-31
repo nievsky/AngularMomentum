@@ -82,6 +82,9 @@ namespace OrbitalPanopticon.Core
         private bool _isOperatorConnected = false;
         private int _lastCoins = -1;
 
+        public bool IsOperatorConnected => _isOperatorConnected;
+        public event System.Action OnOperatorConnected;
+
         private void Awake()
         {
             Instance = this;
@@ -221,6 +224,8 @@ namespace OrbitalPanopticon.Core
             {
                 startOverlayPanel.SetActive(false);
             }
+
+            OnOperatorConnected?.Invoke();
         }
 
         private IEnumerator FadeOutStartOverlayRoutine()
