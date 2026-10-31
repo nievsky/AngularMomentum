@@ -366,6 +366,7 @@ namespace OrbitalPanopticon.Gameplay
 
                 float pullElapsed = 0f;
                 const float pullDuration = 3.6f;
+                float cutoffDist = horizonRadius * 1.15f;
 
                 if (FMODAudioManager.Instance != null)
                 {
@@ -381,6 +382,12 @@ namespace OrbitalPanopticon.Gameplay
                     // Smoothly pull PlayerDrone straight into the center of the Black Hole (0,0,0)
                     playerDrone.transform.position = Vector3.Lerp(playerStartPos, center, smoothT);
 
+                    // Step 1: Progressively ramp up VHSCameraController tape noise, tracking glitch, and chromatic aberration (0.0 -> 1.0)
+                    if (VHSCameraController.Instance != null)
+                    {
+                        VHSCameraController.Instance.SetFinaleInterference(t);
+                    }
+
                     // Increase camera FOV from 60 to 115 for relativistic warp effect
                     if (droneCam != null)
                     {
@@ -391,22 +398,85 @@ namespace OrbitalPanopticon.Gameplay
                         droneCam.transform.localPosition = camLocalPos + (Random.insideUnitSphere * shudder);
                     }
 
+                    // Step 2: Crossing Event Horizon check (dist <= eventHorizonRadius * 1.15f)
+                    float currentDist = Vector3.Distance(playerDrone.transform.position, center);
+                    if (currentDist <= cutoffDist)
+                    {
+                        break;
+                    }
+
                     yield return null;
                 }
 
-                if (playerDrone != null)
-                {
-                    playerDrone.transform.position = center;
-                }
                 if (droneCam != null)
                 {
                     droneCam.transform.localPosition = camLocalPos;
                 }
             }
 
-            // The moment the player reaches (0,0,0), call SceneTransitionManager.Instance.TransitionToScene("CreditsScene")!
-            Debug.Log("<color=#FF00FF>[FINALE] Singularity crossed! Transitioning to CreditsScene...</color>");
+            // Step 2 (Crossing the Event Horizon — Instant Camera Cutoff):
+            Debug.Log("<color=#FF0055>[FINALE] Crossing Event Horizon! Triggering Instant Camera Cutoff & CRT Turn-Off Sequence...</color>");
 
+            // 1. Immediately hide RoboArmVisual
+            if (GravityManipulatorController.Instance != null && GravityManipulatorController.Instance.RoboArmVisual != null)
+            {
+                GravityManipulatorController.Instance.RoboArmVisual.gameObject.SetActive(false);
+            }
+            else
+            {
+                var arm = GameObject.Find("RoboArmVisual");
+                if (arm != null) arm.SetActive(false);
+            }
+
+            // 2. Hide in-game HUD bars
+            if (UIManager.Instance != null)
+            {
+                UIManager.Instance.HideAllHUD();
+            }
+            if (_finaleAlertPanel != null)
+            {
+                _finaleAlertPanel.SetActive(false);
+            }
+
+            // 3. Stop rendering 3D world
+            Camera activeCam = Camera.main;
+            if (activeCam != null)
+            {
+                activeCam.cullingMask = 0;
+                activeCam.clearFlags = CameraClearFlags.SolidColor;
+                activeCam.backgroundColor = Color.black;
+            }
+
+            // 4. Mute all ongoing gameplay audio & loops for dramatic silence
+            if (FMODAudioManager.Instance != null)
+            {
+                FMODAudioManager.Instance.StopAllGameplayLoops();
+            }
+            if (MusicPlaylistManager.Instance != null)
+            {
+                MusicPlaylistManager.Instance.StopAllMusicImmediate();
+            }
+
+            // 5. Trigger CRT TV Turn-Off Animation
+            CameraShutdownEffect shutdownEffect = CameraShutdownEffect.Instance != null 
+                ? CameraShutdownEffect.Instance 
+                : FindAnyObjectByType<CameraShutdownEffect>();
+
+            if (shutdownEffect != null)
+            {
+                yield return shutdownEffect.PlayCRTShutdownSequenceRoutine();
+            }
+            else
+            {
+                yield return new WaitForSecondsRealtime(0.52f);
+            }
+
+            // Step 3 (Dramatic Silence Hold): Wait 1.8f seconds in complete pitch-black silence
+            Debug.Log("<color=#FFFFFF>[FINALE] Holding in dramatic silence (1.8s)...</color>");
+            yield return new WaitForSecondsRealtime(1.8f);
+
+            // Step 4 (Transition to Credits): Smoothly dissolve to Credits crawl
+            Debug.Log("<color=#FF00FF>[FINALE] Transitioning to CreditsScene...</color>");
             if (SceneTransitionManager.Instance != null)
             {
                 SceneTransitionManager.Instance.TransitionToScene("CreditsScene");

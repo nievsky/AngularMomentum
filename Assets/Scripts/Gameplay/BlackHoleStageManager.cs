@@ -21,9 +21,12 @@ namespace OrbitalPanopticon.Gameplay
         [SerializeField] private BlackHoleGravity blackHoleGravity;
         [SerializeField] private Transform visualRoot;
         [SerializeField] private GameObject accretionDiskVisual;
+        [SerializeField] private Transform eventHorizonOpaqueCore;
         [SerializeField] private SphereCollider eventHorizonCollider;
         [SerializeField] private SphereCollider gravityWellCollider;
         [SerializeField] private List<OverseerContainmentEye> containmentEyes = new List<OverseerContainmentEye>();
+
+        public Transform EventHorizonOpaqueCore => eventHorizonOpaqueCore;
 
         // Public Events
         public event Action<float, int> OnMassChanged; // (mass, stage 1-4)
@@ -115,6 +118,12 @@ namespace OrbitalPanopticon.Gameplay
             {
                 var ad = visualRoot.Find("AccretionDiskVisual");
                 if (ad != null) accretionDiskVisual = ad.gameObject;
+            }
+
+            if (eventHorizonOpaqueCore == null && visualRoot != null)
+            {
+                var eh = visualRoot.Find("EventHorizonOpaqueCore");
+                if (eh != null) eventHorizonOpaqueCore = eh;
             }
 
             if (eventHorizonCollider == null)
@@ -303,8 +312,52 @@ namespace OrbitalPanopticon.Gameplay
             config.eventHorizonRadius = targetHorizon;
             config.accretionThresholdRadius = targetAccretion;
 
+            if (eventHorizonOpaqueCore != null)
+            {
+                float parentScale = (visualRoot != null) ? visualRoot.localScale.x : 1f;
+                float coreLocalScale = (targetHorizon * 2.0f) / Mathf.Max(0.001f, parentScale);
+                eventHorizonOpaqueCore.localScale = Vector3.one * coreLocalScale;
+            }
+
             if (eventHorizonCollider != null) eventHorizonCollider.radius = targetHorizon;
             if (gravityWellCollider != null) gravityWellCollider.radius = targetAccretion;
+        }
+
+        public void EnsureEventHorizonCore()
+        {
+            if (visualRoot == null) visualRoot = transform.Find("VisualRoot");
+            if (visualRoot == null) visualRoot = transform;
+
+            if (eventHorizonOpaqueCore == null)
+            {
+                var existing = visualRoot.Find("EventHorizonOpaqueCore");
+                if (existing != null)
+                {
+                    eventHorizonOpaqueCore = existing;
+                }
+            }
+
+            if (eventHorizonOpaqueCore == null)
+            {
+                GameObject coreGo = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                coreGo.name = "EventHorizonOpaqueCore";
+                coreGo.transform.SetParent(visualRoot, false);
+                coreGo.transform.localPosition = Vector3.zero;
+                coreGo.transform.localRotation = Quaternion.identity;
+
+                var col = coreGo.GetComponent<Collider>();
+                if (col != null)
+                {
+#if UNITY_EDITOR
+                    if (!Application.isPlaying) DestroyImmediate(col);
+                    else Destroy(col);
+#else
+                    Destroy(col);
+#endif
+                }
+
+                eventHorizonOpaqueCore = coreGo.transform;
+            }
         }
     }
 }

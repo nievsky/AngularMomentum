@@ -82,7 +82,14 @@ namespace OrbitalPanopticon.Core
             // Credits Scene
             { "CREDITS_BackBtn", ("В ГЛАВНОЕ МЕНЮ (ESC)", "RETURN TO MENU (ESC)") },
             { "CREDITS_SpeedHint", ("[ УДЕРЖИВАЙТЕ ПРОБЕЛ / ЛКМ ДЛЯ УСКОРЕНИЯ ТЕКСТА x3 ]", "[ HOLD SPACE / LMB TO SPEED UP TEXT x3 ]") },
-            { "CREDITS_Thanks", ("СПАСИБО ЗА ОЧИСТКУ ОРБИТЫ!", "THANK YOU FOR CLEARING THE ORBIT!") }
+            { "CREDITS_Thanks", ("СПАСИБО ЗА ОЧИСТКУ ОРБИТЫ!", "THANK YOU FOR CLEARING THE ORBIT!") },
+
+            // In-Game ESC Pause Menu
+            { "PAUSE_Title", ("ПАУЗА СИСТЕМЫ", "SYSTEM PAUSE") },
+            { "PAUSE_Resume", ("ПРОДОЛЖИТЬ", "RESUME") },
+            { "PAUSE_Settings", ("НАСТРОЙКИ", "SETTINGS") },
+            { "PAUSE_MainMenu", ("В ГЛАВНОЕ МЕНЮ", "MAIN MENU") },
+            { "PAUSE_Quit", ("ВЫЙТИ ИЗ ИГРЫ", "QUIT GAME") }
         };
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]

@@ -27,10 +27,19 @@ namespace OrbitalPanopticon.UI
 
         [Header("Language Switcher")]
         [SerializeField] private GameObject languageSwitcherPanel;
-        [SerializeField] private Button btnLangRU;
-        [SerializeField] private Button btnLangEN;
-        [SerializeField] private Outline outlineLangRU;
-        [SerializeField] private Outline outlineLangEN;
+        [SerializeField] private Button btnFlagRU;
+        [SerializeField] private Button btnFlagEN;
+        [SerializeField] private Image imageFlagRU;
+        [SerializeField] private Image imageFlagEN;
+        [SerializeField] private Outline outlineFlagRU;
+        [SerializeField] private Outline outlineFlagEN;
+        [SerializeField] private Sprite flagSpriteRU;
+        [SerializeField] private Sprite flagSpriteEN;
+
+        public Button BtnFlagRU => btnFlagRU;
+        public Button BtnFlagEN => btnFlagEN;
+        public Image ImageFlagRU => imageFlagRU;
+        public Image ImageFlagEN => imageFlagEN;
 
         [Header("Localized Labels (Auto-Resolved if Unassigned)")]
         [SerializeField] private TextMeshProUGUI subtitleText;
@@ -154,47 +163,99 @@ namespace OrbitalPanopticon.UI
             {
                 GameObject panelGo = new GameObject("LanguageSwitcherPanel", typeof(RectTransform), typeof(Image), typeof(Outline));
                 panelGo.transform.SetParent(canvas.transform, false);
-
-                RectTransform rt = panelGo.GetComponent<RectTransform>();
-                rt.anchorMin = new Vector2(1f, 0f);
-                rt.anchorMax = new Vector2(1f, 0f);
-                rt.pivot = new Vector2(1f, 0f);
-                rt.anchoredPosition = new Vector2(-40f, 40f);
-                rt.sizeDelta = new Vector2(175f, 48f);
-
-                Image bg = panelGo.GetComponent<Image>();
-                bg.color = new Color(0.04f, 0.08f, 0.14f, 0.92f);
-
-                Outline outline = panelGo.GetComponent<Outline>();
-                outline.effectColor = new Color(0.2f, 0.85f, 1f, 0.8f);
-                outline.effectDistance = new Vector2(1.5f, -1.5f);
-
                 languageSwitcherPanel = panelGo;
-
-                // RU Flag Button
-                btnLangRU = CreateFlagButton(panelGo.transform, "Btn_Lang_RU", new Vector2(-42f, 0f), "RU", new Color(0.2f, 0.55f, 1f));
-                outlineLangRU = btnLangRU.GetComponent<Outline>();
-
-                // EN Flag Button
-                btnLangEN = CreateFlagButton(panelGo.transform, "Btn_Lang_EN", new Vector2(42f, 0f), "EN", new Color(1f, 0.35f, 0.35f));
-                outlineLangEN = btnLangEN.GetComponent<Outline>();
             }
 
-            if (btnLangRU != null)
+            RectTransform rt = languageSwitcherPanel.GetComponent<RectTransform>();
+            rt.anchorMin = new Vector2(1f, 0f);
+            rt.anchorMax = new Vector2(1f, 0f);
+            rt.pivot = new Vector2(1f, 0f);
+            rt.anchoredPosition = new Vector2(-40f, 40f);
+            rt.sizeDelta = new Vector2(270f, 96f);
+
+            Image bg = languageSwitcherPanel.GetComponent<Image>();
+            bg.color = new Color(0.04f, 0.08f, 0.14f, 0.92f);
+
+            Outline outline = languageSwitcherPanel.GetComponent<Outline>();
+            outline.effectColor = new Color(0.2f, 0.85f, 1f, 0.8f);
+            outline.effectDistance = new Vector2(1.5f, -1.5f);
+
+            // Clean up legacy small text buttons if present
+            Transform oldRu = languageSwitcherPanel.transform.Find("Btn_Lang_RU");
+            if (oldRu != null)
             {
-                btnLangRU.onClick.RemoveAllListeners();
-                btnLangRU.onClick.AddListener(() => OnLanguageButtonClicked(GameLanguage.RU));
+#if UNITY_EDITOR
+                if (!Application.isPlaying) DestroyImmediate(oldRu.gameObject);
+                else Destroy(oldRu.gameObject);
+#else
+                Destroy(oldRu.gameObject);
+#endif
             }
-            if (btnLangEN != null)
+            Transform oldEn = languageSwitcherPanel.transform.Find("Btn_Lang_EN");
+            if (oldEn != null)
             {
-                btnLangEN.onClick.RemoveAllListeners();
-                btnLangEN.onClick.AddListener(() => OnLanguageButtonClicked(GameLanguage.EN));
+#if UNITY_EDITOR
+                if (!Application.isPlaying) DestroyImmediate(oldEn.gameObject);
+                else Destroy(oldEn.gameObject);
+#else
+                Destroy(oldEn.gameObject);
+#endif
+            }
+
+#if UNITY_EDITOR
+            if (flagSpriteRU == null)
+            {
+                flagSpriteRU = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/_Project/Textures/UI/Flag_RU.png");
+            }
+            if (flagSpriteEN == null)
+            {
+                flagSpriteEN = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/_Project/Textures/UI/Flag_EN.png");
+            }
+#endif
+
+            // RU Flag Button
+            Transform ruTr = languageSwitcherPanel.transform.Find("Btn_Flag_RU");
+            if (ruTr == null)
+            {
+                btnFlagRU = CreateLargeFlagButton(languageSwitcherPanel.transform, "Btn_Flag_RU", new Vector2(-65f, 0f), flagSpriteRU, out imageFlagRU, out outlineFlagRU);
+            }
+            else
+            {
+                btnFlagRU = ruTr.GetComponent<Button>();
+                outlineFlagRU = ruTr.GetComponent<Outline>();
+                var imgTr = ruTr.Find("Image_Flag");
+                if (imgTr != null) imageFlagRU = imgTr.GetComponent<Image>();
+            }
+
+            // EN Flag Button
+            Transform enTr = languageSwitcherPanel.transform.Find("Btn_Flag_EN");
+            if (enTr == null)
+            {
+                btnFlagEN = CreateLargeFlagButton(languageSwitcherPanel.transform, "Btn_Flag_EN", new Vector2(65f, 0f), flagSpriteEN, out imageFlagEN, out outlineFlagEN);
+            }
+            else
+            {
+                btnFlagEN = enTr.GetComponent<Button>();
+                outlineFlagEN = enTr.GetComponent<Outline>();
+                var imgTr = enTr.Find("Image_Flag");
+                if (imgTr != null) imageFlagEN = imgTr.GetComponent<Image>();
+            }
+
+            if (btnFlagRU != null)
+            {
+                btnFlagRU.onClick.RemoveAllListeners();
+                btnFlagRU.onClick.AddListener(() => OnLanguageButtonClicked(GameLanguage.RU));
+            }
+            if (btnFlagEN != null)
+            {
+                btnFlagEN.onClick.RemoveAllListeners();
+                btnFlagEN.onClick.AddListener(() => OnLanguageButtonClicked(GameLanguage.EN));
             }
 
             UpdateLanguageSwitcherVisuals();
         }
 
-        private Button CreateFlagButton(Transform parent, string name, Vector2 pos, string code, Color accent)
+        private Button CreateLargeFlagButton(Transform parent, string name, Vector2 pos, Sprite flagSprite, out Image flagImage, out Outline borderOutline)
         {
             GameObject btnGo = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button), typeof(Outline), typeof(UIButtonTweenAnimator));
             btnGo.transform.SetParent(parent, false);
@@ -204,33 +265,38 @@ namespace OrbitalPanopticon.UI
             rt.anchorMax = new Vector2(0.5f, 0.5f);
             rt.pivot = new Vector2(0.5f, 0.5f);
             rt.anchoredPosition = pos;
-            rt.sizeDelta = new Vector2(72f, 32f);
+            rt.sizeDelta = new Vector2(110f, 74f);
 
-            Image img = btnGo.GetComponent<Image>();
-            img.color = new Color(0.08f, 0.13f, 0.20f, 0.95f);
+            Image bg = btnGo.GetComponent<Image>();
+            bg.color = new Color(0.08f, 0.12f, 0.18f, 0.98f);
 
-            Outline outline = btnGo.GetComponent<Outline>();
-            outline.effectDistance = new Vector2(1.5f, -1.5f);
-            outline.effectColor = accent;
+            borderOutline = btnGo.GetComponent<Outline>();
+            borderOutline.effectDistance = new Vector2(2f, -2f);
+            borderOutline.effectColor = new Color(0.3f, 0.4f, 0.5f, 0.4f);
 
             var animator = btnGo.GetComponent<UIButtonTweenAnimator>();
             animator.SetOriginalScale(Vector3.one);
 
             Button btn = btnGo.GetComponent<Button>();
 
-            GameObject textGo = new GameObject("Text_Code", typeof(RectTransform), typeof(TextMeshProUGUI));
-            textGo.transform.SetParent(btnGo.transform, false);
+            // Full-size Flag Image child
+            GameObject flagGo = new GameObject("Image_Flag", typeof(RectTransform), typeof(Image));
+            flagGo.transform.SetParent(btnGo.transform, false);
 
-            RectTransform textRt = textGo.GetComponent<RectTransform>();
-            textRt.anchorMin = Vector2.zero;
-            textRt.anchorMax = Vector2.one;
-            textRt.sizeDelta = Vector2.zero;
+            RectTransform flagRt = flagGo.GetComponent<RectTransform>();
+            flagRt.anchorMin = Vector2.zero;
+            flagRt.anchorMax = Vector2.one;
+            flagRt.pivot = new Vector2(0.5f, 0.5f);
+            flagRt.sizeDelta = new Vector2(-8f, -8f);
+            flagRt.anchoredPosition = Vector2.zero;
 
-            TextMeshProUGUI tmp = textGo.GetComponent<TextMeshProUGUI>();
-            tmp.text = $"<b>[{code}]</b>";
-            tmp.fontSize = 13;
-            tmp.alignment = TextAlignmentOptions.Center;
-            tmp.color = Color.white;
+            flagImage = flagGo.GetComponent<Image>();
+            flagImage.color = Color.white;
+            flagImage.preserveAspect = true;
+            if (flagSprite != null)
+            {
+                flagImage.sprite = flagSprite;
+            }
 
             return btn;
         }
@@ -238,7 +304,7 @@ namespace OrbitalPanopticon.UI
         private void OnLanguageButtonClicked(GameLanguage lang)
         {
             LocalizationManager.SetLanguage(lang);
-            Button activeBtn = (lang == GameLanguage.RU) ? btnLangRU : btnLangEN;
+            Button activeBtn = (lang == GameLanguage.RU) ? btnFlagRU : btnFlagEN;
             if (activeBtn != null)
             {
                 activeBtn.transform.DOKill();
@@ -251,24 +317,24 @@ namespace OrbitalPanopticon.UI
         {
             bool isRU = LocalizationManager.IsRussian;
 
-            if (outlineLangRU != null)
+            if (outlineFlagRU != null)
             {
-                outlineLangRU.effectColor = isRU ? new Color(1f, 0.85f, 0.2f, 1f) : new Color(0.3f, 0.4f, 0.5f, 0.4f);
-                outlineLangRU.effectDistance = isRU ? new Vector2(2f, -2f) : new Vector2(1f, -1f);
+                outlineFlagRU.effectColor = isRU ? new Color(0.2f, 0.85f, 1f, 1f) : new Color(0.3f, 0.35f, 0.45f, 0.4f);
+                outlineFlagRU.effectDistance = isRU ? new Vector2(3f, -3f) : new Vector2(1.5f, -1.5f);
             }
-            if (btnLangRU != null)
+            if (btnFlagRU != null)
             {
-                btnLangRU.transform.localScale = isRU ? Vector3.one * 1.05f : Vector3.one * 0.95f;
+                btnFlagRU.transform.localScale = isRU ? Vector3.one * 1.05f : Vector3.one * 0.95f;
             }
 
-            if (outlineLangEN != null)
+            if (outlineFlagEN != null)
             {
-                outlineLangEN.effectColor = !isRU ? new Color(1f, 0.85f, 0.2f, 1f) : new Color(0.3f, 0.4f, 0.5f, 0.4f);
-                outlineLangEN.effectDistance = !isRU ? new Vector2(2f, -2f) : new Vector2(1f, -1f);
+                outlineFlagEN.effectColor = !isRU ? new Color(0.2f, 0.85f, 1f, 1f) : new Color(0.3f, 0.35f, 0.45f, 0.4f);
+                outlineFlagEN.effectDistance = !isRU ? new Vector2(3f, -3f) : new Vector2(1.5f, -1.5f);
             }
-            if (btnLangEN != null)
+            if (btnFlagEN != null)
             {
-                btnLangEN.transform.localScale = !isRU ? Vector3.one * 1.05f : Vector3.one * 0.95f;
+                btnFlagEN.transform.localScale = !isRU ? Vector3.one * 1.05f : Vector3.one * 0.95f;
             }
         }
 

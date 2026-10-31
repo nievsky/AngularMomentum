@@ -1,5 +1,32 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-6746631379814312950
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Blackhole/Collapse_GameOver
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Blackhole/Collapse_GameOver
+  Guid:
+    Data1: 796395129
+    Data2: 1282654343
+    Data3: 801463450
+    Data4: 1270391367
+  Banks:
+  - {fileID: 1206500338223914334}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 5346
 --- !u!114 &-4678422627807385823
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -135,6 +162,87 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 60
   Length: 27960
+--- !u!114 &-1999112365666556362
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Weapon/GravityGun_Hold_Punt
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Weapon/GravityGun_Hold_Punt
+  Guid:
+    Data1: 1395821805
+    Data2: 1276669968
+    Data3: 1118351800
+    Data4: 431399961
+  Banks:
+  - {fileID: 1206500338223914334}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 875
+--- !u!114 &-1199398483129989483
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/MusicGameplay
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/MusicGameplay
+  Guid:
+    Data1: 240368200
+    Data2: 1248749185
+    Data3: 436691867
+    Data4: -1852162274
+  Banks:
+  - {fileID: 1206500338223914334}
+  IsStream: 1
+  Is3D: 0
+  IsOneShot: 0
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 134769
+--- !u!114 &-910432846171389987
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Player/Boundary_Warning_Beep
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Player/Boundary_Warning_Beep
+  Guid:
+    Data1: -2026481849
+    Data2: 1206464885
+    Data3: -1921201788
+    Data4: 1724677121
+  Banks:
+  - {fileID: 1206500338223914334}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 0
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 8200
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -153,22 +261,22 @@ MonoBehaviour:
   EditorEvents:
   - {fileID: -2933343117144284886}
   - {fileID: -4508080486168585058}
-  - {fileID: -4678422627807385823}
-  - {fileID: 8534987069125408952}
-  - {fileID: 2922544707766357331}
-  - {fileID: -3162588088598610348}
-  - {fileID: 718460502020177242}
-  - {fileID: -3731078813574528267}
-  - {fileID: 1606418619250310922}
-  - {fileID: 452124941215673372}
-  - {fileID: 250376656742973212}
+  - {fileID: 4503679319983954620}
+  - {fileID: -910432846171389987}
+  - {fileID: -1199398483129989483}
+  - {fileID: 8568847049878802105}
+  - {fileID: -6746631379814312950}
+  - {fileID: 5796031600623458317}
+  - {fileID: 2792630031582971311}
+  - {fileID: 6514209862584641672}
+  - {fileID: -1999112365666556362}
   EditorParameters: []
   MasterBanks:
   - {fileID: 1206500338223914334}
   StringsBanks:
   - {fileID: 384512280698726887}
   cacheVersion: 131848
-  cacheTime: 639290601453215053
+  cacheTime: 639290570217180391
   SerializableEventsDict:
   - key: event:/Blackhole/Singularity_Hum
     index: 0
@@ -178,19 +286,19 @@ MonoBehaviour:
     index: 2
   - key: event:/Player/Boundary_Warning_Beep
     index: 3
-  - key: event:/Blackhole/Scrap_Spaghettify
-    index: 4
-  - key: event:/Blackhole/Collapse_GameOver
-    index: 5
-  - key: event:/Weapon/GravityGun_Hold_Loop
-    index: 6
-  - key: event:/Weapon/GravityGun_Hold_Punt
-    index: 7
-  - key: event:/Boss/Overseer_Destroyed
-    index: 8
-  - key: event:/Boss/Overseer_Idle
-    index: 9
   - key: event:/MusicGameplay
+    index: 4
+  - key: event:/Blackhole/Scrap_Spaghettify
+    index: 5
+  - key: event:/Blackhole/Collapse_GameOver
+    index: 6
+  - key: event:/Boss/Overseer_Destroyed
+    index: 7
+  - key: event:/Boss/Overseer_Idle
+    index: 8
+  - key: event:/Weapon/GravityGun_Hold_Loop
+    index: 9
+  - key: event:/Weapon/GravityGun_Hold_Punt
     index: 10
 --- !u!114 &250376656742973212
 MonoBehaviour:
@@ -234,7 +342,7 @@ MonoBehaviour:
   Path: Assets/FMOD/Desktop/Master.strings.bank
   Name: Master.strings
   StudioPath: bank:/Master.strings
-  lastModified: 639290601453215053
+  lastModified: 639290570217180391
   FileSizes:
   - Name: Desktop
     Value: 1360
@@ -310,7 +418,7 @@ MonoBehaviour:
   Path: Assets/FMOD/Desktop/Master.bank
   Name: Master
   StudioPath: bank:/Master
-  lastModified: 639290601453190039
+  lastModified: 639290570217164960
   FileSizes:
   - Name: Desktop
     Value: 4160960
@@ -344,6 +452,33 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 8303
+--- !u!114 &2792630031582971311
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Boss/Overseer_Idle
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Boss/Overseer_Idle
+  Guid:
+    Data1: 56212931
+    Data2: 1173858237
+    Data3: 1878719880
+    Data4: 1780395995
+  Banks:
+  - {fileID: 1206500338223914334}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 5831
 --- !u!114 &2922544707766357331
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -371,6 +506,87 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 50
   Length: 851
+--- !u!114 &4503679319983954620
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Player/Signal_Lost_Respawn
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Player/Signal_Lost_Respawn
+  Guid:
+    Data1: 1724754181
+    Data2: 1220784314
+    Data3: -1174031993
+    Data4: -1451889056
+  Banks:
+  - {fileID: 1206500338223914334}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 2405
+--- !u!114 &5796031600623458317
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Boss/Overseer_Destroyed
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Boss/Overseer_Destroyed
+  Guid:
+    Data1: -971791706
+    Data2: 1260674535
+    Data3: 1415243656
+    Data4: -888433246
+  Banks:
+  - {fileID: 1206500338223914334}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 8303
+--- !u!114 &6514209862584641672
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Weapon/GravityGun_Hold_Loop
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Weapon/GravityGun_Hold_Loop
+  Guid:
+    Data1: -628893757
+    Data2: 1202257670
+    Data3: -1114030942
+    Data4: -2099506591
+  Banks:
+  - {fileID: 1206500338223914334}
+  IsStream: 0
+  Is3D: 0
+  IsOneShot: 0
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 20
+  Length: 7000
 --- !u!114 &8534987069125408952
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -398,3 +614,30 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 20
   Length: 8200
+--- !u!114 &8568847049878802105
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Blackhole/Scrap_Spaghettify
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Blackhole/Scrap_Spaghettify
+  Guid:
+    Data1: 1748800076
+    Data2: 1204892513
+    Data3: -1409214822
+    Data4: -232205417
+  Banks:
+  - {fileID: 1206500338223914334}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 50
+  Length: 851

@@ -240,12 +240,17 @@ When Black Hole mass reaches **120,000 tons** (Stage 4 target), all containment 
 
 ### 5.3 Outer Wilds Gravitational Lensing & Accretion Disk
 - **Screen-Space Gravitational Lensing ([`S_OuterWildsBlackHole.shader`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/Materials/S_OuterWildsBlackHole.shader), [`M_OuterWildsBlackHole.mat`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/Materials/M_OuterWildsBlackHole.mat))**:
-  - Custom URP transparent shader (`Queue = Transparent+50`, `ZWrite Off`, `Cull Front`) sampling `_CameraOpaqueTexture`.
+  - Custom URP transparent shader (`Queue = Transparent-100 / 2900`, `ZWrite Off`, `Cull Front`) sampling `_CameraOpaqueTexture` and `_CameraDepthTexture`.
+  - **True Depth Rejection (Fix Issue #1)**: Evaluates `LinearEyeDepth(SampleSceneDepth(screenUV))` against `length(_WorldSpaceCameraPos - centerWS) - coreRadiusWorld * 1.05f`. If an opaque object (such as `RoboArmVisual`, held scrap, or debris in front of the black hole) is closer than the singularity, the shader immediately executes `discard;`, preventing the black hole from ever rendering over foreground objects.
   - Warps background stars, Overseer beams, and debris around the singularity center:
     1. **Singularity Core (`r < _CoreRadius`)**: Pure pitch-black core (`float4(0, 0, 0, 1)`).
     2. **Photon Ring / Einstein Ring (`r ≈ _CoreRadius`)**: Razor-thin warm photon ring where light orbits the event horizon.
     3. **Relativistic Gravitational Lensing (`r >= _CoreRadius`)**: Inverse power curve deflection offsetting screen UV toward the center.
   - Lensing sphere mesh scaled to `2.8x` inside `VisualRoot` so the lens extends wide around the core.
+- **Solid Black Event Horizon Opaque Core ([`S_EventHorizonOpaqueCore.shader`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/Materials/S_EventHorizonOpaqueCore.shader), [`M_EventHorizonOpaqueCore.mat`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/Materials/M_EventHorizonOpaqueCore.mat))**:
+  - Inner sphere `EventHorizonOpaqueCore` child of `VisualRoot` with pure unlit pitch-black opaque shader (`Queue = Geometry / 2000`, `ZWrite On`, `ZTest LEqual`).
+  - Scaled dynamically in `BlackHoleStageManager` to match `eventHorizonRadius * 2f`.
+  - Ensures depth buffer writing and solid occlusion for any geometry or line renderers behind the Event Horizon.
 - **Optional Toggleable Accretion Disk ([`S_AccretionDisk.shader`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/Materials/S_AccretionDisk.shader), [`M_AccretionDisk.mat`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/Materials/M_AccretionDisk.mat))**:
   - Flat horizontal disk/quad (`AccretionDiskVisual`, scale `7.0, 7.0, 1.0`) inside `VisualRoot` with polar coordinate Keplerian differential swirl, dual-layer procedural FBM noise, and hot-to-cool radial temperature gradient (`_InnerHotColor` to `_OuterCoolColor`).
   - Render queue `Transparent+20` so the disk is drawn before the lensing sphere and dynamically distorted by the gravitational lens.
@@ -555,13 +560,13 @@ Orbital Panopticon features an overhauled AAA-indie VFX pipeline combining Visua
   - **Scrap**: Beams remain 100% visual with zero colliders, triggers, or scoring multipliers.
   - **Player Drone**: Active beams (`!isLockBroken && !isConsumedOrCollapsing`) project an impassable energy hazard.
 - **3D Line Segment Proximity Hazard Check**:
-  - Every frame, each active Eye calculates the shortest 3D distance from `PlayerDrone.transform.position` to the line segment between `PupilPosition` and `BlackHoleCenter (0,0,0)`:
+  - Every frame, each active Eye calculates the shortest 3D distance from `PlayerDrone.transform.position` to the line segment between `PupilPosition` and the surface of the event horizon `blackHoleCenter + dirFromCenterToEye * (eventHorizonRadius * 0.98f)`:
     $$\vec{AB} = B - A, \quad t = \text{clamp01}\left(\frac{(\vec{P} - A) \cdot \vec{AB}}{|\vec{AB}|^2}\right), \quad \text{closestPoint} = A + t \cdot \vec{AB}$$
   - Hazard threshold radius: `2.2m`.
 - **Hit Feedback & Knockback**:
   - When `dist < 2.2f` and `drone.BeamHitCooldownTimer <= 0f`:
     - Increments `drone.CurrentBeamHits++` and applies a `1.1s` cooldown timer (preventing multi-hit clipping during a single pass).
-    - Applies a strong knockback away from the beam: `rb.AddForce(awayFromBeamDir * 18f, ForceMode.VelocityChange)`.
+    - Applies a gentle push away from the beam: `rb.linearVelocity = rb.linearVelocity * 0.5f + awayDir * cfg.beamKnockbackImpulse` (`beamKnockbackImpulse = 4.5f`, reduced from `18f`).
     - Triggers full sensory shock:
       - `PostProcessingToolkitController.Instance.TriggerImpactPulse(2.2f, 0.65f, -0.18f, 0.35f, 0.7f)`
       - `VHSCameraController.Instance.TriggerGlitchBurst(0.85f, 0.35f)`
@@ -614,6 +619,135 @@ Orbital Panopticon features an overhauled AAA-indie VFX pipeline combining Visua
   - Instant live update of all scene text upon switching without scene reloading.
 - **Unified Font Rendering**:
   - `GlobalFontApplier.ApplyToAll()` ensures all localized Cyrillic and Latin characters render cleanly using the master font assets.
+
+### 5.15 Black Hole Depth Sorting, Ballistic Scrap Coasting & Smooth Vortex Capture (Issues #1, #2, #8)
+
+#### 1. Black Hole Foreground Depth Rejection & Event Horizon Opaque Core (Issue #1)
+- **Problem Solved**: `S_OuterWildsBlackHole.shader` previously rendered over foreground elements (held scrap, `RoboArmVisual`), and containment beams pierced through the singularity core.
+- **True Depth Rejection**:
+  - `S_OuterWildsBlackHole.shader` queue set to `"Transparent-100"` (`renderQueue = 2900`).
+  - Frag pass samples `_CameraDepthTexture` via `SampleSceneDepth(screenUV)` and converts to linear eye depth.
+  - If `sceneLinearDepth < bhCenterDepth - coreRadiusWorld * 1.05f`, fragment immediately discards. Foreground objects are never covered by black hole lensing or core.
+- **Event Horizon Opaque Core**:
+  - `EventHorizonOpaqueCore` sphere inside `BlackHoleSystem/VisualRoot` with dedicated pure black shader `S_EventHorizonOpaqueCore.shader` (`Queue = Geometry / 2000`, `ZWrite On`, `ZTest LEqual`, `#000000`).
+  - Scaled dynamically by `BlackHoleStageManager` to match `eventHorizonRadius * 2f`.
+  - Terminates all 4 Overseer `ContainmentBeam` endpoints at `blackHoleCenter + dirFromCenterToEye * (eventHorizonRadius * 0.98f)`. Beams terminate cleanly on the event horizon surface without piercing into the core.
+
+#### 2. Ballistic Scrap Coasting & Smooth Vortex Capture (Issue #2)
+- **Problem Solved**: Thrown scrap outside the accretion threshold was previously captured into Zone B and redirected into the black hole; crossing the threshold previously snapped velocity and position abruptly.
+- **Ballistic Coasting Outside Threshold (`dist3D > accretionThresholdRadius`)**:
+  - Scrap in `ScrapState.Launched` outside threshold flies purely on its ballistic trajectory with gentle natural drag (`linearDamping = 0.25f`).
+  - When velocity drops below `outerZoneDriftSpeed * 1.3f`, smoothly transitions back to `ScrapState.Floating` at its new orbital radius (`homeOrbitRadius = dist3D`), restoring calm circular drift without reverse course snapping.
+- **Smooth Vortex Capture & Momentum Blending (`dist3D <= accretionThresholdRadius`)**:
+  - Entry tracks `timeInVortex += Time.fixedDeltaTime`.
+  - Calculates smooth blend weight `entryBlend = Mathf.SmoothStep(0f, 1f, timeInVortex / 0.85f)`.
+  - Smoothly blends from incoming velocity to spiral orbital velocity over `0.85s`.
+  - Removes hard position clamping on threshold entry. Hard radial clamping is strictly reserved for deep accretion (`depth01 > 0.65f`) near the Event Horizon, completely eliminating initial trajectory jerk.
+
+#### 3. Gentle Containment Beam Knockback (Issue #8)
+- Configured `beamKnockbackImpulse = 4.5f` in `GameBalanceConfig` (reduced from `18f`).
+- Applied soft velocity damping: `rb.linearVelocity = rb.linearVelocity * 0.5f + awayDir * config.beamKnockbackImpulse`.
+- Touching a beam now delivers a tactile nudge instead of violently flinging the player across the arena.
+
+### 5.14 UI Polish, Minimalist Camera Viewfinder, Large Flag Switchers & In-Game ESC Pause Menu
+
+#### 1. Elimination of Stuck Red UI Panels (Issue #6)
+- **Problem**: Blank red rectangle alert overlay remained stuck in `GameplayScene` when warnings had expired or lacked text.
+- **Solution**:
+  - `UIManager.Awake()` and `Start()` explicitly initialize all alert and warning panels (`WarningPanel`, `SignalLostOverlay`, `Panel_ObservedNotice`, `Panel_QuotaCelebration`, `Panel_NarrativeComms`, `Panel_BeamDamageAlert`) to `SetActive(false)` and `alpha = 0f`.
+  - `UpdateWarningHUD()` automatically deactivates `warningPanel` and resets `warningBorderImage.color.a = 0f` immediately whenever `_warningRemainingSeconds <= 0f`.
+  - Removed all orphan legacy red panels (`DamageFlashOverlay`, `BoundaryWarningPanel`, `StageWarningBanner`) from `GameplayScene.unity`.
+
+#### 2. Minimalist Camera Viewfinder Overlay (`● REC` & Framing Brackets) (Issue #4)
+- **Visual Presentation**:
+  - Four delicate corner brackets (`┌  ┐`, `└  ┘`) framing the camera feed (`alpha = 0.35`, cyan `#59E6FF`).
+  - Top-left recording status badge: pulsing red circular indicator dot (`●`) paired with bold `"REC"` text label.
+  - Pulsing red dot uses `DOTween.DOFade(0.15f, 0.65f).SetEase(Ease.InOutSine).SetLoops(-1, LoopType.Yoyo).SetUpdate(true)` to pulse continuously in unscaled time during pauses or tree viewing.
+  - All viewfinder elements have `raycastTarget = false` to prevent mouse hit blockage.
+- **Minimalist Gameplay HUD**:
+  - In-game HUD strictly limited to 3 essential metrics:
+    1. **Scrap Coins Counter** (Top-Right): Sleek badge with scale pop animation on coin pickup.
+    2. **Black Hole Mass Bar & Stage** (Bottom-Center): Dynamic stage-colored bar with target mass and stage number indicator.
+    3. **Center Crosshair** (Center): Dynamic ticks indicating tractor beam lock states.
+    4. **Camera Viewfinder Overlay** (Perimeter): Corner brackets and `● REC` indicator.
+
+#### 3. Large Flag Buttons in Main Menu (Issue #3)
+- **Hierarchy & Visuals**:
+  - In `MainMenuScene.unity`, replaced small textual language toggle buttons with two large flag buttons (`Btn_Flag_RU` and `Btn_Flag_EN`).
+  - Button dimensions: `110x74` px, positioned in the bottom-right corner (`anchoredPosition = new Vector2(-40, 40)`), spaced `20` px apart.
+  - Full-size child `Image_Flag` component (`preserveAspect = true`, `color = Color.white`) displaying high-resolution procedural flag textures [`Flag_RU.png`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/Textures/UI/Flag_RU.png) and [`Flag_EN.png`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/Textures/UI/Flag_EN.png).
+  - Selected language displays a vivid cyan outline border (`#33D9FF`, `thickness = 3px`) and scale emphasis (`1.05x`), while inactive language displays a subtle muted outline (`#4D5973`, `thickness = 1.5px`) and scaled down (`0.95x`).
+  - Integrated with `UIButtonTweenAnimator` for punch-scale juice on click and hover.
+
+#### 4. In-Game ESC Pause Menu & System Settings (Issue #7)
+- **Architecture ([`PauseMenuController.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/PauseMenuController.cs))**:
+  - Centrally manages game pausing via `ESC` key while prioritizing gameplay overlays:
+    - **`ESC` Priority**: If `TAB` Upgrade Tree is open, pressing `ESC` closes the Upgrade Tree first; otherwise, toggles the Pause Menu.
+    - **Race-Condition Safety**: `UpgradeTreeManager.LastClosedFrame` tracks when the tree closes, preventing the Pause Menu from opening in the same frame that the Upgrade Tree was closed.
+  - When paused:
+    - Sets `Time.timeScale = 0f` and unlocks cursor (`CursorLockMode.None`, `Cursor.visible = true`).
+    - Blocks input to both [`DroneController.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Player/DroneController.cs) and [`GravityManipulatorController.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Player/GravityManipulatorController.cs).
+  - **Menu Buttons**:
+    1. **`[ПРОДОЛЖИТЬ] / [RESUME]`**: Unpauses the game, restores `Time.timeScale = 1f`, relocks cursor.
+    2. **`[НАСТРОЙКИ] / [SETTINGS]`**: Opens system settings sub-panel (`Panel_SettingsSub`) with Master Volume and Mouse Sensitivity sliders.
+    3. **`[В ГЛАВНОЕ МЕНЮ] / [MAIN MENU]`**: Transitions smoothly to `MainMenuScene` using `SceneTransitionManager`.
+    4. **`[ВЫЙТИ ИЗ ИГРЫ] / [QUIT GAME]`**: Exits application (`Application.Quit()` / stops play mode in editor).
+  - All UI buttons use `UIButtonTweenAnimator` with `.SetUpdate(true)` to provide hover glow and punch feedback in unscaled time.
+  - Real-time localization support dynamically refreshes all Pause Menu labels when language changes.
+
+### 5.15 Finale Event Horizon Camera Shutdown (CRT TV Turn-Off + Static)
+
+#### 1. CRT Camera Shutdown Overlay ([`CameraShutdownEffect.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/CameraShutdownEffect.cs))
+- Located at the highest sorting order in `HUD_Canvas` (`CameraShutdownOverlay` is set to `transform.SetAsLastSibling()`).
+- **Composed of 3 Layers**:
+  1. `BlackoutCurtain`: Fullscreen pitch black (`#000000`) background covering the entire screen.
+  2. `StaticBurstImage`: Fullscreen high-contrast white noise / analog static overlay using a 256x256 procedural noise sprite, dynamically jittering with violent positional offsets during trigger.
+  3. `CRTCollapseLine`: Glowing white/cyan phosphorus flare line (`new Color(0.92f, 0.98f, 1f, 1f)`) with electric cyan outline (`#33D9FF`), anchored across the horizontal center of the screen (`1080px` height initially).
+
+#### 2. Finale Player Pull & Horizon Crossing Cutoff ([`EndgameFinaleController.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Gameplay/EndgameFinaleController.cs))
+- **Step 1: Relativistic Approach & VHS Glitch Ramp**:
+  - As the player drone is pulled toward singularity `(0,0,0)`, [`VHSCameraController.Instance.SetFinaleInterference(t)`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/VHSCameraController.cs) progressively ramps tape noise, tracking bar glitch, horizontal tearing, jitter, and chromatic aberration from `0.0 -> 1.0`.
+  - Camera FOV expands smoothly from `60°` to `115°` with exponential camera shudder.
+- **Step 2: Instant Camera Cutoff (`dist <= eventHorizonRadius * 1.15f`)**:
+  - The exact moment the event horizon threshold is crossed:
+    1. Immediately deactivates `RoboArmVisual` (`SetActive(false)`).
+    2. Hides all HUD elements via [`UIManager.Instance.HideAllHUD()`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/UIManager.cs) and disables finale banners.
+    3. Stops rendering the 3D world (`Camera.main.cullingMask = 0`, `clearFlags = SolidColor`, `backgroundColor = Color.black`).
+    4. Mutes/stops all ongoing gameplay loops and background music via [`FMODAudioManager.Instance.StopAllGameplayLoops()`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/FMODAudioManager.cs) and [`MusicPlaylistManager.Instance.StopAllMusicImmediate()`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/MusicPlaylistManager.cs).
+    5. Executes **CRT TV Turn-Off Sequence** with unscaled DOTween:
+       - **Phase 1**: Flashes `StaticBurstImage` at `100%` intensity for `0.18s` with rapid violent screen jitter.
+       - **Phase 2**: Enables solid `BlackoutCurtain` and squashes `CRTCollapseLine` vertically (`DOScaleY(0.008f, 0.16f).SetEase(Ease.InExpo)`) into a razor-thin luminous line across the middle of the screen.
+       - **Phase 3**: Collapses the line's width into a bright center dot (`DOScaleX(0.0f, 0.18f).SetEase(Ease.InQuad)`) while fading out image alpha to 0.
+- **Step 3: Dramatic Silence Hold**:
+  - Holds in total pitch-black silence for **`1.8s`** (`WaitForSecondsRealtime(1.8f)`).
+- **Step 4: Transition to Credits Crawl**:
+  - Calls `SceneTransitionManager.Instance.TransitionToScene("CreditsScene")`, which smoothly dissolves out from the black screen into the Star Wars style Credits crawl.
+
+### 5.16 Automated 3D Asset, PBR Material & Animation Pipeline (`AssetAutoIntegrationPipeline`)
+
+Located at [`Assets/_Project/Scripts/Editor/AssetAutoIntegrationPipeline.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/Scripts/Editor/AssetAutoIntegrationPipeline.cs), this automated pipeline scans incoming art assets and wires them directly into gameplay prefabs, scenes, materials, and animator controllers.
+
+- **Menu Item**: `Tools/Orbital Panopticon/Auto-Bind 3D Assets & Materials`.
+- **Directory Structure & Auto-Organization**:
+  - Automatically sorts incoming raw models and texture folders into structured subdirectories:
+    - `Assets/_Project/Art/Models/RoboArm/` (`MainGun_animated.fbx`, `MainGun_textures`)
+    - `Assets/_Project/Art/Models/HelperBot/` (`robot_low.fbx`, `robot_textures`)
+    - `Assets/_Project/Art/Models/OverseerEye/` (`eyeball.fbx`, `eyeball_textures`)
+    - `Assets/_Project/Art/Models/Scrap/Tier1..Tier4/` (`ariral.fbx`, `ariral_textures` bound to `Scrap/Tier4/`)
+- **Direct Roughness PBR Material Generation**:
+  - Automatically generates materials in `Assets/_Project/Materials/Generated/` (`M_RoboArm.mat`, `M_HelperBot.mat`, `M_OverseerEye.mat`, `M_Tier4.mat`).
+  - Utilizes the `Autodesk Interactive` shader (or URP Lit fallback) which natively supports direct **Roughness Maps** in `_SpecGlossMap` without requiring manual texture inversion or RGB channel packing.
+  - Automatically flags normal maps as `TextureImporterType.NormalMap`, assigns `_BumpMap`, and enables HDR emissive emission (`[HDR] Color.white * 2.5f`).
+- **Robo-Arm LMB/RMB Animation Controller Setup**:
+  - Programmatically generates `Assets/_Project/Art/Models/RoboArm/AC_RoboArm.controller` with:
+    - Parameters: `bool IsPullingRMB`, `Trigger FirePuntLMB`.
+    - States: `Idle` (default pose), `PullHold_RMB` (driven by `Mandibles_base_open` clip when `IsPullingRMB == true`), and `Punt_LMB` (violent muzzle snap and recoil on `FirePuntLMB` trigger).
+  - Automatically attaches [`RoboArmAnimatorHook`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Player/RoboArmAnimatorHook.cs) to `PlayerDrone/MainCamera/RoboArmVisual`, synchronizing player input in [`GravityManipulatorController`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Player/GravityManipulatorController.cs) with arm animations.
+  - Automatically aligns `MuzzleNozzlePoint` at the front tip of the arm model's bounding box.
+- **Prefab & VisualRoot Replacement**:
+  - **Helper Drone Bot**: Automatically instantiates `robot_low.fbx` under `HelperDroneBot.prefab`'s `VisualRoot`, disables primitive placeholder meshes, strips visual colliders, and normalizes scale to `~1.8` units.
+  - **Overseer Containment Eye**: Replaces placeholder pupil spheres across all 4 `OverseerContainmentEye` instances in `GameplayScene.unity` with the high-poly eyeball model and generated material.
+  - **Scrap Prefabs (`Tier1..Tier4`)**: Replaces visual geometry in `Scrap_Tier1_Bolt.prefab` through `Scrap_Tier4_Anomaly.prefab`, while preserving the root rigidbody and colliders, and updating the cached `mainRenderer` on `ScrapItem` for dynamic dissolve and valuable lava glow highlights.
 
 ---
 

@@ -39,6 +39,13 @@ namespace OrbitalPanopticon.Core
         public TextMeshProUGUI BlackHoleBarText => blackHoleBarText;
         public TextMeshProUGUI StageHeaderText => stageHeaderText;
 
+        [Header("Camera Viewfinder Overlay")]
+        [SerializeField] private GameObject cameraViewfinderOverlay;
+        [SerializeField] private Image recDotImage;
+
+        public GameObject CameraViewfinderOverlay => cameraViewfinderOverlay;
+        public Image RecDotImage => recDotImage;
+
         [Header("Crosshair Elements")]
         [SerializeField] private Image crosshairImage;
         [SerializeField] private Image[] crosshairTickImages;
@@ -80,10 +87,25 @@ namespace OrbitalPanopticon.Core
         private bool _isWarningActive = false;
         private float _warningRemainingSeconds = 0f;
         private bool _isOperatorConnected = false;
+        private bool _isHUDHidden = false;
         private int _lastCoins = -1;
 
         public bool IsOperatorConnected => _isOperatorConnected;
+        public bool IsHUDHidden => _isHUDHidden;
         public event System.Action OnOperatorConnected;
+
+        public void HideAllHUD()
+        {
+            _isHUDHidden = true;
+            if (bottomHUDPanel != null) bottomHUDPanel.SetActive(false);
+            if (scrapCoinsBadge != null) scrapCoinsBadge.SetActive(false);
+            if (crosshairImage != null) crosshairImage.gameObject.SetActive(false);
+            if (cameraViewfinderOverlay != null) cameraViewfinderOverlay.SetActive(false);
+            if (warningPanel != null) warningPanel.SetActive(false);
+            if (observedNoticePanel != null) observedNoticePanel.SetActive(false);
+            if (quotaCelebrationPanel != null) quotaCelebrationPanel.SetActive(false);
+            if (startOverlayPanel != null) startOverlayPanel.SetActive(false);
+        }
 
         private void Awake()
         {
@@ -122,6 +144,15 @@ namespace OrbitalPanopticon.Core
             if (warningPanel != null) warningPanel.SetActive(false);
             if (observedNoticePanel != null) observedNoticePanel.SetActive(false);
             if (quotaCelebrationPanel != null) quotaCelebrationPanel.SetActive(false);
+            if (beamAlertPanel != null) beamAlertPanel.SetActive(false);
+            if (beamAlertCanvasGroup != null) beamAlertCanvasGroup.alpha = 0f;
+            if (warningBorderImage != null)
+            {
+                warningBorderImage.raycastTarget = false;
+                Color c = warningBorderPulsingColor;
+                c.a = 0f;
+                warningBorderImage.color = c;
+            }
 
             // Auto-detect crosshair ticks if needed
             if (crosshairImage == null)
@@ -151,6 +182,7 @@ namespace OrbitalPanopticon.Core
             }
 
             EnsureMinimalistHUD();
+            EnsureViewfinderOverlay();
         }
 
         private void OnDestroy()
@@ -282,6 +314,7 @@ namespace OrbitalPanopticon.Core
 
         private void UpdateHUD()
         {
+            if (_isHUDHidden) return;
             var stageMgr = BlackHoleStageManager.Instance;
             GameBalanceConfig config = GameManager.GameBalanceConfigInstance;
             float mass = stageMgr != null ? stageMgr.CurrentMass : (BlackHoleMassAndEnergyManager.Instance != null ? BlackHoleMassAndEnergyManager.Instance.CurrentBlackHoleMass : 0f);
@@ -368,7 +401,7 @@ namespace OrbitalPanopticon.Core
             if (canvas == null) return;
 
             // 1. Permanently remove all legacy clutter elements
-            string[] legacyNames = { "SurveillanceMonitorFrame", "Text_REC_Status", "Panel_QuotaAndHeat", "Text_BossTracker", "Panel_CriticalMassWarning" };
+            string[] legacyNames = { "SurveillanceMonitorFrame", "Text_REC_Status", "Panel_QuotaAndHeat", "Text_BossTracker", "Panel_CriticalMassWarning", "DamageFlashOverlay", "StageWarningBanner", "BoundaryWarningPanel" };
             foreach (var legName in legacyNames)
             {
                 Transform t = canvas.transform.Find(legName);
@@ -540,11 +573,156 @@ namespace OrbitalPanopticon.Core
             stageHeaderText.fontSize = 14;
             stageHeaderText.fontStyle = FontStyles.Bold;
             stageHeaderText.color = new Color(0.2f, 0.92f, 1f);
+
+            // 4. Ensure Camera Viewfinder Overlay (Corner Brackets + ● REC)
+            EnsureViewfinderOverlay(canvas);
+        }
+
+        public void EnsureViewfinderOverlay(Canvas canvas = null)
+        {
+            if (canvas == null)
+            {
+                canvas = GetComponentInParent<Canvas>();
+                if (canvas == null) canvas = FindAnyObjectByType<Canvas>();
+                if (canvas == null) return;
+            }
+
+            if (cameraViewfinderOverlay == null)
+            {
+                Transform existing = canvas.transform.Find("CameraViewfinderOverlay");
+                if (existing != null) cameraViewfinderOverlay = existing.gameObject;
+            }
+
+            if (cameraViewfinderOverlay == null)
+            {
+                GameObject vfGo = new GameObject("CameraViewfinderOverlay", typeof(RectTransform));
+                vfGo.transform.SetParent(canvas.transform, false);
+                vfGo.transform.SetAsFirstSibling(); // Behind text HUD, in front of 3D world
+                RectTransform rt = vfGo.GetComponent<RectTransform>();
+                rt.anchorMin = Vector2.zero;
+                rt.anchorMax = Vector2.one;
+                rt.sizeDelta = Vector2.zero;
+                rt.anchoredPosition = Vector2.zero;
+
+                Color bracketColor = new Color(0.35f, 0.9f, 1f, 0.35f);
+
+                void CreateBracket(string name, Vector2 anchor, Vector2 offset, bool isRight, bool isBottom)
+                {
+                    GameObject brGo = new GameObject(name, typeof(RectTransform));
+                    brGo.transform.SetParent(vfGo.transform, false);
+                    RectTransform brRt = brGo.GetComponent<RectTransform>();
+                    brRt.anchorMin = anchor;
+                    brRt.anchorMax = anchor;
+                    brRt.pivot = anchor;
+                    brRt.anchoredPosition = offset;
+                    brRt.sizeDelta = new Vector2(36f, 36f);
+
+                    // Horizontal line
+                    GameObject hBar = new GameObject("H", typeof(RectTransform), typeof(Image));
+                    hBar.transform.SetParent(brGo.transform, false);
+                    RectTransform hRt = hBar.GetComponent<RectTransform>();
+                    hRt.anchorMin = isBottom ? new Vector2(0f, 0f) : new Vector2(0f, 1f);
+                    hRt.anchorMax = isBottom ? new Vector2(1f, 0f) : new Vector2(1f, 1f);
+                    hRt.pivot = isBottom ? new Vector2(0.5f, 0f) : new Vector2(0.5f, 1f);
+                    hRt.sizeDelta = new Vector2(0f, 2f);
+                    hRt.anchoredPosition = Vector2.zero;
+                    Image hImg = hBar.GetComponent<Image>();
+                    hImg.color = bracketColor;
+                    hImg.raycastTarget = false;
+
+                    // Vertical line
+                    GameObject vBar = new GameObject("V", typeof(RectTransform), typeof(Image));
+                    vBar.transform.SetParent(brGo.transform, false);
+                    RectTransform vRt = vBar.GetComponent<RectTransform>();
+                    vRt.anchorMin = isRight ? new Vector2(1f, 0f) : new Vector2(0f, 0f);
+                    vRt.anchorMax = isRight ? new Vector2(1f, 1f) : new Vector2(0f, 1f);
+                    vRt.pivot = isRight ? new Vector2(1f, 0.5f) : new Vector2(0f, 0.5f);
+                    vRt.sizeDelta = new Vector2(2f, 0f);
+                    vRt.anchoredPosition = Vector2.zero;
+                    Image vImg = vBar.GetComponent<Image>();
+                    vImg.color = bracketColor;
+                    vImg.raycastTarget = false;
+                }
+
+                CreateBracket("Bracket_TL", new Vector2(0f, 1f), new Vector2(28f, -28f), false, false);
+                CreateBracket("Bracket_TR", new Vector2(1f, 1f), new Vector2(-28f, -28f), true, false);
+                CreateBracket("Bracket_BL", new Vector2(0f, 0f), new Vector2(28f, 28f), false, true);
+                CreateBracket("Bracket_BR", new Vector2(1f, 0f), new Vector2(-28f, 28f), true, true);
+
+                // Top-Left ● REC Indicator
+                GameObject recGo = new GameObject("REC_Indicator", typeof(RectTransform));
+                recGo.transform.SetParent(vfGo.transform, false);
+                RectTransform recRt = recGo.GetComponent<RectTransform>();
+                recRt.anchorMin = new Vector2(0f, 1f);
+                recRt.anchorMax = new Vector2(0f, 1f);
+                recRt.pivot = new Vector2(0f, 1f);
+                recRt.anchoredPosition = new Vector2(46f, -38f);
+                recRt.sizeDelta = new Vector2(90f, 24f);
+
+                // Red Circle Dot
+                GameObject dotGo = new GameObject("Dot_REC", typeof(RectTransform), typeof(Image));
+                dotGo.transform.SetParent(recGo.transform, false);
+                RectTransform dotRt = dotGo.GetComponent<RectTransform>();
+                dotRt.anchorMin = new Vector2(0f, 0.5f);
+                dotRt.anchorMax = new Vector2(0f, 0.5f);
+                dotRt.pivot = new Vector2(0f, 0.5f);
+                dotRt.anchoredPosition = Vector2.zero;
+                dotRt.sizeDelta = new Vector2(10f, 10f);
+                recDotImage = dotGo.GetComponent<Image>();
+                recDotImage.color = new Color(1f, 0.15f, 0.15f, 1f);
+                recDotImage.raycastTarget = false;
+
+                // REC text
+                GameObject textGo = new GameObject("Text_REC", typeof(RectTransform), typeof(TextMeshProUGUI));
+                textGo.transform.SetParent(recGo.transform, false);
+                RectTransform textRt = textGo.GetComponent<RectTransform>();
+                textRt.anchorMin = new Vector2(0f, 0.5f);
+                textRt.anchorMax = new Vector2(1f, 0.5f);
+                textRt.pivot = new Vector2(0f, 0.5f);
+                textRt.anchoredPosition = new Vector2(18f, 0f);
+                textRt.sizeDelta = new Vector2(-18f, 20f);
+                var tmp = textGo.GetComponent<TextMeshProUGUI>();
+                tmp.text = "REC";
+                tmp.fontSize = 14;
+                tmp.fontStyle = FontStyles.Bold;
+                tmp.color = new Color(0.9f, 0.95f, 1f, 0.85f);
+                tmp.alignment = TextAlignmentOptions.Left;
+                tmp.raycastTarget = false;
+
+                cameraViewfinderOverlay = vfGo;
+            }
+
+            if (recDotImage == null && cameraViewfinderOverlay != null)
+            {
+                var dotT = cameraViewfinderOverlay.transform.Find("REC_Indicator/Dot_REC");
+                if (dotT != null) recDotImage = dotT.GetComponent<Image>();
+            }
+
+            if (recDotImage != null)
+            {
+                recDotImage.DOKill();
+                recDotImage.color = new Color(1f, 0.15f, 0.15f, 1f);
+                recDotImage.DOFade(0.15f, 0.65f).SetEase(Ease.InOutSine).SetLoops(-1, LoopType.Yoyo).SetUpdate(true);
+            }
         }
 
         private void UpdateWarningHUD()
         {
-            if (!_isWarningActive) return;
+            if (!_isWarningActive || _warningRemainingSeconds <= 0f)
+            {
+                if (warningPanel != null && warningPanel.activeSelf)
+                {
+                    warningPanel.SetActive(false);
+                }
+                if (warningBorderImage != null && warningBorderImage.color.a > 0f)
+                {
+                    Color c = warningBorderPulsingColor;
+                    c.a = 0f;
+                    warningBorderImage.color = c;
+                }
+                _isWarningActive = false;
+                return;
+            }
 
             if (warningCountdownText != null)
             {
@@ -555,7 +733,7 @@ namespace OrbitalPanopticon.Core
             {
                 float pulse = (Mathf.Sin(Time.time * 9f) + 1f) * 0.5f;
                 Color c = warningBorderPulsingColor;
-                c.a = Mathf.Lerp(0.25f, 0.85f, pulse);
+                c.a = Mathf.Lerp(0.12f, 0.45f, pulse);
                 warningBorderImage.color = c;
             }
         }
@@ -753,6 +931,8 @@ namespace OrbitalPanopticon.Core
                 beamAlertPanel = existing.gameObject;
                 beamAlertText = beamAlertPanel.GetComponentInChildren<TextMeshProUGUI>();
                 beamAlertCanvasGroup = beamAlertPanel.GetComponent<CanvasGroup>();
+                beamAlertPanel.SetActive(false);
+                if (beamAlertCanvasGroup != null) beamAlertCanvasGroup.alpha = 0f;
                 return;
             }
 
@@ -795,6 +975,12 @@ namespace OrbitalPanopticon.Core
         private IEnumerator ShowCenterWarningAlertRoutine(string message, float duration)
         {
             EnsureBeamAlertPanel();
+
+            if (string.IsNullOrWhiteSpace(message) || duration <= 0f)
+            {
+                if (beamAlertPanel != null) beamAlertPanel.SetActive(false);
+                yield break;
+            }
 
             if (beamAlertPanel != null && beamAlertText != null)
             {

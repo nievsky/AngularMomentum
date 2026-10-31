@@ -403,6 +403,10 @@ namespace OrbitalPanopticon.Core
         [Tooltip("Display names for each containment lock eye.")]
         public string[] containmentEyeNames = new string[] { "CONTAINMENT LOCK EYE-01", "CONTAINMENT LOCK EYE-02", "CONTAINMENT LOCK EYE-03", "CONTAINMENT LOCK EYE-04" };
 
+        [Tooltip("Impulse force pushing player drone away from containment beams (reduced to 4.5f for gentle push).")]
+        [Range(1f, 25f)]
+        public float beamKnockbackImpulse = 4.5f;
+
         // =========================================================================
         // 9. Debug & Designer Tools
         // =========================================================================

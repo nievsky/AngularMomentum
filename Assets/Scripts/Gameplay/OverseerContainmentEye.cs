@@ -205,7 +205,13 @@ namespace OrbitalPanopticon.Gameplay
             if (drone.BeamHitCooldownTimer > 0f) return;
 
             Vector3 startPos = PupilPosition;
-            Vector3 endPos = centerReference != null ? centerReference.position : Vector3.zero;
+            Vector3 blackHoleCenter = centerReference != null ? centerReference.position : Vector3.zero;
+
+            GameBalanceConfig cfg = GameManager.GameBalanceConfigInstance;
+            float currentEventHorizonRadius = (cfg != null) ? cfg.eventHorizonRadius : 3.5f;
+
+            Vector3 dirFromCenterToEye = (startPos - blackHoleCenter).normalized;
+            Vector3 endPos = blackHoleCenter + dirFromCenterToEye * (currentEventHorizonRadius * 0.98f);
             Vector3 dronePos = drone.transform.position;
 
             Vector3 closestPoint = GetClosestPointOnSegment(dronePos, startPos, endPos, out float t);
@@ -248,7 +254,9 @@ namespace OrbitalPanopticon.Gameplay
 
             if (drone.Rigidbody != null)
             {
-                drone.Rigidbody.AddForce(awayDir * 18f, ForceMode.VelocityChange);
+                GameBalanceConfig cfg = GameManager.GameBalanceConfigInstance;
+                float impulse = (cfg != null) ? cfg.beamKnockbackImpulse : 4.5f;
+                drone.Rigidbody.linearVelocity = drone.Rigidbody.linearVelocity * 0.5f + awayDir * impulse;
             }
 
             // High-impact visual / post-processing / camera glitch cues
@@ -372,11 +380,17 @@ namespace OrbitalPanopticon.Gameplay
 
             if (!containmentBeam.enabled) containmentBeam.enabled = true;
 
-            Vector3 startPos = PupilPosition;
-            Vector3 endPos = centerReference != null ? centerReference.position : Vector3.zero;
+            Vector3 eyeLensPos = PupilPosition;
+            Vector3 blackHoleCenter = centerReference != null ? centerReference.position : Vector3.zero;
 
-            containmentBeam.SetPosition(0, startPos);
-            containmentBeam.SetPosition(1, endPos);
+            GameBalanceConfig cfg = GameManager.GameBalanceConfigInstance;
+            float currentEventHorizonRadius = (cfg != null) ? cfg.eventHorizonRadius : 3.5f;
+
+            Vector3 dirFromCenterToEye = (eyeLensPos - blackHoleCenter).normalized;
+            Vector3 beamEndPos = blackHoleCenter + dirFromCenterToEye * (currentEventHorizonRadius * 0.98f);
+
+            containmentBeam.SetPosition(0, eyeLensPos);
+            containmentBeam.SetPosition(1, beamEndPos);
         }
 
         /// <summary>
