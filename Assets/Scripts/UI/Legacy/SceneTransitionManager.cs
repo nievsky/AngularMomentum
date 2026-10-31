@@ -1,308 +1,245 @@
 using System;
 using System.Collections;
 using UnityEngine;
-using UnityEngine.Events;
+using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 
-[DefaultExecutionOrder(-900)]
+[DefaultExecutionOrder(-990)]
+[DisallowMultipleComponent]
 public class SceneTransitionManager : MonoBehaviour
 {
     public static SceneTransitionManager Instance { get; private set; }
-    public static bool IsTransitioning => Instance != null && Instance._isTransitioning;
-    public static event Action<SceneTransitionPhase> PhaseChanged;
 
-    [Header("Default Config")]
-    [SerializeField] private SceneTransitionConfig _defaultConfig;
+    [Header("Transition Settings")]
+    [SerializeField] private Material dissolveMaterial;
+    [SerializeField] private float transitionDuration = 0.8f;
 
-    [Header("Transition Events")]
-    [SerializeField] private UnityEvent _coverStarted = new UnityEvent();
-    [SerializeField] private UnityEvent _coverCompleted = new UnityEvent();
-    [SerializeField] private UnityEvent _sceneActivationStarted = new UnityEvent();
-    [SerializeField] private UnityEvent _sceneActivated = new UnityEvent();
-    [SerializeField] private UnityEvent _revealStarted = new UnityEvent();
-    [SerializeField] private UnityEvent _revealCompleted = new UnityEvent();
+    private Canvas _transitionCanvas;
+    private Image _dissolveImage;
+    private Material _instancedMat;
+    private bool _isTransitioning = false;
 
-    private SceneTransitionView _view;
-    private SceneTransitionConfig _runtimeDefaultConfig;
-    private Coroutine _transitionRoutine;
-    private bool _isTransitioning;
+    private static readonly int DissolveProgressID = Shader.PropertyToID("_DissolveProgress");
 
-    public static void LoadScene(string sceneName)
+    public bool IsTransitioning => _isTransitioning;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+    private static void AutoInitialize()
     {
-        LoadScene(sceneName, null);
-    }
-
-    public static void LoadScene(string sceneName, SceneTransitionConfig config)
-    {
-        EnsureInstance().StartSceneLoad(sceneName, -1, false, config);
-    }
-
-    public static void LoadScene(int buildIndex)
-    {
-        LoadScene(buildIndex, null);
-    }
-
-    public static void LoadScene(int buildIndex, SceneTransitionConfig config)
-    {
-        EnsureInstance().StartSceneLoad(null, buildIndex, true, config);
-    }
-
-    public static void ReloadActiveScene(SceneTransitionConfig config = null)
-    {
-        LoadScene(SceneManager.GetActiveScene().buildIndex, config);
-    }
-
-    private static SceneTransitionManager EnsureInstance()
-    {
-        if (Instance != null)
+        if (Instance == null)
         {
-            return Instance;
+            var existing = FindAnyObjectByType<SceneTransitionManager>();
+            if (existing != null)
+            {
+                Instance = existing;
+            }
+            else
+            {
+                GameObject go = new GameObject("[SCENE_TRANSITION_MANAGER]");
+                Instance = go.AddComponent<SceneTransitionManager>();
+            }
         }
-
-#if UNITY_2023_1_OR_NEWER
-        SceneTransitionManager existing = FindFirstObjectByType<SceneTransitionManager>();
-#else
-        SceneTransitionManager existing = FindObjectOfType<SceneTransitionManager>();
-#endif
-        if (existing != null)
-        {
-            existing.EnsureInitialized();
-            return existing;
-        }
-
-        GameObject managerObject = new GameObject("Scene Transition Manager");
-        SceneTransitionManager manager = managerObject.AddComponent<SceneTransitionManager>();
-        manager.EnsureInitialized();
-        return manager;
     }
 
     private void Awake()
     {
         if (Instance != null && Instance != this)
         {
-            if (Instance._defaultConfig == null && _defaultConfig != null)
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+
+        BuildTransitionUI();
+    }
+
+    public void BuildTransitionUI()
+    {
+        if (_transitionCanvas != null) return;
+
+        // 1. Create Top-Sorting Canvas (sortingOrder = 9999)
+        GameObject canvasGo = new GameObject("Transition_Canvas");
+        canvasGo.transform.SetParent(transform, false);
+
+        _transitionCanvas = canvasGo.AddComponent<Canvas>();
+        _transitionCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        _transitionCanvas.sortingOrder = 9999;
+
+        var scaler = canvasGo.AddComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920, 1080);
+        scaler.matchWidthOrHeight = 0.5f;
+
+        canvasGo.AddComponent<GraphicRaycaster>();
+
+        // 2. Full-screen BlackDissolveOverlay Image
+        GameObject imgGo = new GameObject("BlackDissolveOverlay");
+        imgGo.transform.SetParent(canvasGo.transform, false);
+
+        RectTransform rt = imgGo.AddComponent<RectTransform>();
+        rt.anchorMin = Vector2.zero;
+        rt.anchorMax = Vector2.one;
+        rt.offsetMin = Vector2.zero;
+        rt.offsetMax = Vector2.zero;
+
+        _dissolveImage = imgGo.AddComponent<Image>();
+        _dissolveImage.color = Color.white;
+        _dissolveImage.raycastTarget = false;
+
+        if (dissolveMaterial == null)
+        {
+#if UNITY_EDITOR
+            dissolveMaterial = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Materials/M_ScreenDissolve.mat");
+#endif
+            if (dissolveMaterial == null)
             {
-                Instance._defaultConfig = _defaultConfig;
+                Shader s = Shader.Find("UI/ScreenDissolve");
+                if (s != null) dissolveMaterial = new Material(s);
             }
-
-            // DestroyDuplicateTransitionComponents();
-            return;
         }
 
-        EnsureInitialized();
+        if (dissolveMaterial != null)
+        {
+            _instancedMat = new Material(dissolveMaterial);
+            _dissolveImage.material = _instancedMat;
+            _instancedMat.SetFloat(DissolveProgressID, 0f);
+        }
+
+        imgGo.SetActive(false);
     }
 
-    private void OnDestroy()
+    public void TransitionToScene(string sceneName)
     {
-        if (Instance == this)
-        {
-            Instance = null;
-        }
-    }
-
-    private void EnsureInitialized()
-    {
-        if (Instance == null)
-        {
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
-
-        if (_view != null)
-        {
-            return;
-        }
-
-        GameObject viewObject = new GameObject("Scene Transition View");
-        viewObject.transform.SetParent(transform, false);
-        _view = viewObject.AddComponent<SceneTransitionView>();
-        _view.Initialize();
-    }
-
-    private void StartSceneLoad(string sceneName, int buildIndex, bool useBuildIndex, SceneTransitionConfig config)
-    {
-        EnsureInitialized();
-
         if (_isTransitioning)
         {
-            Debug.LogWarning("Scene transition already running. Ignoring new scene load request.");
+            Debug.LogWarning($"[SceneTransitionManager] Transition to '{sceneName}' requested while already transitioning. Ignored.");
             return;
         }
 
-        _transitionRoutine = StartCoroutine(LoadSceneRoutine(sceneName, buildIndex, useBuildIndex, GetConfig(config)));
+        StartCoroutine(TransitionRoutine(sceneName));
     }
 
-    private IEnumerator LoadSceneRoutine(string sceneName, int buildIndex, bool useBuildIndex, SceneTransitionConfig config)
+    public static void LoadScene(string sceneName)
+    {
+        if (Instance != null)
+        {
+            Instance.TransitionToScene(sceneName);
+        }
+        else
+        {
+            SceneManager.LoadScene(sceneName);
+        }
+    }
+
+    public static void LoadScene(int buildIndex)
+    {
+        string path = SceneUtility.GetScenePathByBuildIndex(buildIndex);
+        string sceneName = System.IO.Path.GetFileNameWithoutExtension(path);
+        if (!string.IsNullOrEmpty(sceneName))
+        {
+            LoadScene(sceneName);
+        }
+        else
+        {
+            SceneManager.LoadScene(buildIndex);
+        }
+    }
+
+    private IEnumerator TransitionRoutine(string sceneName)
     {
         _isTransitioning = true;
-        _view.Prepare(config);
+        BuildTransitionUI();
 
-        AsyncOperation operation = null;
-        bool loadAttempted = false;
-
-        RaisePhase(SceneTransitionPhase.CoverStarted);
-
-        if (config.StartLoadingDuringCoverAnimation)
+        if (_dissolveImage != null)
         {
-            operation = BeginSceneLoad(sceneName, buildIndex, useBuildIndex);
-            loadAttempted = true;
+            _dissolveImage.gameObject.SetActive(true);
+            _dissolveImage.raycastTarget = true;
         }
 
-        yield return AnimateProgress(0f, 1f, config.CoverDuration, config.CoverCurve, config.UseUnscaledTime);
-        _view.SetCovered();
-        RaisePhase(SceneTransitionPhase.CoverCompleted);
-
-        if (!loadAttempted)
+        // -------------------------------------------------------------
+        // Step 1 (Dissolve IN to Black):
+        // Animate _DissolveProgress from 0.0 to 1.0 over 0.8f seconds (unscaledDeltaTime)
+        // -------------------------------------------------------------
+        if (OrbitalPanopticon.Core.FMODAudioManager.Instance != null)
         {
-            operation = BeginSceneLoad(sceneName, buildIndex, useBuildIndex);
-            loadAttempted = true;
-        }
-
-        if (operation == null)
-        {
-            RaisePhase(SceneTransitionPhase.RevealStarted);
-            yield return AnimateProgress(1f, 0f, config.RevealDuration, config.RevealCurve, config.UseUnscaledTime);
-            RaisePhase(SceneTransitionPhase.RevealCompleted);
-            FinishTransition();
-            yield break;
-        }
-
-        float coveredUntil = Time.realtimeSinceStartup + config.MinimumCoveredDuration;
-        while (operation.progress < 0.9f || Time.realtimeSinceStartup < coveredUntil)
-        {
-            yield return null;
-        }
-
-        RaisePhase(SceneTransitionPhase.SceneActivationStarted);
-        operation.allowSceneActivation = true;
-
-        while (!operation.isDone)
-        {
-            yield return null;
-        }
-
-        RaisePhase(SceneTransitionPhase.SceneActivated);
-
-        yield return null;
-        yield return null;
-
-        RaisePhase(SceneTransitionPhase.RevealStarted);
-        yield return AnimateProgress(1f, 0f, config.RevealDuration, config.RevealCurve, config.UseUnscaledTime);
-        RaisePhase(SceneTransitionPhase.RevealCompleted);
-
-        FinishTransition();
-    }
-
-    private AsyncOperation BeginSceneLoad(string sceneName, int buildIndex, bool useBuildIndex)
-    {
-        if (useBuildIndex)
-        {
-            if (buildIndex < 0 || buildIndex >= SceneManager.sceneCountInBuildSettings)
-            {
-                Debug.LogError($"Cannot load scene build index {buildIndex}. It is not in Build Settings.");
-                return null;
-            }
-
-            AsyncOperation operation = SceneManager.LoadSceneAsync(buildIndex);
-            operation.allowSceneActivation = false;
-            return operation;
-        }
-
-        if (string.IsNullOrWhiteSpace(sceneName) || !Application.CanStreamedLevelBeLoaded(sceneName))
-        {
-            Debug.LogError($"Cannot load scene '{sceneName}'. It is not in Build Settings or is not loadable.");
-            return null;
-        }
-
-        AsyncOperation namedOperation = SceneManager.LoadSceneAsync(sceneName);
-        namedOperation.allowSceneActivation = false;
-        return namedOperation;
-    }
-
-    private IEnumerator AnimateProgress(float from, float to, float duration, AnimationCurve curve, bool useUnscaledTime)
-    {
-        if (duration <= 0f)
-        {
-            _view.SetProgress(to);
-            yield break;
+            OrbitalPanopticon.Core.FMODAudioManager.Instance.PlayDissolveTransition();
         }
 
         float elapsed = 0f;
-        while (elapsed < duration)
+        float dur = Mathf.Max(0.1f, transitionDuration);
+
+        while (elapsed < dur)
         {
-            elapsed += useUnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime;
-            float normalizedTime = Mathf.Clamp01(elapsed / duration);
-            float curvedTime = curve != null ? curve.Evaluate(normalizedTime) : normalizedTime;
-            _view.SetProgress(Mathf.LerpUnclamped(from, to, curvedTime));
+            elapsed += Time.unscaledDeltaTime;
+            float progress = Mathf.Clamp01(elapsed / dur);
+            if (_instancedMat != null)
+            {
+                _instancedMat.SetFloat(DissolveProgressID, progress);
+            }
             yield return null;
         }
 
-        _view.SetProgress(to);
-    }
-
-    private SceneTransitionConfig GetConfig(SceneTransitionConfig overrideConfig)
-    {
-        if (overrideConfig != null)
+        if (_instancedMat != null)
         {
-            return overrideConfig;
+            _instancedMat.SetFloat(DissolveProgressID, 1.0f);
         }
 
-        if (_defaultConfig != null)
+        // -------------------------------------------------------------
+        // Step 2 (Load Scene in Background while Screen is Black):
+        // AsyncOperation op = SceneManager.LoadSceneAsync(sceneName); wait until op.isDone
+        // -------------------------------------------------------------
+        Time.timeScale = 1f;
+
+        AsyncOperation op = SceneManager.LoadSceneAsync(sceneName);
+        if (op != null)
         {
-            return _defaultConfig;
+            while (!op.isDone)
+            {
+                yield return null;
+            }
+        }
+        else
+        {
+            Debug.LogError($"[SceneTransitionManager] Failed to start async load for scene '{sceneName}'.");
         }
 
-        if (_runtimeDefaultConfig == null)
+        yield return null;
+        Time.timeScale = 1f;
+
+        // -------------------------------------------------------------
+        // Step 3 (Dissolve OUT from Black):
+        // Animate _DissolveProgress from 1.0 back down to 0.0 over 0.8f seconds
+        // -------------------------------------------------------------
+        if (OrbitalPanopticon.Core.FMODAudioManager.Instance != null)
         {
-            _runtimeDefaultConfig = ScriptableObject.CreateInstance<SceneTransitionConfig>();
-            _runtimeDefaultConfig.hideFlags = HideFlags.HideAndDontSave;
+            OrbitalPanopticon.Core.FMODAudioManager.Instance.PlayDissolveTransition();
         }
 
-        return _runtimeDefaultConfig;
-    }
-
-    private void RaisePhase(SceneTransitionPhase phase)
-    {
-        PhaseChanged?.Invoke(phase);
-
-        switch (phase)
+        elapsed = 0f;
+        while (elapsed < dur)
         {
-            case SceneTransitionPhase.CoverStarted:
-                _coverStarted?.Invoke();
-                break;
-            case SceneTransitionPhase.CoverCompleted:
-                _coverCompleted?.Invoke();
-                break;
-            case SceneTransitionPhase.SceneActivationStarted:
-                _sceneActivationStarted?.Invoke();
-                break;
-            case SceneTransitionPhase.SceneActivated:
-                _sceneActivated?.Invoke();
-                break;
-            case SceneTransitionPhase.RevealStarted:
-                _revealStarted?.Invoke();
-                break;
-            case SceneTransitionPhase.RevealCompleted:
-                _revealCompleted?.Invoke();
-                break;
+            elapsed += Time.unscaledDeltaTime;
+            float progress = 1.0f - Mathf.Clamp01(elapsed / dur);
+            if (_instancedMat != null)
+            {
+                _instancedMat.SetFloat(DissolveProgressID, progress);
+            }
+            yield return null;
         }
-    }
 
-    private void FinishTransition()
-    {
-        _view.Hide();
-        _transitionRoutine = null;
+        if (_instancedMat != null)
+        {
+            _instancedMat.SetFloat(DissolveProgressID, 0.0f);
+        }
+
+        if (_dissolveImage != null)
+        {
+            _dissolveImage.raycastTarget = false;
+            _dissolveImage.gameObject.SetActive(false);
+        }
+
         _isTransitioning = false;
     }
-
-    // private void DestroyDuplicateTransitionComponents()
-    // {
-    //     SceneTransitionFmodAudio[] audioAdapters = GetComponents<SceneTransitionFmodAudio>();
-    //     for (int i = 0; i < audioAdapters.Length; i++)
-    //     {
-    //         Destroy(audioAdapters[i]);
-    //     }
-    //
-    //     Destroy(this);
-    // }
 }

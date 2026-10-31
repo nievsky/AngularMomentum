@@ -50,42 +50,38 @@ namespace OrbitalPanopticon.Core
                 }
             }
 
-            // F2: Instantly Complete Current Quota
+            // F2: +1,000 Mass
             if (kb.f2Key.wasPressedThisFrame)
             {
-                if (_quotaManager == null) _quotaManager = FindAnyObjectByType<QuotaAndScoreManager>();
-                if (_quotaManager != null)
+                var stageMgr = BlackHoleStageManager.Instance;
+                if (stageMgr != null)
                 {
-                    Debug.Log("<color=#FFD700>[DEBUG SHORTCUT] F2 pressed: Instantly completing current quota!</color>");
-                    _quotaManager.ForceCompleteQuota();
+                    stageMgr.AddMass(1000f);
+                    Debug.Log("<color=#00FFAA>[DEBUG SHORTCUT] F2 pressed: Added +1,000 Singularity Mass! Current Mass: " + stageMgr.CurrentMass + "</color>");
                 }
             }
 
-            // F3: Spawn 1 Helper Robot immediately
+            // F3: Advance Black Hole Stage
             if (kb.f3Key.wasPressedThisFrame)
             {
-                if (HelperDroneManager.Instance != null)
+                var stageMgr = BlackHoleStageManager.Instance;
+                if (stageMgr != null)
                 {
-                    HelperDroneBot bot = HelperDroneManager.Instance.SpawnHelperRobot();
-                    Debug.Log("<color=#00D8FF>[DEBUG SHORTCUT] F3 pressed: Spawned Helper Robot! Total active: " + HelperDroneManager.Instance.ActiveBots.Count + "</color>");
-                }
-                else
-                {
-                    Debug.LogWarning("[DEBUG SHORTCUT] HelperDroneManager instance not found!");
+                    float target = stageMgr.CurrentStageTargetMass;
+                    float needed = Mathf.Max(100f, target - stageMgr.CurrentMass);
+                    stageMgr.AddMass(needed);
+                    Debug.Log($"<color=#FFD700>[DEBUG SHORTCUT] F3 pressed: Advanced Black Hole Stage! Stage: {stageMgr.CurrentStage}, Mass: {stageMgr.CurrentMass:F0}</color>");
                 }
             }
 
-            // F4: Trigger the Endgame Collapse Finale immediately
+            // F4: Break Next Containment Lock
             if (kb.f4Key.wasPressedThisFrame)
             {
-                if (EndgameFinaleController.Instance != null)
+                var stageMgr = BlackHoleStageManager.Instance;
+                if (stageMgr != null)
                 {
-                    Debug.Log("<color=#FF2244>[DEBUG SHORTCUT] F4 pressed: Triggering Singularity Sector Collapse Finale!</color>");
-                    EndgameFinaleController.Instance.TriggerEndgameFinale();
-                }
-                else
-                {
-                    Debug.LogWarning("[DEBUG SHORTCUT] EndgameFinaleController instance not found!");
+                    stageMgr.BreakNextContainmentLock();
+                    Debug.Log($"<color=#FF2244>[DEBUG SHORTCUT] F4 pressed: Broke Containment Lock! Active Locks Remaining: {stageMgr.ActiveContainmentLocksCount}/4</color>");
                 }
             }
         }
@@ -105,8 +101,8 @@ namespace OrbitalPanopticon.Core
                 _legendStyle.normal.textColor = new Color(0.2f, 1f, 0.85f, 0.95f);
             }
 
-            string text = "[DEV SHORTCUTS]  F1: +500 Coins  |  F2: Skip Quota  |  F3: Spawn Bot  |  F4: Singularity Finale";
-            float width = 640f;
+            string text = "[DEV SHORTCUTS]  F1: +500 Coins  |  F2: +1000 Mass  |  F3: Advance Stage  |  F4: Break Next Lock";
+            float width = 680f;
             float height = 22f;
             float x = (Screen.width - width) * 0.5f;
             float y = 4f;

@@ -8,6 +8,8 @@ namespace OrbitalPanopticon.Core
     [DisallowMultipleComponent]
     public class QuotaAndScoreManager : MonoBehaviour
     {
+        public static QuotaAndScoreManager Instance { get; private set; }
+
         [Header("References")]
         [SerializeField] private BlackHoleGravity blackHoleGravity;
 
@@ -80,6 +82,16 @@ namespace OrbitalPanopticon.Core
                 scrapCoins += amount;
                 OnScoreAdded?.Invoke(0f, scrapCoins);
             }
+        }
+
+        private void Awake()
+        {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
         }
 
         private void Start()
@@ -193,10 +205,35 @@ namespace OrbitalPanopticon.Core
             float observationMultiplier = isObserved ? obsMultiplier : 1f;
             float kamikazeMultiplier = isKamikaze ? 2.5f : 1f;
             int effectiveHeatMultiplier = (playerInvolved || isKamikaze) ? currentHeatMultiplier : 1;
-            float finalScore = baseValue * orbitalMultiplier * observationMultiplier * effectiveHeatMultiplier * kamikazeMultiplier;
+
+            float stageMultiplier = 1.0f;
+            if (BlackHoleStageManager.Instance != null)
+            {
+                stageMultiplier = BlackHoleStageManager.Instance.CurrentStageValueMultiplier;
+            }
+
+            float finalScore = baseValue * orbitalMultiplier * observationMultiplier * effectiveHeatMultiplier * kamikazeMultiplier * stageMultiplier;
+            if (config != null && config.quantumDecayUnlocked)
+            {
+                finalScore *= 2.0f;
+            }
 
             currentQuotaProgress += finalScore;
+
+            // Direct coins reward from every piece of scrap (doubled by Quantum Decay)
+            int coinsGained = Mathf.Max(1, Mathf.RoundToInt(baseValue * orbitalMultiplier * stageMultiplier * 0.15f));
+            if (config != null && config.quantumDecayUnlocked)
+            {
+                coinsGained *= 2;
+            }
+            AddScrapCoins(coinsGained);
+
             OnScoreAdded?.Invoke(finalScore, scrapCoins);
+
+            if (FMODAudioManager.Instance != null)
+            {
+                FMODAudioManager.Instance.PlayScorePopup(body != null ? body.transform.position : Vector3.zero);
+            }
 
             // World-space floating score popup
             if (ScorePopupManager.Instance != null)
@@ -221,6 +258,10 @@ namespace OrbitalPanopticon.Core
             // Designer rule: each new mission/quota reward increases by +10%
             float currentQuotaReward = baseQuotaReward * Mathf.Pow(1.10f, completedQuotasCount);
             int reward = Mathf.RoundToInt(currentQuotaReward * (1f + (speedBonusPercent / 100f)));
+            if (GameManager.GameBalanceConfigInstance != null && GameManager.GameBalanceConfigInstance.quantumDecayUnlocked)
+            {
+                reward *= 2;
+            }
             scrapCoins += reward;
 
             OnQuotaCompleted?.Invoke(currentQuotaLevel, reward);

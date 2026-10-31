@@ -8,6 +8,8 @@ namespace OrbitalPanopticon.Player
     [DisallowMultipleComponent]
     public class DroneController : MonoBehaviour
     {
+        public static DroneController Instance { get; private set; }
+
         [Header("Tuning Fallbacks (Overrides from GameBalanceConfig)")]
         [Tooltip("Damping factor for cargo weight penalty on acceleration.")]
         [SerializeField] private float cargoMassPenaltyFactor = 0.05f;
@@ -21,9 +23,29 @@ namespace OrbitalPanopticon.Player
         [Header("Runtime State")]
         [SerializeField] private float currentCargoMass = 0f;
         [SerializeField] private bool isControlEnabled = true;
+        [SerializeField] private bool isMovementLocked = false;
         [SerializeField] private bool isBraking = false;
         [SerializeField] private float currentPitch = 0f;
         [SerializeField] private float currentYaw = 0f;
+
+        [Header("Production Flight VFX")]
+        [SerializeField] private ParticleSystem spaceDustParticles;
+        [SerializeField] private ParticleSystem shiftDashBurstParticles;
+
+        private float _baseCameraFov = 60f;
+        private Coroutine _dashFovCoroutine;
+
+        public ParticleSystem SpaceDustParticles
+        {
+            get => spaceDustParticles;
+            set => spaceDustParticles = value;
+        }
+
+        public ParticleSystem ShiftDashBurstParticles
+        {
+            get => shiftDashBurstParticles;
+            set => shiftDashBurstParticles = value;
+        }
 
         private Vector2 _moveInput;
         private float _verticalInput;
@@ -38,6 +60,7 @@ namespace OrbitalPanopticon.Player
         }
 
         public bool IsControlEnabled => isControlEnabled;
+        public bool IsMovementLocked => isMovementLocked;
         public bool IsDashing => _dashTimer > 0f;
         public bool IsBoosting => IsDashing;
         public bool IsBraking => isBraking;
@@ -70,6 +93,18 @@ namespace OrbitalPanopticon.Player
             }
         }
 
+        public void SetMovementLocked(bool locked)
+        {
+            isMovementLocked = locked;
+            if (locked)
+            {
+                _moveInput = Vector2.zero;
+                _verticalInput = 0f;
+                _dashTimer = 0f;
+                isBraking = false;
+            }
+        }
+
         public void Teleport(Vector3 position, Quaternion rotation)
         {
             transform.position = position;
@@ -93,6 +128,8 @@ namespace OrbitalPanopticon.Player
 
         private void Awake()
         {
+            Instance = this;
+
             if (rb == null)
             {
                 rb = GetComponent<Rigidbody>();
@@ -113,7 +150,65 @@ namespace OrbitalPanopticon.Player
                 mainCamera = Camera.main;
             }
 
+            if (mainCamera != null)
+            {
+                _baseCameraFov = mainCamera.fieldOfView;
+            }
+
             SetupDashTrail();
+            SetupFlightParticles();
+        }
+
+        private void SetupFlightParticles()
+        {
+            if (spaceDustParticles == null)
+            {
+                var found = transform.Find("VFX_SpaceFlightDust");
+                if (found != null) spaceDustParticles = found.GetComponent<ParticleSystem>();
+                if (spaceDustParticles == null && mainCamera != null)
+                {
+                    var foundCam = mainCamera.transform.Find("VFX_SpaceFlightDust");
+                    if (foundCam != null) spaceDustParticles = foundCam.GetComponent<ParticleSystem>();
+                }
+
+                if (spaceDustParticles == null)
+                {
+                    GameObject dustPrefab = Resources.Load<GameObject>("VFX_SpaceFlightDust");
+#if UNITY_EDITOR
+                    if (dustPrefab == null) dustPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/VFX_SpaceFlightDust.prefab");
+#endif
+                    if (dustPrefab != null)
+                    {
+                        Transform parent = mainCamera != null ? mainCamera.transform : transform;
+                        GameObject go = Instantiate(dustPrefab, parent);
+                        go.name = "VFX_SpaceFlightDust";
+                        go.transform.localPosition = Vector3.zero;
+                        go.transform.localRotation = Quaternion.identity;
+                        spaceDustParticles = go.GetComponent<ParticleSystem>();
+                    }
+                }
+            }
+
+            if (shiftDashBurstParticles == null)
+            {
+                var found = transform.Find("VFX_ShiftDashBurst");
+                if (found != null) shiftDashBurstParticles = found.GetComponent<ParticleSystem>();
+                if (shiftDashBurstParticles == null)
+                {
+                    GameObject dashPrefab = Resources.Load<GameObject>("VFX_ShiftDashBurst");
+#if UNITY_EDITOR
+                    if (dashPrefab == null) dashPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/VFX_ShiftDashBurst.prefab");
+#endif
+                    if (dashPrefab != null)
+                    {
+                        GameObject go = Instantiate(dashPrefab, transform);
+                        go.name = "VFX_ShiftDashBurst";
+                        go.transform.localPosition = Vector3.zero;
+                        go.transform.localRotation = Quaternion.identity;
+                        shiftDashBurstParticles = go.GetComponent<ParticleSystem>();
+                    }
+                }
+            }
         }
 
         private void SetupDashTrail()
@@ -196,6 +291,17 @@ namespace OrbitalPanopticon.Player
                 }
             }
 
+            // Update Space Dust streaming lines opposite to velocity
+            if (spaceDustParticles != null && rb != null)
+            {
+                var vel = spaceDustParticles.velocityOverLifetime;
+                vel.enabled = true;
+                vel.space = ParticleSystemSimulationSpace.World;
+                vel.x = -rb.linearVelocity.x * 0.45f;
+                vel.y = -rb.linearVelocity.y * 0.45f;
+                vel.z = -rb.linearVelocity.z * 0.45f;
+            }
+
             HandleMouseLook();
             ReadInput();
         }
@@ -252,7 +358,7 @@ namespace OrbitalPanopticon.Player
             _verticalInput = 0f;
             isBraking = false;
 
-            if (!isControlEnabled) return;
+            if (!isControlEnabled || isMovementLocked) return;
 
             var keyboard = Keyboard.current;
             if (keyboard == null) return;
@@ -299,6 +405,29 @@ namespace OrbitalPanopticon.Player
                 _lastDashTime = Time.time;
                 _dashTimer = duration;
 
+                if (shiftDashBurstParticles != null)
+                {
+                    shiftDashBurstParticles.transform.position = transform.position;
+                    shiftDashBurstParticles.transform.rotation = Quaternion.LookRotation(-dashDir, Vector3.up);
+                    shiftDashBurstParticles.Play(true);
+                }
+
+                if (mainCamera != null)
+                {
+                    if (_dashFovCoroutine != null) StopCoroutine(_dashFovCoroutine);
+                    _dashFovCoroutine = StartCoroutine(DashFovKickRoutine(8f, 0.25f));
+                }
+
+                if (PostProcessingToolkitController.Instance != null)
+                {
+                    PostProcessingToolkitController.Instance.TriggerImpactPulse(0.6f, 0.2f, 0.25f);
+                }
+
+                if (FMODAudioManager.Instance != null)
+                {
+                    FMODAudioManager.Instance.PlayShiftDash(transform.position);
+                }
+
                 if (rb != null)
                 {
                     rb.linearVelocity = dashDir * impulse;
@@ -309,6 +438,25 @@ namespace OrbitalPanopticon.Player
                     _dashTrail.emitting = true;
                 }
             }
+        }
+
+        private System.Collections.IEnumerator DashFovKickRoutine(float fovKick, float duration)
+        {
+            if (mainCamera == null) yield break;
+            float startFov = _baseCameraFov + fovKick;
+            float elapsed = 0f;
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+                float ease = Mathf.SmoothStep(0f, 1f, t);
+                mainCamera.fieldOfView = Mathf.Lerp(startFov, _baseCameraFov, ease);
+                yield return null;
+            }
+
+            mainCamera.fieldOfView = _baseCameraFov;
+            _dashFovCoroutine = null;
         }
 
         private void UpdateDampingAndBrakes()

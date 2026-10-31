@@ -37,6 +37,7 @@ namespace OrbitalPanopticon.Gameplay
         [SerializeField] private ScrapData wreckageData;
 
         [Header("Status")]
+        [SerializeField] private bool isBoundaryActive = true;
         [SerializeField] private bool isRespawning = false;
         [SerializeField] private bool isWarningActive = false;
         [SerializeField] private float currentWarningTimer = 0f;
@@ -49,9 +50,19 @@ namespace OrbitalPanopticon.Gameplay
         public float ArenaSafeRadius => arenaSafeRadius;
         public float ArenaMaxRadius => arenaMaxRadius;
         public float EventHorizonRadius => eventHorizonRadius;
+        public bool IsBoundaryActive => isBoundaryActive;
         public bool IsRespawning => isRespawning;
         public bool IsWarningActive => isWarningActive;
         public float CurrentWarningTimer => currentWarningTimer;
+
+        public void SetBoundaryActive(bool active)
+        {
+            isBoundaryActive = active;
+            if (!active)
+            {
+                ClearWarning();
+            }
+        }
 
         private void Awake()
         {
@@ -95,7 +106,7 @@ namespace OrbitalPanopticon.Gameplay
 
         private void Update()
         {
-            if (isRespawning || playerDrone == null) return;
+            if (!isBoundaryActive || isRespawning || playerDrone == null) return;
 
             SyncConfigValues();
 
@@ -125,6 +136,10 @@ namespace OrbitalPanopticon.Gameplay
                 {
                     isWarningActive = true;
                     currentWarningTimer = warningDuration;
+                    if (FMODAudioManager.Instance != null)
+                    {
+                        FMODAudioManager.Instance.PlayBoundaryWarning(playerDrone.transform.position);
+                    }
                 }
 
                 currentWarningTimer -= Time.deltaTime;
@@ -176,6 +191,11 @@ namespace OrbitalPanopticon.Gameplay
             ClearWarning();
 
             Debug.LogWarning($"[ArenaBoundary] Player death / signal loss: {reason} at {deathPos}");
+
+            if (FMODAudioManager.Instance != null)
+            {
+                FMODAudioManager.Instance.PlaySignalLostRespawn(deathPos);
+            }
 
             // 1) Spawn dummy visual prop at deathPos so the Black Hole spaghettifies the dummy wreckage and awards scrap points
             if (spawnWreckage)

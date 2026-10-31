@@ -16,6 +16,15 @@ namespace OrbitalPanopticon.Physics
         [SerializeField] private SphereCollider eventHorizonTrigger;
         [SerializeField] private SphereCollider gravityWellTrigger;
 
+        [Header("Singularity Implosion VFX")]
+        [SerializeField] private GameObject singularityImplosionPrefab;
+
+        public GameObject SingularityImplosionPrefab
+        {
+            get => singularityImplosionPrefab;
+            set => singularityImplosionPrefab = value;
+        }
+
         // Events
         public event Action<GravityBody> OnObjectConsumed;
 
@@ -147,7 +156,7 @@ namespace OrbitalPanopticon.Physics
                 {
                     if (isPlayer)
                     {
-                        if (ArenaBoundaryManager.Instance != null)
+                        if (ArenaBoundaryManager.Instance != null && ArenaBoundaryManager.Instance.IsBoundaryActive)
                         {
                             ArenaBoundaryManager.Instance.OnPlayerConsumedByBlackHole(body.transform.position);
                         }
@@ -184,9 +193,10 @@ namespace OrbitalPanopticon.Physics
                     else
                     {
                         // Inside accretion threshold: exponential ramp up allowing diving & slingshot maneuvers
+                        float stageGravityMult = (BlackHoleStageManager.Instance != null) ? BlackHoleStageManager.Instance.CurrentStageGravityMultiplier : ((BlackHoleMassAndEnergyManager.Instance != null) ? BlackHoleMassAndEnergyManager.Instance.CurrentStageGravityMultiplier : 1.0f);
                         float depth01 = 1f - Mathf.Clamp01((dist3D - config.eventHorizonRadius) / Mathf.Max(0.1f, config.accretionThresholdRadius - config.eventHorizonRadius));
-                        float playerPull = Mathf.Lerp(2.0f, 25.0f, Mathf.Pow(depth01, 2.0f)) * config.globalSimulationSpeed * config.playerGravityMultiplier;
-                        float playerSwirl = Mathf.Lerp(4.0f, 18.0f, Mathf.Pow(depth01, 1.5f)) * config.globalSimulationSpeed * config.playerGravityMultiplier;
+                        float playerPull = Mathf.Lerp(2.0f, 25.0f, Mathf.Pow(depth01, 2.0f)) * config.globalSimulationSpeed * config.playerGravityMultiplier * stageGravityMult;
+                        float playerSwirl = Mathf.Lerp(4.0f, 18.0f, Mathf.Pow(depth01, 1.5f)) * config.globalSimulationSpeed * config.playerGravityMultiplier * stageGravityMult;
 
                         Vector3 radialForce = dirToCenter3D * playerPull;
                         Vector3 swirlForce = clockwiseTangent * playerSwirl;
@@ -284,12 +294,13 @@ namespace OrbitalPanopticon.Physics
                         }
 
                         // Step 2 — Fast Exponential Clockwise Swirl
-                        float swirlSpeed = Mathf.Lerp(config.innerMinSwirlSpeed, config.innerMaxSwirlSpeed, Mathf.Pow(depth01, config.swirlExponentialPower)) * config.globalSimulationSpeed;
+                        float stageGravityMult = (BlackHoleStageManager.Instance != null) ? BlackHoleStageManager.Instance.CurrentStageGravityMultiplier : ((BlackHoleMassAndEnergyManager.Instance != null) ? BlackHoleMassAndEnergyManager.Instance.CurrentStageGravityMultiplier : 1.0f);
+                        float swirlSpeed = Mathf.Lerp(config.innerMinSwirlSpeed, config.innerMaxSwirlSpeed, Mathf.Pow(depth01, config.swirlExponentialPower)) * config.globalSimulationSpeed * stageGravityMult;
 
                         // Step 3 — Compensate Centrifugal Drift & Pull Inward strictly along dirToCenter3D (True 3D Center Pull)
                         float targetRadius = scrap != null ? scrap.currentSpiralRadius : Mathf.Min(dist3D, config.accretionThresholdRadius);
                         float radiusError = dist3D - targetRadius;
-                        float inwardSpeed = (config.spiralRadiusShrinkRate * (1f + depth01)) + Mathf.Max(0f, radiusError * config.spiralTightnessSpring);
+                        float inwardSpeed = ((config.spiralRadiusShrinkRate * (1f + depth01)) + Mathf.Max(0f, radiusError * config.spiralTightnessSpring)) * stageGravityMult;
 
                         // 3D Spiral strictly along the item's customOrbitAxis
                         Vector3 orbitAxis = (scrap != null && scrap.customOrbitAxis.sqrMagnitude > 0.01f) ? scrap.customOrbitAxis : Vector3.up;
@@ -406,6 +417,12 @@ namespace OrbitalPanopticon.Physics
                 // Spaghettification stretch
                 visualTransform.localScale = Vector3.Lerp(startScale, targetScale, t);
 
+                ScrapItem scrap = body.GetComponent<ScrapItem>();
+                if (scrap != null)
+                {
+                    scrap.TriggerSpaghettifyBurst(t);
+                }
+
                 yield return null;
             }
 
@@ -418,6 +435,8 @@ namespace OrbitalPanopticon.Physics
                     _consumingBodies.Remove(body);
                     yield break;
                 }
+
+                TriggerSingularityImplosion(center);
 
                 OnObjectConsumed?.Invoke(body);
                 _trackedBodies.Remove(body);
@@ -432,6 +451,31 @@ namespace OrbitalPanopticon.Physics
                 {
                     Destroy(body.gameObject);
                 }
+            }
+        }
+
+        private void TriggerSingularityImplosion(Vector3 center)
+        {
+            if (singularityImplosionPrefab == null)
+            {
+#if UNITY_EDITOR
+                singularityImplosionPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/VFX_SingularityImplosion.prefab");
+#endif
+                if (singularityImplosionPrefab == null)
+                {
+                    singularityImplosionPrefab = Resources.Load<GameObject>("VFX_SingularityImplosion");
+                }
+            }
+
+            if (singularityImplosionPrefab != null)
+            {
+                GameObject implosion = Instantiate(singularityImplosionPrefab, center, Quaternion.identity);
+                Destroy(implosion, 0.6f);
+            }
+
+            if (PostProcessingToolkitController.Instance != null)
+            {
+                PostProcessingToolkitController.Instance.TriggerImpactPulse(1.8f, 0.25f, 0.25f);
             }
         }
 

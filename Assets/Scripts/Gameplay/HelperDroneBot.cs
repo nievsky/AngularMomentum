@@ -112,8 +112,9 @@ namespace OrbitalPanopticon.Gameplay
                 targetScrap = FindBestScrap(config, center);
             }
 
+            float configuredSpeed = config != null && config.helperBotSpeed > 0f ? config.helperBotSpeed : baseSpeed;
             float speedMultiplier = config != null ? (config.magnetPullForce / 25f) : 1f;
-            float currentSpeed = baseSpeed * Mathf.Max(1f, speedMultiplier);
+            float currentSpeed = configuredSpeed * Mathf.Max(1f, speedMultiplier);
 
             if (targetScrap != null)
             {
@@ -165,8 +166,9 @@ namespace OrbitalPanopticon.Gameplay
                 transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, turnSpeed * Time.fixedDeltaTime);
             }
 
+            float configuredSpeed = config != null && config.helperBotSpeed > 0f ? config.helperBotSpeed : baseSpeed;
             float speedMultiplier = config != null ? (config.magnetPullForce / 25f) : 1f;
-            float currentSpeed = baseSpeed * Mathf.Max(1f, speedMultiplier);
+            float currentSpeed = configuredSpeed * Mathf.Max(1f, speedMultiplier);
             transform.position += transform.forward * (currentSpeed * Time.fixedDeltaTime);
 
             // Drag scrap along behind the bot
@@ -321,8 +323,10 @@ namespace OrbitalPanopticon.Gameplay
             var simManager = ScrapSimulationManager.Instance;
             if (simManager == null) return null;
 
-            ScrapItem best = null;
-            float closestDist = float.MaxValue;
+            ScrapItem bestValuable = null;
+            float closestValuableDist = float.MaxValue;
+            ScrapItem bestRegular = null;
+            float closestRegularDist = float.MaxValue;
             var helperManager = HelperDroneManager.Instance;
 
             foreach (var scrap in simManager.ActiveScrap)
@@ -331,12 +335,25 @@ namespace OrbitalPanopticon.Gameplay
                 if (helperManager != null && helperManager.IsScrapClaimed(scrap)) continue;
 
                 float dist = Vector3.Distance(transform.position, scrap.transform.position);
-                if (dist < closestDist)
+                if (scrap.isValuableScrap)
                 {
-                    closestDist = dist;
-                    best = scrap;
+                    if (dist < closestValuableDist)
+                    {
+                        closestValuableDist = dist;
+                        bestValuable = scrap;
+                    }
+                }
+                else
+                {
+                    if (dist < closestRegularDist)
+                    {
+                        closestRegularDist = dist;
+                        bestRegular = scrap;
+                    }
                 }
             }
+
+            ScrapItem best = bestValuable != null ? bestValuable : bestRegular;
 
             if (best != null && helperManager != null)
             {

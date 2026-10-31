@@ -31,6 +31,14 @@ namespace OrbitalPanopticon.Core
         [SerializeField] private TextMeshProUGUI heatMultiplierText;
         [SerializeField] private TextMeshProUGUI scrapCoinsText;
 
+        [Header("Overhauled Bottom HUD: Black Hole & Battery Bars")]
+        [SerializeField] private GameObject bottomHUDPanel;
+        [SerializeField] private Image blackHoleBarFill;
+        [SerializeField] private TextMeshProUGUI blackHoleBarText;
+        [SerializeField] private Image playerEnergyBarFill;
+        [SerializeField] private TextMeshProUGUI playerEnergyBarText;
+        [SerializeField] private TextMeshProUGUI topBossTrackerText;
+
         [Header("Crosshair Elements")]
         [SerializeField] private Image crosshairImage;
         [SerializeField] private Image[] crosshairTickImages;
@@ -48,6 +56,10 @@ namespace OrbitalPanopticon.Core
         [SerializeField] private GameObject quotaCelebrationPanel;
         [SerializeField] private CanvasGroup quotaCelebrationCanvasGroup;
         [SerializeField] private TextMeshProUGUI quotaCelebrationText;
+
+        [Header("Critical Mass Warning")]
+        [SerializeField] private GameObject criticalMassWarningPanel;
+        [SerializeField] private TextMeshProUGUI criticalMassWarningText;
 
         [Header("Boundary Warning Elements")]
         [SerializeField] private GameObject warningPanel;
@@ -158,6 +170,8 @@ namespace OrbitalPanopticon.Core
             {
                 _isOperatorConnected = true;
             }
+
+            EnsureBottomHUDAndBossTracker();
         }
 
         private void OnDestroy()
@@ -179,6 +193,7 @@ namespace OrbitalPanopticon.Core
             HandleStartOverlayInput();
             UpdateHUD();
             UpdateWarningHUD();
+            UpdateCriticalMassWarningHUD();
             UpdateObservedNotice();
         }
 
@@ -288,37 +303,63 @@ namespace OrbitalPanopticon.Core
 
         private void UpdateHUD()
         {
-            if (quotaManager == null) return;
+            var stageMgr = BlackHoleStageManager.Instance;
+            GameBalanceConfig config = GameManager.GameBalanceConfigInstance;
+            float mass = stageMgr != null ? stageMgr.CurrentMass : (BlackHoleMassAndEnergyManager.Instance != null ? BlackHoleMassAndEnergyManager.Instance.CurrentBlackHoleMass : 0f);
+            int stage = stageMgr != null ? stageMgr.CurrentStage : (BlackHoleMassAndEnergyManager.Instance != null ? BlackHoleMassAndEnergyManager.Instance.CurrentStage : 1);
+            int stageIndex = stageMgr != null ? stageMgr.CurrentStageIndex : (stage - 1);
+            float targetMass = stageMgr != null ? stageMgr.CurrentStageTargetMass : (config != null && config.stageMassTargets != null && stageIndex < config.stageMassTargets.Length ? config.stageMassTargets[stageIndex] : 500f);
+            int activeBeams = stageMgr != null ? stageMgr.ActiveContainmentLocksCount : Mathf.Max(0, 4 - stageIndex);
 
-            // 1. Quota Text & Progress
-            if (quotaText != null)
+            // 1. Single Clean Bottom Bar: Black Hole Mass, Stage & Containment Beams
+            float prevTarget = (stageIndex > 0 && config != null && config.stageMassTargets != null && stageIndex - 1 < config.stageMassTargets.Length)
+                ? config.stageMassTargets[stageIndex - 1]
+                : 0f;
+            float fillNorm = Mathf.Clamp01((mass - prevTarget) / Mathf.Max(1f, targetMass - prevTarget));
+
+            if (blackHoleBarFill != null)
             {
-                int currentProg = Mathf.FloorToInt(quotaManager.CurrentQuotaProgress);
-                int target = Mathf.FloorToInt(quotaManager.TargetQuota);
-                int speedBonus = Mathf.CeilToInt(quotaManager.SpeedBonusPercent);
-                quotaText.text = $"QUOTA: {currentProg} / {target} (Speed Bonus: +{speedBonus}%)";
+                blackHoleBarFill.fillAmount = fillNorm;
+
+                // Color shifts by stage: Cyan (Stage 1) -> Yellow (Stage 2) -> Orange (Stage 3) -> Flashing Red/Gold (Stage 4)
+                if (stage == 1)
+                {
+                    blackHoleBarFill.color = new Color(0.15f, 0.9f, 1.0f, 0.95f);
+                }
+                else if (stage == 2)
+                {
+                    blackHoleBarFill.color = new Color(1.0f, 0.88f, 0.2f, 0.95f);
+                }
+                else if (stage == 3)
+                {
+                    blackHoleBarFill.color = new Color(1.0f, 0.55f, 0.1f, 0.95f);
+                }
+                else
+                {
+                    float pulse = 0.5f + (0.5f * Mathf.Sin(Time.time * 8f));
+                    blackHoleBarFill.color = Color.Lerp(new Color(1f, 0.15f, 0.15f, 0.95f), new Color(1f, 0.85f, 0.15f, 0.95f), pulse);
+                }
             }
 
-            if (quotaFillImage != null && quotaManager.TargetQuota > 0f)
+            if (blackHoleBarText != null)
             {
-                quotaFillImage.fillAmount = Mathf.Clamp01(quotaManager.CurrentQuotaProgress / quotaManager.TargetQuota);
+                if (stage >= 4)
+                {
+                    blackHoleBarText.text = "STAGE 4/4: FINAL CONTAINMENT LOCK FAILING — CRITICAL MASS!";
+                }
+                else
+                {
+                    blackHoleBarText.text = $"BLACK HOLE MASS: {mass:N0} / {targetMass:N0} TONS | STAGE {stage}/4 | CONTAINMENT BEAMS ACTIVE: {activeBeams}/4";
+                }
             }
 
-            // 2. Heat Multiplier & Color
-            if (heatMultiplierText != null)
-            {
-                int multiplier = quotaManager.CurrentHeatMultiplier;
-                heatMultiplierText.text = $"HEAT MULTIPLIER: x{multiplier}";
-                heatMultiplierText.color = GetHeatColor(multiplier);
-            }
-
-            // 3. Scrap Coins
-            if (scrapCoinsText != null)
+            // 2. Scrap Coins
+            if (scrapCoinsText != null && quotaManager != null)
             {
                 scrapCoinsText.text = $"SCRAP COINS: {quotaManager.ScrapCoins}";
             }
 
-            // 4. REC Status & Sector Telemetry (Top-Left)
+            // 3. REC Status & Sector Telemetry (Top-Left)
             if (recStatusText != null)
             {
                 bool blink = (Time.time % 1.2f) < 0.8f;
@@ -332,7 +373,7 @@ namespace OrbitalPanopticon.Core
                 sectorInfoText.text = "SECTOR 7-G // ORBITAL PANOPTICON";
             }
 
-            // 5. Telemetry (Top-Right)
+            // 4. Telemetry (Top-Right)
             if (telemetryRightText != null)
             {
                 int activeBots = 0;
@@ -340,19 +381,158 @@ namespace OrbitalPanopticon.Core
                 {
                     activeBots = HelperDroneManager.Instance.ActiveBots.Count;
                 }
-                else
+                else if (config != null)
                 {
-                    GameBalanceConfig cfg = GameManager.GameBalanceConfigInstance;
-                    if (cfg != null) activeBots = cfg.activeHelperRobotsCount;
+                    activeBots = config.activeHelperRobotsCount;
                 }
 
-                telemetryRightText.text = $"HULL INTEGRITY: 100%\nHELPER BOTS: {activeBots}";
+                telemetryRightText.text = $"HULL: 100% | BOTS: {activeBots} | LOCKS: <color=#00FFCC>{activeBeams}/4</color>\nBH: <color=#FFD700>STAGE {stage}/4</color> ({mass:N0}/{targetMass:N0} TONS)";
             }
 
-            // 6. Context Control Hints (Bottom-Left)
-            if (controlHintsText != null && string.IsNullOrEmpty(controlHintsText.text))
+            // 5. Context Control Hints (Bottom-Left)
+            if (controlHintsText != null)
             {
-                controlHintsText.text = "[RMB] Pull/Hold  |  [LMB] Launch/Punt  |  [SHIFT] Directional Dash  |  [X] Brake  |  [TAB] Upgrades";
+                controlHintsText.text = "[RMB] Grab Scrap | [LMB] Launch / Dry Punt Scrap | [SHIFT] Dash | [TAB] Upgrades";
+            }
+        }
+
+        private void EnsureBottomHUDAndBossTracker()
+        {
+            Canvas canvas = GetComponentInParent<Canvas>();
+            if (canvas == null) canvas = FindAnyObjectByType<Canvas>();
+            if (canvas == null) return;
+
+            // 1. Hide old Quota panel if present
+            Transform oldQuotaPanel = canvas.transform.Find("Panel_QuotaAndHeat");
+            if (oldQuotaPanel != null)
+            {
+                oldQuotaPanel.gameObject.SetActive(false);
+            }
+
+            // 2. Setup or Find Panel_BottomHUD
+            if (bottomHUDPanel == null)
+            {
+                Transform existing = canvas.transform.Find("Panel_BottomHUD");
+                if (existing != null)
+                {
+                    bottomHUDPanel = existing.gameObject;
+                    blackHoleBarFill = bottomHUDPanel.transform.Find("Bar_BlackHole/Fill")?.GetComponent<Image>();
+                    blackHoleBarText = bottomHUDPanel.transform.Find("Bar_BlackHole/Text")?.GetComponent<TextMeshProUGUI>();
+                    
+                    // Hide legacy battery bar if present
+                    Transform batT = bottomHUDPanel.transform.Find("Bar_Battery");
+                    if (batT != null) batT.gameObject.SetActive(false);
+
+                    // Re-anchor Bar_BlackHole to fill the entire bar cleanly
+                    Transform bhT = bottomHUDPanel.transform.Find("Bar_BlackHole");
+                    if (bhT != null)
+                    {
+                        RectTransform bhRtExisting = bhT.GetComponent<RectTransform>();
+                        if (bhRtExisting != null)
+                        {
+                            bhRtExisting.anchorMin = Vector2.zero;
+                            bhRtExisting.anchorMax = Vector2.one;
+                            bhRtExisting.sizeDelta = Vector2.zero;
+                            bhRtExisting.anchoredPosition = Vector2.zero;
+                        }
+                    }
+                }
+            }
+
+            if (bottomHUDPanel == null)
+            {
+                GameObject hudGo = new GameObject("Panel_BottomHUD");
+                hudGo.transform.SetParent(canvas.transform, false);
+                RectTransform hudRt = hudGo.AddComponent<RectTransform>();
+                hudRt.anchorMin = new Vector2(0.5f, 0f);
+                hudRt.anchorMax = new Vector2(0.5f, 0f);
+                hudRt.pivot = new Vector2(0.5f, 0f);
+                hudRt.anchoredPosition = new Vector2(0f, 32f);
+                hudRt.sizeDelta = new Vector2(700f, 38f);
+
+                // Single Clean Bar: Black Hole Mass, Stage & Containment Beams
+                GameObject bhBarGo = new GameObject("Bar_BlackHole");
+                bhBarGo.transform.SetParent(hudGo.transform, false);
+                RectTransform bhRt = bhBarGo.AddComponent<RectTransform>();
+                bhRt.anchorMin = Vector2.zero;
+                bhRt.anchorMax = Vector2.one;
+                bhRt.sizeDelta = Vector2.zero;
+                bhRt.anchoredPosition = Vector2.zero;
+
+                Image bhBg = bhBarGo.AddComponent<Image>();
+                bhBg.color = new Color(0.04f, 0.07f, 0.12f, 0.88f);
+                Outline bhOutline = bhBarGo.AddComponent<Outline>();
+                bhOutline.effectColor = new Color(0.2f, 0.85f, 1f, 0.75f);
+                bhOutline.effectDistance = new Vector2(1.5f, -1.5f);
+
+                GameObject bhFillGo = new GameObject("Fill");
+                bhFillGo.transform.SetParent(bhBarGo.transform, false);
+                RectTransform bhFillRt = bhFillGo.AddComponent<RectTransform>();
+                bhFillRt.anchorMin = Vector2.zero;
+                bhFillRt.anchorMax = Vector2.one;
+                bhFillRt.sizeDelta = Vector2.zero;
+                blackHoleBarFill = bhFillGo.AddComponent<Image>();
+                blackHoleBarFill.type = Image.Type.Filled;
+                blackHoleBarFill.fillMethod = Image.FillMethod.Horizontal;
+                blackHoleBarFill.color = new Color(0.2f, 0.9f, 1f, 0.95f);
+
+                GameObject bhTextGo = new GameObject("Text");
+                bhTextGo.transform.SetParent(bhBarGo.transform, false);
+                RectTransform bhTextRt = bhTextGo.AddComponent<RectTransform>();
+                bhTextRt.anchorMin = Vector2.zero;
+                bhTextRt.anchorMax = Vector2.one;
+                bhTextRt.sizeDelta = Vector2.zero;
+                blackHoleBarText = bhTextGo.AddComponent<TextMeshProUGUI>();
+                blackHoleBarText.alignment = TextAlignmentOptions.Center;
+                blackHoleBarText.fontSize = 13;
+                blackHoleBarText.fontStyle = FontStyles.Bold;
+                blackHoleBarText.color = Color.white;
+
+                bottomHUDPanel = hudGo;
+            }
+
+            // 3. Remove/Hide Boss HP Tracker
+            Transform existingTracker = canvas.transform.Find("Text_BossTracker");
+            if (existingTracker != null)
+            {
+                existingTracker.gameObject.SetActive(false);
+            }
+        }
+
+        private void UpdateCriticalMassWarningHUD()
+        {
+            var massMgr = BlackHoleMassAndEnergyManager.Instance;
+            bool isStage4 = massMgr != null && massMgr.CurrentStage == 4 && !massMgr.IsCatastrophicCollapse;
+
+            if (criticalMassWarningPanel == null)
+            {
+                var canvas = GetComponentInParent<Canvas>();
+                if (canvas != null)
+                {
+                    var found = canvas.transform.Find("Panel_CriticalMassWarning");
+                    if (found != null)
+                    {
+                        criticalMassWarningPanel = found.gameObject;
+                        criticalMassWarningText = criticalMassWarningPanel.GetComponentInChildren<TextMeshProUGUI>();
+                    }
+                }
+            }
+
+            if (criticalMassWarningPanel != null)
+            {
+                if (criticalMassWarningPanel.activeSelf != isStage4)
+                {
+                    criticalMassWarningPanel.SetActive(isStage4);
+                }
+
+                if (isStage4 && criticalMassWarningText != null)
+                {
+                    float pulse = (Mathf.Sin(Time.time * 10f) + 1f) * 0.5f;
+                    Color c = Color.Lerp(new Color(1f, 0.2f, 0.1f), new Color(1f, 0.9f, 0.1f), pulse);
+                    criticalMassWarningText.color = c;
+                    float mass = massMgr != null ? massMgr.CurrentBlackHoleMass : 850f;
+                    criticalMassWarningText.text = $"STAGE 4: CRITICAL MASS ({mass:F0}/1000)!\nSIPHON ENERGY IMMEDIATELY OR COLLAPSE IMMINENT!";
+                }
             }
         }
 

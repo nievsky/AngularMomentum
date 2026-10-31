@@ -22,6 +22,7 @@ namespace OrbitalPanopticon.Gameplay
 
         [Header("Spawn Dynamics")]
         [SerializeField] private int maxActiveScrap = 40;
+        [SerializeField] private int prewarmCount = 0;
         [SerializeField] private float spawnInterval = 1.2f;
         [SerializeField] private float minInitialSpeed = 2.5f;
         [SerializeField] private float maxInitialSpeed = 6.0f;
@@ -42,6 +43,24 @@ namespace OrbitalPanopticon.Gameplay
         private void Awake()
         {
             CalculateTotalWeight();
+        }
+
+        private void Start()
+        {
+            if (prewarmCount > 0)
+            {
+                PrewarmSpawns(prewarmCount);
+            }
+        }
+
+        public void PrewarmSpawns(int count)
+        {
+            CalculateTotalWeight();
+            int toSpawn = Mathf.Min(count, maxActiveScrap);
+            for (int i = 0; i < toSpawn; i++)
+            {
+                SpawnRandomScrap();
+            }
         }
 
         private void OnValidate()
@@ -148,6 +167,10 @@ namespace OrbitalPanopticon.Gameplay
             {
                 scrap.Initialize(selected.scrapData);
             }
+
+            float chance = config != null ? config.valuableScrapSpawnChance : 0.25f;
+            bool isValuable = Random.value < chance;
+            scrap.SetupValuableScrap(isValuable);
 
             // Apply tangential orbital impulse and spin
             Rigidbody rb = scrap.Rigidbody;

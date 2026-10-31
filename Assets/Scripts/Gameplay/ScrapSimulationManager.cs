@@ -29,6 +29,7 @@ namespace OrbitalPanopticon.Gameplay
         [SerializeField] private int activeCount = 0;
         [SerializeField] private int fadingCount = 0;
         [SerializeField] private int pooledCount = 0;
+        [SerializeField] private bool isSpawningEnabled = true;
 
         private readonly Queue<ScrapItem> _scrapPool = new Queue<ScrapItem>();
         private readonly List<ScrapItem> _activeScrap = new List<ScrapItem>();
@@ -37,6 +38,8 @@ namespace OrbitalPanopticon.Gameplay
         private float _spawnTimer = 0f;
         private int _totalWeight = 0;
 
+        public bool IsSpawningEnabled => isSpawningEnabled;
+        public void SetSpawningEnabled(bool enabled) => isSpawningEnabled = enabled;
         public IReadOnlyList<ScrapItem> ActiveScrap => _activeScrap;
         public int ActiveScrapCount => _activeScrap.Count;
         public int FadingScrapCount => _fadingScrap.Count;
@@ -165,7 +168,7 @@ namespace OrbitalPanopticon.Gameplay
             if (_spawnTimer >= config.scrapSpawnInterval)
             {
                 _spawnTimer = 0f;
-                if (_activeScrap.Count < config.maxActiveScrap && _scrapPool.Count > 0)
+                if (isSpawningEnabled && _activeScrap.Count < config.maxActiveScrap && _scrapPool.Count > 0)
                 {
                     SpawnFromPool(config, center);
                 }
@@ -266,6 +269,11 @@ namespace OrbitalPanopticon.Gameplay
 
             scrap.ResetForPool();
             scrap.HomeOrbitRadius = radius;
+
+            float chance = config != null ? config.valuableScrapSpawnChance : 0.25f;
+            bool isValuable = Random.value < chance;
+            scrap.SetupValuableScrap(isValuable);
+
             scrap.gameObject.SetActive(true);
 
             // Compute clockwise tangential orbital velocity for Zone A Calm Drift
@@ -282,6 +290,56 @@ namespace OrbitalPanopticon.Gameplay
             {
                 rb.linearVelocity = initialVelocity;
                 rb.angularVelocity = Random.insideUnitSphere * 0.4f;
+            }
+
+            var bh = Object.FindAnyObjectByType<OrbitalPanopticon.Physics.BlackHoleGravity>();
+            if (bh != null)
+            {
+                bh.RegisterBody(scrap.GravityBody);
+            }
+
+            _activeScrap.Add(scrap);
+            return scrap;
+        }
+
+        public ScrapItem SpawnScrapAtPosition(Vector3 position, Vector3 initialVelocity, bool forceValuable = true)
+        {
+            if (_scrapPool.Count == 0) return null;
+
+            GameBalanceConfig config = GameManager.GameBalanceConfigInstance;
+            int maxTier = config != null ? config.unlockedScrapTier : 1;
+
+            ScrapItem scrap = null;
+            int attempts = _scrapPool.Count;
+            for (int i = 0; i < attempts; i++)
+            {
+                var candidate = _scrapPool.Dequeue();
+                if (candidate == null) continue;
+                if (candidate.Tier <= maxTier)
+                {
+                    scrap = candidate;
+                    break;
+                }
+                else
+                {
+                    _scrapPool.Enqueue(candidate);
+                }
+            }
+
+            if (scrap == null) return null;
+
+            scrap.transform.position = position;
+            scrap.transform.rotation = Random.rotation;
+            scrap.ResetForPool();
+            scrap.HomeOrbitRadius = Vector3.Distance(position, centerTransform != null ? centerTransform.position : Vector3.zero);
+            scrap.SetupValuableScrap(forceValuable);
+            scrap.gameObject.SetActive(true);
+
+            Rigidbody rb = scrap.Rigidbody;
+            if (rb != null)
+            {
+                rb.linearVelocity = initialVelocity;
+                rb.angularVelocity = Random.insideUnitSphere * 0.8f;
             }
 
             var bh = Object.FindAnyObjectByType<OrbitalPanopticon.Physics.BlackHoleGravity>();

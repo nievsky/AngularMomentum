@@ -247,6 +247,8 @@ MonoBehaviour:
   hotAccretionColor: {r: 1, g: 0.45, b: 0.05, a: 1}
   isObserved: 0
   observedGoldColor: {r: 1, g: 0.84, b: 0.05, a: 1}
+  isValuableScrap: 0
+  valuableRingObject: {fileID: 0}
   pullImmunityTimer: 0
   currentSpiralRadius: 0
   customOrbitAxis: {x: 0, y: 1, z: 0}
@@ -255,6 +257,10 @@ MonoBehaviour:
   ballisticLaunchTimer: 0
   rb: {fileID: 1804717621597390111}
   gravityBody: {fileID: 541736643648165065}
+  valuableLavaMaterial: {fileID: 2100000, guid: 695ae3f648dd43d4790ee81fa465dcdc, type: 2}
+  valuableEmbersPrefab: {fileID: 2046512276226227920, guid: 16299fc0d65c1a14d983b3e410444a51, type: 3}
+  accretionSparksParticles: {fileID: 0}
+  accretionSparksPrefab: {fileID: 5470601156366655931, guid: 5823de6ffcc47e441824b742a2709059, type: 3}
   homeOrbitRadius: 25
   wasInteractedByPlayer: 0
 --- !u!1 &5154271449514940201

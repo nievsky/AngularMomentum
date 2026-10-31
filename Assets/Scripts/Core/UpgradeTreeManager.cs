@@ -11,7 +11,8 @@ namespace OrbitalPanopticon.Core
         Player,
         BlackHole,
         Scrap,
-        Cameras,
+        Energy,
+        Cameras = Energy,
         Robots,
         Special
     }
@@ -68,12 +69,22 @@ namespace OrbitalPanopticon.Core
             }
             Instance = this;
 
-            if (nodes == null || nodes.Count == 0)
+            if (nodes == null || nodes.Count == 0 || !HasEnergyBranch())
             {
                 PopulateDefaultNodes();
             }
 
             BuildNodeMap();
+        }
+
+        private bool HasEnergyBranch()
+        {
+            if (nodes == null) return false;
+            for (int i = 0; i < nodes.Count; i++)
+            {
+                if (nodes[i] != null && nodes[i].nodeId == "valuable_scrap_chance") return true;
+            }
+            return false;
         }
 
         private void BuildNodeMap()
@@ -149,6 +160,12 @@ namespace OrbitalPanopticon.Core
             node.currentLevel++;
             ApplyNodeEffect(node);
             OnUpgradeTreeChanged?.Invoke();
+
+            if (FMODAudioManager.Instance != null)
+            {
+                FMODAudioManager.Instance.PlayUpgradeBuy();
+            }
+
             return true;
         }
 
@@ -174,6 +191,11 @@ namespace OrbitalPanopticon.Core
             if (HelperDroneManager.Instance != null)
             {
                 HelperDroneManager.Instance.SpawnHelperRobot();
+            }
+
+            if (FMODAudioManager.Instance != null)
+            {
+                FMODAudioManager.Instance.PlayUpgradeBuy();
             }
 
             OnUpgradeTreeChanged?.Invoke();
@@ -241,22 +263,34 @@ namespace OrbitalPanopticon.Core
                     config.unlockedScrapTier = 4;
                     break;
 
+                case "valuable_scrap_chance":
+                case "energy_siphon_speed":
                 case "camera_add":
-                    ActivateExtraSurveillanceCameras(node.currentLevel);
+                    if (node.currentLevel == 1) config.valuableScrapSpawnChance = 0.25f;
+                    else if (node.currentLevel == 2) config.valuableScrapSpawnChance = 0.35f;
+                    else if (node.currentLevel >= 3) config.valuableScrapSpawnChance = 0.50f;
                     break;
 
+                case "valuable_scrap_mult":
+                case "energy_battery_cap":
                 case "camera_flash":
-                    config.cameraGraviFlashUnlocked = true;
-                    config.cameraGraviFlashInterval = 10.0f;
+                    if (node.currentLevel == 1) config.valuableScrapMultiplier = 5.0f;
+                    else if (node.currentLevel == 2) config.valuableScrapMultiplier = 8.0f;
+                    else if (node.currentLevel >= 3) config.valuableScrapMultiplier = 12.0f;
                     break;
 
+                case "quantum_decay_wow":
+                case "energy_wow":
                 case "camera_wow":
-                    config.cameraObservedMultiplier = config.cameraWowChainLaserMultiplier > 0f ? config.cameraWowChainLaserMultiplier : 6.0f;
-                    config.panopticonLaserGridUnlocked = true;
+                    config.quantumDecayUnlocked = true;
                     break;
 
                 case "robot_trawl":
                     config.magnetPullForce *= 1.25f;
+                    break;
+
+                case "robot_speed":
+                    config.helperBotSpeed *= 1.30f;
                     break;
 
                 case "robot_magnet_range":
@@ -453,7 +487,7 @@ namespace OrbitalPanopticon.Core
             nodes.Add(new UpgradeNodeData
             {
                 nodeId = "hole_heat_fill",
-                titleRU = "Шкала нагрева",
+                titleRU = "КПД воронки",
                 branch = UpgradeBranch.BlackHole,
                 currentLevel = 0,
                 maxLevel = 5,
@@ -461,7 +495,7 @@ namespace OrbitalPanopticon.Core
                 prerequisiteNodeIds = new string[] { "hub" },
                 isWowPerk = false,
                 uiPosition = new Vector2(0f, 150f),
-                descriptionRU = "+10% скорость комбо за ур."
+                descriptionRU = "+15% КПД энергии, +10% макс. масса"
             });
             nodes.Add(new UpgradeNodeData
             {
@@ -518,45 +552,45 @@ namespace OrbitalPanopticon.Core
                 descriptionRU = "Космическая аномалия: ценный мусор"
             });
 
-            // Bottom-Right Branch: Cameras
+            // Bottom-Right Branch: Valuable Glowing Scrap & Matter Enrichment
             nodes.Add(new UpgradeNodeData
             {
-                nodeId = "camera_add",
-                titleRU = "+ Камеры",
-                branch = UpgradeBranch.Cameras,
+                nodeId = "valuable_scrap_chance",
+                titleRU = "Шанс ценного мусора",
+                branch = UpgradeBranch.Energy,
                 currentLevel = 0,
                 maxLevel = 3,
-                levelCosts = new int[] { 30, 60, 120 },
+                levelCosts = new int[] { 30, 65, 130 },
                 prerequisiteNodeIds = new string[] { "hub" },
                 isWowPerk = false,
                 uiPosition = new Vector2(170f, -65f),
-                descriptionRU = "+1 камера наблюдения за ур."
+                descriptionRU = "Шанс ценного мусора: 15% -> 25% -> 35% -> 50%"
             });
             nodes.Add(new UpgradeNodeData
             {
-                nodeId = "camera_flash",
-                titleRU = "Грави-вспышка",
-                branch = UpgradeBranch.Cameras,
+                nodeId = "valuable_scrap_mult",
+                titleRU = "Обогащение материи",
+                branch = UpgradeBranch.Energy,
                 currentLevel = 0,
-                maxLevel = 1,
-                levelCosts = new int[] { 90 },
-                prerequisiteNodeIds = new string[] { "camera_add" },
+                maxLevel = 3,
+                levelCosts = new int[] { 45, 95, 190 },
+                prerequisiteNodeIds = new string[] { "valuable_scrap_chance" },
                 isWowPerk = false,
                 uiPosition = new Vector2(310f, -65f),
-                descriptionRU = "Вспышка раз в 10 сек тянет мусор"
+                descriptionRU = "Множитель ценного мусора: x3 -> x5 -> x8 -> x12"
             });
             nodes.Add(new UpgradeNodeData
             {
-                nodeId = "camera_wow",
-                titleRU = "ВАУ: Камеры",
-                branch = UpgradeBranch.Cameras,
+                nodeId = "quantum_decay_wow",
+                titleRU = "ВАУ: Квантовый распад",
+                branch = UpgradeBranch.Energy,
                 currentLevel = 0,
                 maxLevel = 1,
                 levelCosts = new int[] { 250 },
-                prerequisiteNodeIds = new string[] { "camera_flash" },
+                prerequisiteNodeIds = new string[] { "valuable_scrap_mult" },
                 isWowPerk = true,
                 uiPosition = new Vector2(460f, -65f),
-                descriptionRU = "x6 бонус наблюдения (вместо x3)!"
+                descriptionRU = "ВАУ-перк: Квантовый распад\nУдваивает массу и монеты со всего мусора"
             });
 
             // Bottom Branch: Robots
@@ -570,8 +604,21 @@ namespace OrbitalPanopticon.Core
                 levelCosts = new int[] { 25, 55, 110 },
                 prerequisiteNodeIds = new string[] { "hub" },
                 isWowPerk = false,
-                uiPosition = new Vector2(-60f, -165f),
+                uiPosition = new Vector2(-60f, -145f),
                 descriptionRU = "+25% сила захвата магнита"
+            });
+            nodes.Add(new UpgradeNodeData
+            {
+                nodeId = "robot_speed",
+                titleRU = "Скорость роботов",
+                branch = UpgradeBranch.Robots,
+                currentLevel = 0,
+                maxLevel = 3,
+                levelCosts = new int[] { 30, 65, 120 },
+                prerequisiteNodeIds = new string[] { "robot_trawl" },
+                isWowPerk = false,
+                uiPosition = new Vector2(-155f, -265f),
+                descriptionRU = "+30% скорость роботов за ур."
             });
             nodes.Add(new UpgradeNodeData
             {
@@ -583,7 +630,7 @@ namespace OrbitalPanopticon.Core
                 levelCosts = new int[] { 35, 70, 130 },
                 prerequisiteNodeIds = new string[] { "robot_trawl" },
                 isWowPerk = false,
-                uiPosition = new Vector2(-60f, -285f),
+                uiPosition = new Vector2(35f, -265f),
                 descriptionRU = "Магнит захватывает дальше и шире"
             });
             nodes.Add(new UpgradeNodeData
@@ -594,9 +641,9 @@ namespace OrbitalPanopticon.Core
                 currentLevel = 0,
                 maxLevel = 1,
                 levelCosts = new int[] { 250 },
-                prerequisiteNodeIds = new string[] { "robot_magnet_range" },
+                prerequisiteNodeIds = new string[] { "robot_speed", "robot_magnet_range" },
                 isWowPerk = true,
-                uiPosition = new Vector2(-60f, -405f),
+                uiPosition = new Vector2(-60f, -385f),
                 descriptionRU = "Протокол Камикадзе для роботов"
             });
 

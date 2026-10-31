@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using DG.Tweening;
 using OrbitalPanopticon.Core;
 using OrbitalPanopticon.Gameplay;
 
@@ -20,13 +21,32 @@ namespace OrbitalPanopticon.Player
         [SerializeField] private Transform roboArmVisual;
         [SerializeField] private Transform blackHoleCenter;
 
-        [Header("Visual Beam (Optional Feedback)")]
+        [Header("Visual Beam (Intertwining Helical Beams)")]
         [SerializeField] private LineRenderer magnetBeamLine;
-        [SerializeField] private Color magnetBeamColor = new Color(0.2f, 0.9f, 1f, 0.85f);
-        [SerializeField] private Color shockwaveColor = new Color(0.15f, 0.9f, 1f, 0.85f);
+        [SerializeField] private LineRenderer magnetBeamSecondaryLine;
+        [SerializeField] private Color magnetBeamColor = new Color(0.2f, 2.5f, 5.0f, 1f); // HDR Cyan
+        [SerializeField] private Color magnetBeamSecondaryColor = new Color(3.5f, 0.4f, 5.0f, 1f); // HDR Electric Violet
+        [SerializeField] private Color shockwaveColor = new Color(0.2f, 3.0f, 5.0f, 1f);
 
-        [Header("Punt Shockwave Feedback")]
+        [Header("Punt Shockwave & Flash Feedback")]
         [SerializeField] private Transform puntShockwaveRing;
+        [SerializeField] private Light puntMuzzleLight;
+
+        [Header("Production Manipulator VFX")]
+        [SerializeField] private ParticleSystem pullVortexParticles;
+        [SerializeField] private ParticleSystem puntBlastParticles;
+
+        public ParticleSystem PullVortexParticles
+        {
+            get => pullVortexParticles;
+            set => pullVortexParticles = value;
+        }
+
+        public ParticleSystem PuntBlastParticles
+        {
+            get => puntBlastParticles;
+            set => puntBlastParticles = value;
+        }
 
         [Header("Observed Scrap Indicator on Arm")]
         [SerializeField] private Light armIndicatorLight;
@@ -54,15 +74,24 @@ namespace OrbitalPanopticon.Player
         private bool _requireRmbRelease = false;
         private float _beamFadeTimer = 0f;
         private Coroutine _puntAnimCoroutine;
+        private Coroutine _muzzleLightCoroutine;
+        private const int HELIX_POINTS = 28;
+        private readonly Vector3[] _helixPointsA = new Vector3[HELIX_POINTS];
+        private readonly Vector3[] _helixPointsB = new Vector3[HELIX_POINTS];
 
         public IReadOnlyList<ScrapItem> HeldItems => _heldItems;
         public int HeldCount => _heldItems.Count;
         public bool IsHolding => _heldItems.Count > 0;
         public Transform HoldPoint => holdPoint;
         public bool RequireRmbRelease => _requireRmbRelease;
+        public bool IsDischargingLaser => false;
+        public bool IsSiphoning => false;
+
+        public static GravityManipulatorController Instance { get; private set; }
 
         private void Awake()
         {
+            Instance = this;
             if (droneController == null) droneController = GetComponent<DroneController>();
             if (droneRb == null) droneRb = GetComponent<Rigidbody>();
             if (mainCamera == null) mainCamera = Camera.main;
@@ -101,41 +130,138 @@ namespace OrbitalPanopticon.Player
                     }
                 }
 
-                if (puntShockwaveRing == null)
-                {
-                    puntShockwaveRing = roboArmVisual.Find("PuntShockwaveRing");
-                }
+                SetupManipulatorParticles();
             }
 
             SetupMagnetBeamLine();
         }
 
+        private void SetupManipulatorParticles()
+        {
+            if (roboArmVisual == null) return;
+
+            if (pullVortexParticles == null)
+            {
+                var found = roboArmVisual.Find("VFX_GravityPullStream");
+                if (found != null) pullVortexParticles = found.GetComponentInChildren<ParticleSystem>();
+                if (pullVortexParticles == null)
+                {
+                    GameObject pullPrefab = Resources.Load<GameObject>("VFX_GravityPullStream");
+#if UNITY_EDITOR
+                    if (pullPrefab == null) pullPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/VFX_GravityPullStream.prefab");
+#endif
+                    if (pullPrefab != null)
+                    {
+                        GameObject go = Instantiate(pullPrefab, roboArmVisual);
+                        go.name = "VFX_GravityPullStream";
+                        go.transform.localPosition = new Vector3(0f, 0.05f, 0.65f);
+                        go.transform.localRotation = Quaternion.identity;
+                        pullVortexParticles = go.GetComponentInChildren<ParticleSystem>();
+                    }
+                }
+            }
+
+            if (puntBlastParticles == null)
+            {
+                var found = roboArmVisual.Find("VFX_GravityPuntBlast");
+                if (found != null) puntBlastParticles = found.GetComponentInChildren<ParticleSystem>();
+                if (puntBlastParticles == null)
+                {
+                    GameObject puntPrefab = Resources.Load<GameObject>("VFX_GravityPuntBlast");
+#if UNITY_EDITOR
+                    if (puntPrefab == null) puntPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/VFX_GravityPuntBlast.prefab");
+#endif
+                    if (puntPrefab != null)
+                    {
+                        GameObject go = Instantiate(puntPrefab, roboArmVisual);
+                        go.name = "VFX_GravityPuntBlast";
+                        go.transform.localPosition = new Vector3(0f, 0.05f, 0.75f);
+                        go.transform.localRotation = Quaternion.identity;
+                        puntBlastParticles = go.GetComponentInChildren<ParticleSystem>();
+                    }
+                }
+            }
+
+            // Setup Muzzle Flash Light
+            if (puntMuzzleLight == null)
+            {
+                Transform lightT = roboArmVisual.Find("PuntMuzzleFlashLight");
+                if (lightT != null)
+                {
+                    puntMuzzleLight = lightT.GetComponent<Light>();
+                }
+                else
+                {
+                    GameObject lightGo = new GameObject("PuntMuzzleFlashLight");
+                    lightGo.transform.SetParent(roboArmVisual, false);
+                    lightGo.transform.localPosition = new Vector3(0f, 0.05f, 0.8f);
+                    puntMuzzleLight = lightGo.AddComponent<Light>();
+                    puntMuzzleLight.type = LightType.Point;
+                    puntMuzzleLight.range = 8.0f;
+                    puntMuzzleLight.color = shockwaveColor;
+                    puntMuzzleLight.intensity = 0f;
+                    puntMuzzleLight.enabled = false;
+                }
+            }
+
+            // Remove obsolete primitive PuntShockwaveRing if present
+            var oldRing = roboArmVisual.Find("PuntShockwaveRing");
+            if (oldRing != null)
+            {
+                Destroy(oldRing.gameObject);
+                puntShockwaveRing = null;
+            }
+        }
+
         private void SetupMagnetBeamLine()
         {
+            Material lineMat = AssetDatabaseLoadMaterial();
+
             if (magnetBeamLine == null)
             {
                 GameObject beamGo = new GameObject("MagnetBeamLine");
                 beamGo.transform.SetParent(transform, false);
                 magnetBeamLine = beamGo.AddComponent<LineRenderer>();
-                magnetBeamLine.positionCount = 2;
-                magnetBeamLine.startWidth = 0.06f;
-                magnetBeamLine.endWidth = 0.03f;
-                magnetBeamLine.useWorldSpace = true;
-                magnetBeamLine.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                magnetBeamLine.receiveShadows = false;
-
-                Material lineMat = AssetDatabaseLoadMaterial();
-                if (lineMat != null) magnetBeamLine.sharedMaterial = lineMat;
-                magnetBeamLine.enabled = false;
             }
+            ConfigureHelicalLine(magnetBeamLine, lineMat, magnetBeamColor);
+
+            if (magnetBeamSecondaryLine == null)
+            {
+                GameObject beamGo2 = new GameObject("MagnetBeamSecondaryLine");
+                beamGo2.transform.SetParent(transform, false);
+                magnetBeamSecondaryLine = beamGo2.AddComponent<LineRenderer>();
+            }
+            ConfigureHelicalLine(magnetBeamSecondaryLine, lineMat, magnetBeamSecondaryColor);
+        }
+
+        private void ConfigureHelicalLine(LineRenderer line, Material mat, Color col)
+        {
+            if (line == null) return;
+            line.positionCount = HELIX_POINTS;
+            line.startWidth = 0.05f;
+            line.endWidth = 0.02f;
+            line.useWorldSpace = true;
+            line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            line.receiveShadows = false;
+            if (mat != null) line.sharedMaterial = mat;
+
+            Gradient g = new Gradient();
+            g.SetKeys(
+                new GradientColorKey[] { new GradientColorKey(col, 0f), new GradientColorKey(col, 1f) },
+                new GradientAlphaKey[] { new GradientAlphaKey(0.9f, 0f), new GradientAlphaKey(0.9f, 0.8f), new GradientAlphaKey(0f, 1f) }
+            );
+            line.colorGradient = g;
+            line.enabled = false;
         }
 
         private Material AssetDatabaseLoadMaterial()
         {
 #if UNITY_EDITOR
+            Material glowMat = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Materials/M_ParticleAdditiveGlow.mat");
+            if (glowMat != null) return glowMat;
             return UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/M_Scrap.mat");
 #else
-            return null;
+            return Resources.Load<Material>("M_ParticleAdditiveGlow");
 #endif
         }
 
@@ -187,8 +313,9 @@ namespace OrbitalPanopticon.Player
             // Grab is only active if RMB is held AND the release lock is inactive
             _isGrabHeld = isRmbHeld && !_requireRmbRelease;
 
-            // Punting/Launching uses ONLY Left Mouse Button
+            // Punting/Launching & Siphoning uses Left Mouse Button
             bool isLmbDown = mouse.leftButton.wasPressedThisFrame;
+            bool isLmbHeld = mouse.leftButton.isPressed;
 
             GameBalanceConfig config = GameManager.GameBalanceConfigInstance;
             if (config == null) return;
@@ -211,7 +338,7 @@ namespace OrbitalPanopticon.Player
                 }
             }
 
-            // 1. Fire / Punt Logic (LMB)
+            // 1. Fire / Punt Logic (LMB strictly for launching held scrap or dry-punting nearby scrap)
             if (isLmbDown)
             {
                 if (_heldItems.Count > 0)
@@ -228,6 +355,11 @@ namespace OrbitalPanopticon.Player
             // 2. Pull / Hold Logic (RMB only, when not locked)
             else if (_isGrabHeld)
             {
+                if (pullVortexParticles != null && !pullVortexParticles.isPlaying)
+                {
+                    pullVortexParticles.Play();
+                }
+
                 if (_heldItems.Count < config.maxHeldObjects)
                 {
                     PerformMagnetPull(aimRay, holdTargetPos, config);
@@ -236,6 +368,11 @@ namespace OrbitalPanopticon.Player
             // 3. Release when RMB released
             else
             {
+                if (pullVortexParticles != null && pullVortexParticles.isPlaying)
+                {
+                    pullVortexParticles.Stop();
+                }
+
                 if (_heldItems.Count > 0)
                 {
                     ReleaseAllHeld();
@@ -636,6 +773,36 @@ namespace OrbitalPanopticon.Player
 
         public void PlayPuntAnimation()
         {
+            if (FMODAudioManager.Instance != null)
+            {
+                FMODAudioManager.Instance.PlayGravityGunPunt(transform.position);
+            }
+
+            if (puntBlastParticles != null)
+            {
+                puntBlastParticles.Play(true);
+            }
+
+            // 1. Dynamic Point Light Flash (Intensity 8.0f fading to 0 in 0.12s)
+            if (puntMuzzleLight != null)
+            {
+                if (_muzzleLightCoroutine != null) StopCoroutine(_muzzleLightCoroutine);
+                _muzzleLightCoroutine = StartCoroutine(MuzzleLightFlashRoutine());
+            }
+
+            // 2. Camera Punch (DOTween Shake Position & Rotation)
+            if (mainCamera != null)
+            {
+                mainCamera.transform.DOShakePosition(0.18f, new Vector3(0.08f, 0.08f, -0.15f), 25, 90f, false, true).SetUpdate(true);
+                mainCamera.transform.DOShakeRotation(0.18f, new Vector3(2.5f, 1.5f, 1.5f), 20, 90f).SetUpdate(true);
+            }
+
+            // 3. Post-Process Impact Pulse
+            if (PostProcessingToolkitController.Instance != null)
+            {
+                PostProcessingToolkitController.Instance.TriggerImpactPulse(1.5f, 0.35f, 0.18f);
+            }
+
             if (_puntAnimCoroutine != null)
             {
                 StopCoroutine(_puntAnimCoroutine);
@@ -643,67 +810,47 @@ namespace OrbitalPanopticon.Player
             _puntAnimCoroutine = StartCoroutine(PuntAnimationRoutine());
         }
 
+        private IEnumerator MuzzleLightFlashRoutine()
+        {
+            if (puntMuzzleLight == null) yield break;
+            puntMuzzleLight.enabled = true;
+            puntMuzzleLight.intensity = 8.0f;
+            float elapsed = 0f;
+            const float duration = 0.12f;
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+                puntMuzzleLight.intensity = Mathf.Lerp(8.0f, 0f, t);
+                yield return null;
+            }
+
+            puntMuzzleLight.intensity = 0f;
+            puntMuzzleLight.enabled = false;
+            _muzzleLightCoroutine = null;
+        }
+
         private IEnumerator PuntAnimationRoutine()
         {
-            // 1) Setup RoboArmVisual kick: backward by -0.25f on Z, angle slightly upward (-12f on X)
+            // Setup RoboArmVisual kick: backward by -0.25f on Z, angle slightly upward (-12f on X)
             Vector3 kickPos = new Vector3(0f, 0.05f, -0.25f);
             Quaternion kickRot = Quaternion.Euler(-12f, 0f, 0f);
 
-            // 2) Setup PuntShockwaveRing
-            Vector3 ringStartPos = new Vector3(0f, 0.05f, 0.75f);
-            Vector3 ringEndPos = ringStartPos + new Vector3(0f, 0f, 2.5f);
-            Vector3 ringStartScale = new Vector3(0.2f, 0.05f, 0.2f);
-            Vector3 ringEndScale = new Vector3(2.2f, 0.05f, 2.2f);
-
-            if (puntShockwaveRing == null && roboArmVisual != null)
-            {
-                puntShockwaveRing = roboArmVisual.Find("PuntShockwaveRing");
-            }
-
-            if (puntShockwaveRing != null)
-            {
-                puntShockwaveRing.gameObject.SetActive(true);
-                puntShockwaveRing.localPosition = ringStartPos;
-                puntShockwaveRing.localRotation = Quaternion.Euler(90f, 0f, 0f);
-                puntShockwaveRing.localScale = ringStartScale;
-                SetShockwaveAlpha(0.85f);
-            }
-
             const float kickDuration = 0.22f;
-            const float ringDuration = 0.18f;
             float elapsed = 0f;
 
             while (elapsed < kickDuration)
             {
                 elapsed += Time.deltaTime;
                 float tKick = Mathf.Clamp01(elapsed / kickDuration);
-                float tRing = Mathf.Clamp01(elapsed / ringDuration);
 
                 // Smooth ease out return to rest
                 float easeReturn = Mathf.SmoothStep(0f, 1f, tKick);
                 _armRecoilOffset = Vector3.Lerp(kickPos, Vector3.zero, easeReturn);
                 _armRecoilRot = Quaternion.Slerp(kickRot, Quaternion.identity, easeReturn);
 
-                // Shockwave ring animation
-                if (puntShockwaveRing != null && tRing <= 1.0f)
-                {
-                    puntShockwaveRing.localPosition = Vector3.Lerp(ringStartPos, ringEndPos, tRing);
-                    puntShockwaveRing.localScale = Vector3.Lerp(ringStartScale, ringEndScale, tRing);
-                    float alpha = Mathf.Lerp(0.85f, 0f, tRing);
-                    SetShockwaveAlpha(alpha);
-
-                    if (tRing >= 1.0f)
-                    {
-                        puntShockwaveRing.gameObject.SetActive(false);
-                    }
-                }
-
                 yield return null;
-            }
-
-            if (puntShockwaveRing != null)
-            {
-                puntShockwaveRing.gameObject.SetActive(false);
             }
 
             _armRecoilOffset = Vector3.zero;
@@ -927,6 +1074,7 @@ namespace OrbitalPanopticon.Player
             {
                 _beamFadeTimer -= Time.deltaTime;
                 magnetBeamLine.enabled = true;
+                if (magnetBeamSecondaryLine != null) magnetBeamSecondaryLine.enabled = true;
                 return;
             }
 
@@ -935,16 +1083,60 @@ namespace OrbitalPanopticon.Player
 
             if (_isGrabHeld && _currentPullTarget != null && _heldItems.Count < maxHeld)
             {
-                magnetBeamLine.enabled = true;
                 Vector3 startPos = roboArmVisual != null ? roboArmVisual.position : transform.position;
-                magnetBeamLine.SetPosition(0, startPos);
-                magnetBeamLine.SetPosition(1, _currentPullTarget.transform.position);
-                magnetBeamLine.startColor = magnetBeamColor;
-                magnetBeamLine.endColor = magnetBeamColor;
+                Vector3 endPos = _currentPullTarget.transform.position;
+                Vector3 diff = endPos - startPos;
+                float distance = diff.magnitude;
+
+                if (distance > 0.05f)
+                {
+                    Vector3 forward = diff / distance;
+                    Vector3 tempUp = Mathf.Abs(Vector3.Dot(forward, Vector3.up)) < 0.95f ? Vector3.up : Vector3.right;
+                    Vector3 right = Vector3.Cross(forward, tempUp).normalized;
+                    Vector3 up = Vector3.Cross(right, forward).normalized;
+
+                    float spiralTurns = Mathf.Clamp(distance * 0.35f, 2f, 5.5f);
+                    float spiralSpeed = Time.time * 16f;
+                    float maxRadius = 0.22f;
+
+                    for (int i = 0; i < HELIX_POINTS; i++)
+                    {
+                        float t = i / (float)(HELIX_POINTS - 1);
+                        Vector3 centerPt = Vector3.Lerp(startPos, endPos, t);
+                        float envelope = Mathf.Sin(t * Mathf.PI);
+                        float r = maxRadius * envelope;
+
+                        float noiseA = (Mathf.PerlinNoise(t * 4f, Time.time * 8f) - 0.5f) * 0.06f * envelope;
+                        float noiseB = (Mathf.PerlinNoise(t * 4f + 8f, Time.time * 8f + 8f) - 0.5f) * 0.06f * envelope;
+
+                        float angleA = (t * spiralTurns * Mathf.PI * 2f) + spiralSpeed;
+                        Vector3 offsetA = (right * Mathf.Cos(angleA) + up * Mathf.Sin(angleA)) * r + (right * noiseA + up * noiseB);
+                        _helixPointsA[i] = centerPt + offsetA;
+
+                        float angleB = angleA + Mathf.PI;
+                        Vector3 offsetB = (right * Mathf.Cos(angleB) + up * Mathf.Sin(angleB)) * r - (right * noiseA + up * noiseB);
+                        _helixPointsB[i] = centerPt + offsetB;
+                    }
+
+                    magnetBeamLine.positionCount = HELIX_POINTS;
+                    magnetBeamLine.SetPositions(_helixPointsA);
+                    magnetBeamLine.enabled = true;
+
+                    if (magnetBeamSecondaryLine != null)
+                    {
+                        magnetBeamSecondaryLine.positionCount = HELIX_POINTS;
+                        magnetBeamSecondaryLine.SetPositions(_helixPointsB);
+                        magnetBeamSecondaryLine.enabled = true;
+                    }
+                }
             }
             else
             {
                 magnetBeamLine.enabled = false;
+                if (magnetBeamSecondaryLine != null)
+                {
+                    magnetBeamSecondaryLine.enabled = false;
+                }
             }
         }
 
@@ -956,11 +1148,23 @@ namespace OrbitalPanopticon.Player
             Vector3 startPos = roboArmVisual != null ? roboArmVisual.position : transform.position;
             Vector3 endPos = startPos + (aimRay.direction * 18f);
 
+            magnetBeamLine.positionCount = 2;
             magnetBeamLine.enabled = true;
             magnetBeamLine.startColor = color;
             magnetBeamLine.endColor = color;
             magnetBeamLine.SetPosition(0, startPos);
             magnetBeamLine.SetPosition(1, endPos);
+
+            if (magnetBeamSecondaryLine != null)
+            {
+                magnetBeamSecondaryLine.positionCount = 2;
+                magnetBeamSecondaryLine.enabled = true;
+                magnetBeamSecondaryLine.startColor = color;
+                magnetBeamSecondaryLine.endColor = color;
+                magnetBeamSecondaryLine.SetPosition(0, startPos + (transform.right * 0.05f));
+                magnetBeamSecondaryLine.SetPosition(1, endPos + (transform.right * 0.1f));
+            }
+
             _beamFadeTimer = duration;
         }
 

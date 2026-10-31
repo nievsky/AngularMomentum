@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.VFX;
 
 namespace OrbitalPanopticon.Core
 {
@@ -311,10 +312,66 @@ namespace OrbitalPanopticon.Core
         [Tooltip("Active count of purchased helper robots in the arena.")]
         public int activeHelperRobotsCount = 0;
 
+        [Tooltip("Base speed of autonomous helper drone bots.")]
+        public float helperBotSpeed = 14f;
+
+        [Tooltip("Whether the WOW-perk Hyper-Beam is unlocked (x2 damage against Boss Eyes, infinite siphon range).")]
+        public bool hyperBeamUnlocked = false;
+
         // =========================================================================
-        // 7. Black Hole Evolution & Finale
+        // 7. Black Hole Mass Stages & Containment
         // =========================================================================
-        [Header("7. Black Hole Evolution & Finale")]
+        [Header("7. Black Hole Mass Stages & Containment")]
+        [Tooltip("Target mass required to complete each stage (Stages 1 to 4).")]
+        public float[] stageMassTargets = new float[] { 500f, 4000f, 25000f, 120000f };
+
+        [Tooltip("Visual scale of Black Hole VisualRoot for stages 1 to 4.")]
+        public float[] stageBlackHoleScales = new float[] { 6f, 10f, 15f, 22f };
+
+        [Tooltip("Global score and mass multiplier for each stage so numbers ALWAYS go up!")]
+        public float[] stageValueMultipliers = new float[] { 1.0f, 2.5f, 6.0f, 15.0f };
+
+        [Tooltip("Gravitational pull multiplier for stages 1 to 4.")]
+        public float[] stageGravityMultipliers = new float[] { 1.0f, 1.35f, 1.8f, 2.5f };
+
+        [Tooltip("Chance (0 to 1) for newly spawned debris to be high-value glowing scrap.")]
+        [Range(0f, 1f)]
+        public float valuableScrapSpawnChance = 0.15f;
+
+        [Tooltip("Multiplier applied to base value and mass of valuable scrap items.")]
+        public float valuableScrapMultiplier = 3.0f;
+
+        [Tooltip("Whether the Quantum Decay WOW-perk is unlocked (doubles mass and coins gained from every piece of scrap).")]
+        public bool quantumDecayUnlocked = false;
+
+        [Tooltip("Whether to display the glowing relativistic accretion disk around the Black Hole.")]
+        public bool showAccretionDisk = false;
+
+        [Tooltip("Orbital distance of Overseer Eyes from singularity (pushes them far outside playable sphere boundary).")]
+        public float overseerOrbitRadius = 78.0f;
+
+        [Tooltip("Uniform visual scale for all 4 Overseer Containment Eyes.")]
+        public float overseerVisualScale = 14.0f;
+
+        [Tooltip("Orbital angular speed in degrees per second around the singularity.")]
+        public float overseerOrbitAngularSpeed = 8.0f;
+
+        [Tooltip("Tilted orbital normal axes for each of the 4 Overseer Eyes.")]
+        public Vector3[] overseerOrbitAxes = new Vector3[]
+        {
+            new Vector3(0.2f, 1f, 0.1f),
+            new Vector3(-0.3f, 1f, 0.2f),
+            new Vector3(0.1f, 1f, -0.35f),
+            new Vector3(-0.25f, 1f, -0.2f)
+        };
+
+        // Compatibility accessors
+        public float maxBlackHoleMass => (stageMassTargets != null && stageMassTargets.Length > 0) ? stageMassTargets[stageMassTargets.Length - 1] : 120000f;
+        public float[] stageVisualScales => stageBlackHoleScales;
+        public float[] stageEnergyConversionMultipliers => stageValueMultipliers;
+        public float maxPlayerEnergyCapacity => 0f;
+
+        // Legacy / Quota Progression Fields
         [Tooltip("Number of completed quotas required to reach critical mass and trigger the endgame sequence.")]
         public int quotasToTriggerFinale = 8;
 
@@ -340,11 +397,37 @@ namespace OrbitalPanopticon.Core
         public bool panopticonLaserGridUnlocked = false;
 
         // =========================================================================
-        // 8. Debug & Designer Tools
+        // 8. Four Containment Locks (Visual Only)
         // =========================================================================
-        [Header("8. Debug & Designer Tools")]
+        [Header("8. Four Containment Locks (Visual Only)")]
+        [Tooltip("Display names for each containment lock eye.")]
+        public string[] containmentEyeNames = new string[] { "CONTAINMENT LOCK EYE-01", "CONTAINMENT LOCK EYE-02", "CONTAINMENT LOCK EYE-03", "CONTAINMENT LOCK EYE-04" };
+
+        // =========================================================================
+        // 9. Debug & Designer Tools
+        // =========================================================================
+        [Header("9. Debug & Designer Tools")]
         [Tooltip("Enable designer function key shortcuts (F1-F4) for rapid playtesting.")]
         public bool enableDebugShortcuts = true;
+
+        // =========================================================================
+        // 10. Visual Effect Graph Assets (Optional AAA Overdrive)
+        // =========================================================================
+        [Header("10. Visual Effect Graph Assets (Optional AAA Overdrive)")]
+        [Tooltip("Optional VFX Graph asset for Gravity Gun pull beam tendrils.")]
+        public VisualEffectAsset vfxPullBeamAsset;
+
+        [Tooltip("Optional VFX Graph asset for Gravity Gun punt concussive shockwave.")]
+        public VisualEffectAsset vfxPuntShockwaveAsset;
+
+        [Tooltip("Optional VFX Graph asset for Singularity spaghettification implosion.")]
+        public VisualEffectAsset vfxSpaghettifyVortexAsset;
+
+        [Tooltip("Optional VFX Graph asset for valuable scrap magma ember aura.")]
+        public VisualEffectAsset vfxValuableLootAuraAsset;
+
+        [Tooltip("Optional VFX Graph asset for drone dash thrusters.")]
+        public VisualEffectAsset vfxDashThrusterAsset;
 
         private void OnEnable()
         {
