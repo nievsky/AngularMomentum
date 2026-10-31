@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-6746631379814312950
+--- !u!114 &-7699357662918403016
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -10,23 +10,23 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/Blackhole/Collapse_GameOver
+  m_Name: event:/Player/Thruster_Loop
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
-  Path: event:/Blackhole/Collapse_GameOver
+  Path: event:/Player/Thruster_Loop
   Guid:
-    Data1: 796395129
-    Data2: 1282654343
-    Data3: 801463450
-    Data4: 1270391367
+    Data1: -1060347334
+    Data2: 1198373997
+    Data3: 1563518371
+    Data4: -874790919
   Banks:
   - {fileID: 1206500338223914334}
-  IsStream: 0
+  IsStream: 1
   Is3D: 0
-  IsOneShot: 1
+  IsOneShot: 0
   Parameters: []
   MinDistance: 1
   MaxDistance: 20
-  Length: 5346
+  Length: 12877
 --- !u!114 &-4678422627807385823
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -129,12 +129,12 @@ MonoBehaviour:
   Banks:
   - {fileID: 1206500338223914334}
   IsStream: 0
-  Is3D: 0
+  Is3D: 1
   IsOneShot: 1
   Parameters: []
   MinDistance: 1
-  MaxDistance: 20
-  Length: 5346
+  MaxDistance: 100
+  Length: 7396
 --- !u!114 &-2933343117144284886
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -261,22 +261,24 @@ MonoBehaviour:
   EditorEvents:
   - {fileID: -2933343117144284886}
   - {fileID: -4508080486168585058}
-  - {fileID: 4503679319983954620}
-  - {fileID: -910432846171389987}
-  - {fileID: -1199398483129989483}
-  - {fileID: 8568847049878802105}
-  - {fileID: -6746631379814312950}
-  - {fileID: 5796031600623458317}
-  - {fileID: 2792630031582971311}
-  - {fileID: 6514209862584641672}
-  - {fileID: -1999112365666556362}
+  - {fileID: -4678422627807385823}
+  - {fileID: 8534987069125408952}
+  - {fileID: 2922544707766357331}
+  - {fileID: -3162588088598610348}
+  - {fileID: 718460502020177242}
+  - {fileID: -3731078813574528267}
+  - {fileID: 1606418619250310922}
+  - {fileID: 452124941215673372}
+  - {fileID: 250376656742973212}
+  - {fileID: -7699357662918403016}
+  - {fileID: 2014070168158378883}
   EditorParameters: []
   MasterBanks:
   - {fileID: 1206500338223914334}
   StringsBanks:
   - {fileID: 384512280698726887}
   cacheVersion: 131848
-  cacheTime: 639290570217180391
+  cacheTime: 639290652829174896
   SerializableEventsDict:
   - key: event:/Blackhole/Singularity_Hum
     index: 0
@@ -300,6 +302,10 @@ MonoBehaviour:
     index: 9
   - key: event:/Weapon/GravityGun_Hold_Punt
     index: 10
+  - key: event:/Player/Thruster_Loop
+    index: 11
+  - key: event:/MusicCredits
+    index: 12
 --- !u!114 &250376656742973212
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -342,12 +348,12 @@ MonoBehaviour:
   Path: Assets/FMOD/Desktop/Master.strings.bank
   Name: Master.strings
   StudioPath: bank:/Master.strings
-  lastModified: 639290570217180391
+  lastModified: 639290652829174896
   FileSizes:
   - Name: Desktop
-    Value: 1360
+    Value: 1454
   - Name: WEB
-    Value: 1360
+    Value: 1454
   Exists: 1
 --- !u!114 &452124941215673372
 MonoBehaviour:
@@ -374,7 +380,7 @@ MonoBehaviour:
   IsOneShot: 1
   Parameters: []
   MinDistance: 1
-  MaxDistance: 20
+  MaxDistance: 290
   Length: 5831
 --- !u!114 &718460502020177242
 MonoBehaviour:
@@ -418,12 +424,12 @@ MonoBehaviour:
   Path: Assets/FMOD/Desktop/Master.bank
   Name: Master
   StudioPath: bank:/Master
-  lastModified: 639290570217164960
+  lastModified: 639290652829149882
   FileSizes:
   - Name: Desktop
-    Value: 4160960
+    Value: 7216000
   - Name: WEB
-    Value: 4160960
+    Value: 7216000
   Exists: 1
 --- !u!114 &1606418619250310922
 MonoBehaviour:
@@ -450,9 +456,9 @@ MonoBehaviour:
   IsOneShot: 1
   Parameters: []
   MinDistance: 1
-  MaxDistance: 20
+  MaxDistance: 280
   Length: 8303
---- !u!114 &2792630031582971311
+--- !u!114 &2014070168158378883
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -462,23 +468,23 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
-  m_Name: event:/Boss/Overseer_Idle
+  m_Name: event:/MusicCredits
   m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
-  Path: event:/Boss/Overseer_Idle
+  Path: event:/MusicCredits
   Guid:
-    Data1: 56212931
-    Data2: 1173858237
-    Data3: 1878719880
-    Data4: 1780395995
+    Data1: 686295599
+    Data2: 1286262125
+    Data3: -1934319431
+    Data4: 323551914
   Banks:
   - {fileID: 1206500338223914334}
-  IsStream: 0
-  Is3D: 1
-  IsOneShot: 1
+  IsStream: 1
+  Is3D: 0
+  IsOneShot: 0
   Parameters: []
   MinDistance: 1
   MaxDistance: 20
-  Length: 5831
+  Length: 214411
 --- !u!114 &2922544707766357331
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -45,6 +45,7 @@ namespace OrbitalPanopticon.Core
         // Loop state flags
         private bool _isGravityHoldingActive = false;
         private bool _isAlarmActive = false;
+        private bool _isThrusterActive = false;
 
         public FMODAudioConfigSO Config => audioConfig;
         public MusicPlaylistManager PlaylistManager => playlistManager;
@@ -82,6 +83,7 @@ namespace OrbitalPanopticon.Core
 
             ResolveReferences();
             SceneManager.sceneLoaded += OnSceneLoaded;
+            OverseerContainmentEye.OnOverseerIdleEmitted += HandleOverseerIdle;
         }
 
         private void Start()
@@ -92,6 +94,19 @@ namespace OrbitalPanopticon.Core
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
             ResolveReferences();
+
+            bool isGameplay = scene.name.Contains("Gameplay") || scene.name.Contains("Outdoor");
+            if (!isGameplay)
+            {
+                // Non-gameplay scenes (CreditsScene, MainMenuScene): stop all black hole and ambient loops
+                StopBlackHoleLoops(FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
+                StopSpaceAmbience(FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
+            }
+            else
+            {
+                StartSingularityHum();
+                StartSpaceAmbience();
+            }
         }
 
         private void ResolveReferences()
@@ -170,11 +185,21 @@ namespace OrbitalPanopticon.Core
                 _containmentBeamHumInstance.start();
             }
 
-            // 4. Thruster Engine Loop
-            if (!audioConfig.thrusterLoop.IsNull)
+            // 4. Thruster Engine Loop (prepared, started on player input)
+            EventReference thrusterRef = (!audioConfig.thrusterLoop.IsNull)
+                ? audioConfig.thrusterLoop
+                : RuntimeManager.PathToEventReference("event:/Player/Thruster_Loop");
+
+            if (!thrusterRef.IsNull)
             {
-                _thrusterInstance = RuntimeManager.CreateInstance(audioConfig.thrusterLoop);
-                _thrusterInstance.start();
+                try
+                {
+                    _thrusterInstance = RuntimeManager.CreateInstance(thrusterRef);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning($"[FMODAudioManager] Failed to create Thruster Loop instance: {e.Message}");
+                }
             }
 
             // 5. Gravity Gun Tether Hold Loop (prepared)
@@ -319,8 +344,37 @@ namespace OrbitalPanopticon.Core
                 }
             }
 
-            // 4. Thruster Loop 3D position
-            if (playerDrone != null && _thrusterInstance.isValid())
+            // 4. Thruster Loop: active strictly on player movement input
+            bool hasThrust = playerDrone != null && playerDrone.HasThrusterInput;
+            if (hasThrust && !_isThrusterActive)
+            {
+                _isThrusterActive = true;
+                if (!_thrusterInstance.isValid())
+                {
+                    EventReference thrusterRef = (audioConfig != null && !audioConfig.thrusterLoop.IsNull)
+                        ? audioConfig.thrusterLoop
+                        : RuntimeManager.PathToEventReference("event:/Player/Thruster_Loop");
+                    if (!thrusterRef.IsNull)
+                    {
+                        try { _thrusterInstance = RuntimeManager.CreateInstance(thrusterRef); } catch { }
+                    }
+                }
+
+                if (_thrusterInstance.isValid())
+                {
+                    _thrusterInstance.set3DAttributes(RuntimeUtils.To3DAttributes(playerPos));
+                    _thrusterInstance.start();
+                }
+            }
+            else if (!hasThrust && _isThrusterActive)
+            {
+                _isThrusterActive = false;
+                if (_thrusterInstance.isValid())
+                {
+                    _thrusterInstance.stop(FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
+                }
+            }
+            else if (_isThrusterActive && _thrusterInstance.isValid())
             {
                 _thrusterInstance.set3DAttributes(RuntimeUtils.To3DAttributes(playerPos));
             }
@@ -372,6 +426,11 @@ namespace OrbitalPanopticon.Core
             if (playlistManager != null) playlistManager.PlayPreviousTrack();
         }
 
+        public void StopMusic(FMOD.Studio.STOP_MODE stopMode = FMOD.Studio.STOP_MODE.ALLOWFADEOUT)
+        {
+            if (playlistManager != null) playlistManager.StopMusic(stopMode);
+        }
+
         #endregion
 
         #region Public One-Shot Trigger API
@@ -403,6 +462,24 @@ namespace OrbitalPanopticon.Core
         public void PlayContainmentLockBreak(Vector3 position = default)
         {
             if (audioConfig != null) PlayOneShot(audioConfig.containmentLockBreakOneShot, position);
+        }
+
+        public void PlayContainmentBeamShock(Vector3 position = default)
+        {
+            if (audioConfig != null && !audioConfig.containmentBeamShockOneShot.IsNull)
+            {
+                PlayOneShot(audioConfig.containmentBeamShockOneShot, position);
+            }
+        }
+
+        private void HandleOverseerIdle(OverseerContainmentEye eye, Vector3 position)
+        {
+            PlayOverseerIdle(position);
+        }
+
+        public void PlayOverseerIdle(Vector3 position = default)
+        {
+            if (audioConfig != null) PlayOneShot(audioConfig.overseerIdleOneShot, position);
         }
 
         public void PlayCommsOpenBeep()
@@ -532,8 +609,118 @@ namespace OrbitalPanopticon.Core
             if (audioConfig != null) PlayOneShot(audioConfig.upgradeBuyOneShot);
         }
 
+        /// <summary>
+        /// Stops the Singularity Hum loop event.
+        /// </summary>
+        public void StopSingularityHum(FMOD.Studio.STOP_MODE stopMode = FMOD.Studio.STOP_MODE.ALLOWFADEOUT)
+        {
+            if (_singularityHumInstance.isValid())
+            {
+                _singularityHumInstance.stop(stopMode);
+            }
+        }
+
+        /// <summary>
+        /// Starts or resumes the Singularity Hum loop event if in a gameplay scene with a black hole.
+        /// </summary>
+        public void StartSingularityHum()
+        {
+            if (audioConfig == null || audioConfig.singularityHumLoop.IsNull) return;
+
+            if (!_singularityHumInstance.isValid())
+            {
+                _singularityHumInstance = RuntimeManager.CreateInstance(audioConfig.singularityHumLoop);
+            }
+
+            _singularityHumInstance.getPlaybackState(out FMOD.Studio.PLAYBACK_STATE state);
+            if (state == FMOD.Studio.PLAYBACK_STATE.STOPPED || state == FMOD.Studio.PLAYBACK_STATE.STOPPING)
+            {
+                if (blackHoleTransform != null)
+                {
+                    _singularityHumInstance.set3DAttributes(RuntimeUtils.To3DAttributes(blackHoleTransform.position));
+                }
+                _singularityHumInstance.start();
+            }
+        }
+
+        /// <summary>
+        /// Stops all Black Hole persistent loops (Singularity Hum, Containment Beams, Critical Mass Alarm).
+        /// Typically called upon endgame singularity crossing or transitioning to Credits/Menu.
+        /// </summary>
+        public void StopBlackHoleLoops(FMOD.Studio.STOP_MODE stopMode = FMOD.Studio.STOP_MODE.ALLOWFADEOUT)
+        {
+            StopSingularityHum(stopMode);
+
+            if (_containmentBeamHumInstance.isValid())
+            {
+                _containmentBeamHumInstance.stop(stopMode);
+            }
+
+            if (_isAlarmActive && _criticalMassAlarmInstance.isValid())
+            {
+                _isAlarmActive = false;
+                _criticalMassAlarmInstance.stop(stopMode);
+            }
+        }
+
+        /// <summary>
+        /// Stops the Space Ambience drone loop event.
+        /// </summary>
+        public void StopSpaceAmbience(FMOD.Studio.STOP_MODE stopMode = FMOD.Studio.STOP_MODE.ALLOWFADEOUT)
+        {
+            if (_spaceAmbienceInstance.isValid())
+            {
+                _spaceAmbienceInstance.stop(stopMode);
+            }
+        }
+
+        /// <summary>
+        /// Starts or resumes the Space Ambience drone loop event if in a gameplay scene.
+        /// </summary>
+        public void StartSpaceAmbience()
+        {
+            if (audioConfig == null || audioConfig.spaceAmbienceLoop.IsNull) return;
+
+            if (!_spaceAmbienceInstance.isValid())
+            {
+                _spaceAmbienceInstance = RuntimeManager.CreateInstance(audioConfig.spaceAmbienceLoop);
+            }
+
+            _spaceAmbienceInstance.getPlaybackState(out FMOD.Studio.PLAYBACK_STATE state);
+            if (state == FMOD.Studio.PLAYBACK_STATE.STOPPED || state == FMOD.Studio.PLAYBACK_STATE.STOPPING)
+            {
+                _spaceAmbienceInstance.start();
+            }
+        }
+
         public void PlayCollapseGameOver(Vector3 position = default)
         {
+            if (position == default)
+            {
+                if (blackHoleTransform != null)
+                {
+                    position = blackHoleTransform.position;
+                }
+                else
+                {
+                    GameObject bh = GameObject.Find("BlackHoleSystem");
+                    if (bh != null) position = bh.transform.position;
+                }
+            }
+
+            // Stop critical mass alarm loop if active so the massive collapse impact is heard clearly
+            if (_isAlarmActive && _criticalMassAlarmInstance.isValid())
+            {
+                _isAlarmActive = false;
+                _criticalMassAlarmInstance.stop(FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
+            }
+
+            // Stop Gameplay music right at the moment the black hole explodes
+            StopMusic(FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
+
+            // Stop Space Ambience drone loop (event:/Ambience/Space_Drone_Ambience) with the explosion
+            StopSpaceAmbience(FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
+
             if (audioConfig != null) PlayOneShot(audioConfig.collapseGameOverOneShot, position);
         }
 
@@ -562,6 +749,7 @@ namespace OrbitalPanopticon.Core
         private void OnDestroy()
         {
             SceneManager.sceneLoaded -= OnSceneLoaded;
+            OverseerContainmentEye.OnOverseerIdleEmitted -= HandleOverseerIdle;
 
             ReleaseInstance(ref _spaceAmbienceInstance);
             ReleaseInstance(ref _singularityHumInstance);

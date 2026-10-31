@@ -273,6 +273,10 @@ namespace OrbitalPanopticon.Core
         [Range(0.2f, 5.0f)]
         public float overseerTrackingSpeed = 1.5f;
 
+        [Tooltip("Average periodicity in seconds between Overseer Idle sounds. Default: 10s.")]
+        [Range(2f, 60f)]
+        public float overseerIdleInterval = 10.0f;
+
         [Tooltip("Baseline target score for the first quota.")]
         [Range(100f, 2000f)]
         public float baseQuotaTarget = 500f;

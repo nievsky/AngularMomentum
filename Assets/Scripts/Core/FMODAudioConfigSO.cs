@@ -58,6 +58,20 @@ namespace OrbitalPanopticon.Core
         [Tooltip("One-shot played when a stage completes and one Eye containment lock breaks")]
         public EventReference containmentLockBreakOneShot;
 
+        [Tooltip("One-shot played when player touches or takes damage from an active Overseer Containment Beam (for future sound)")]
+        public EventReference containmentBeamShockOneShot;
+
+        [Tooltip("Idle vocalization or scanning pulse emitted by active Overseer Containment Eyes")]
+        public EventReference overseerIdleOneShot;
+
+        [Tooltip("Periodicity slider in seconds between Overseer Idle sounds. Default: 10s (rare).")]
+        [Range(2f, 60f)]
+        public float overseerIdleInterval = 10.0f;
+
+        [Tooltip("Random variance (+/- seconds) applied to idle interval so vocalizations sound organic.")]
+        [Range(0f, 10f)]
+        public float overseerIdleJitter = 2.5f;
+
         [Tooltip("Radio transmission open beep for Star Fox style comms box")]
         public EventReference commsOpenBeepOneShot;
 
