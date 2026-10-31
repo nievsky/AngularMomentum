@@ -29,7 +29,8 @@ Shader "OrbitalPanopticon/OuterWildsBlackHole"
 
             Blend SrcAlpha OneMinusSrcAlpha
             ZWrite Off
-            Cull Front
+            ZTest LEqual
+            Cull Off
 
             HLSLPROGRAM
             #pragma vertex vert
@@ -70,19 +71,32 @@ Shader "OrbitalPanopticon/OuterWildsBlackHole"
             Varyings vert(Attributes input)
             {
                 Varyings output;
-                output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
-                output.screenPos = ComputeScreenPos(output.positionCS);
 
-                // Black Hole world position from object model matrix
+                // Center position of Black Hole in world space
                 float3 centerWS = UNITY_MATRIX_M._m03_m13_m23;
                 output.centerWS = centerWS;
                 output.centerClip = TransformWorldToHClip(centerWS);
 
+                // Quad billboard orientation facing the camera
+                float3 cameraRightWS = UNITY_MATRIX_V[0].xyz;
+                float3 cameraUpWS = UNITY_MATRIX_V[1].xyz;
+
+                // Scale of the quad in world space
+                float scaleX = length(float3(UNITY_MATRIX_M._m00, UNITY_MATRIX_M._m10, UNITY_MATRIX_M._m20));
+                float scaleY = length(float3(UNITY_MATRIX_M._m01, UNITY_MATRIX_M._m11, UNITY_MATRIX_M._m21));
+                float meshScale = scaleX * 0.5;
+                output.meshScale = meshScale;
+
+                // Billboard vertex position centered at centerWS
+                float3 billboardPosWS = centerWS 
+                    + cameraRightWS * (input.positionOS.x * scaleX) 
+                    + cameraUpWS * (input.positionOS.y * scaleY);
+
+                output.positionCS = TransformWorldToHClip(billboardPosWS);
+                output.screenPos = ComputeScreenPos(output.positionCS);
+
                 // Calculate projected screen-space mesh radius
                 float aspect = _ScreenParams.x / _ScreenParams.y;
-                float3 cameraRightWS = UNITY_MATRIX_V[0].xyz;
-                float meshScale = length(float3(UNITY_MATRIX_M._m00, UNITY_MATRIX_M._m10, UNITY_MATRIX_M._m20)) * 0.5;
-                output.meshScale = meshScale;
                 float4 rimClip = TransformWorldToHClip(centerWS + cameraRightWS * meshScale);
 
                 float2 centerScreenUV = ComputeScreenPos(output.centerClip).xy / max(output.centerClip.w, 0.0001);
@@ -105,19 +119,8 @@ Shader "OrbitalPanopticon/OuterWildsBlackHole"
 
                 float2 screenUV = input.screenPos.xy / input.screenPos.w;
 
-                // True scene depth check against foreground geometry (RoboArm, held scrap, floating objects in front)
-                float sceneRawDepth = SampleSceneDepth(screenUV);
-                float sceneLinearDepth = LinearEyeDepth(sceneRawDepth, _ZBufferParams);
-                float bhCenterDepth = length(_WorldSpaceCameraPos - input.centerWS);
-                float coreRadiusWorld = input.meshScale * _CoreRadius;
-
-                // If an opaque object is between the camera and the front of the black hole, discard
-                if (sceneLinearDepth < (bhCenterDepth - coreRadiusWorld * 1.05f))
-                {
-                    discard;
-                }
                 float4 centerScreen = ComputeScreenPos(input.centerClip);
-                float2 centerUV = centerScreen.xy / centerScreen.w;
+                float2 centerUV = centerScreen.xy / max(centerScreen.w, 0.0001);
 
                 // Screen aspect correction for isotropic circular metric
                 float aspect = _ScreenParams.x / _ScreenParams.y;
@@ -125,9 +128,9 @@ Shader "OrbitalPanopticon/OuterWildsBlackHole"
                 delta.x *= aspect;
 
                 float rScreen = length(delta);
-                float normR = rScreen / input.screenMeshRadius;
+                float normR = rScreen / max(input.screenMeshRadius, 0.0001);
 
-                // 1) Singularity Core (normR < _CoreRadius): Output pure pitch-black
+                // 1) Singularity Core (normR < _CoreRadius): Output solid pitch-black event horizon
                 if (normR < _CoreRadius)
                 {
                     return float4(0.0, 0.0, 0.0, 1.0);
@@ -140,7 +143,7 @@ Shader "OrbitalPanopticon/OuterWildsBlackHole"
 
                 // 3) Relativistic Gravitational Lensing (normR >= _CoreRadius)
                 float falloffTerm = saturate(1.0 - normR / _MaxLensingRadius);
-                float deflection = _LensingStrength * pow(falloffTerm, _LensingFalloff) / max(normR - _CoreRadius + 0.02, 0.001);
+                float deflection = _LensingStrength * pow(falloffTerm, _LensingFalloff) / max(normR - _CoreRadius + 0.01, 0.001);
 
                 // Offset the background sampling UV toward the center
                 float2 normDir = delta / max(rScreen, 0.0001);

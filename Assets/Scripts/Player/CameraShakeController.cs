@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using OrbitalPanopticon.Core;
 using OrbitalPanopticon.Gameplay;
 
 namespace OrbitalPanopticon.Player
@@ -13,6 +14,9 @@ namespace OrbitalPanopticon.Player
     public class CameraShakeController : MonoBehaviour
     {
         public static CameraShakeController Instance { get; private set; }
+
+        [Header("Transform Pivot")]
+        [SerializeField] private Transform shakePivot;
 
         [Header("Trauma Impulse Settings")]
         [SerializeField] private float traumaDecayRate = 1.0f;
@@ -42,7 +46,13 @@ namespace OrbitalPanopticon.Player
             }
             Instance = this;
 
-            _baseLocalPosition = transform.localPosition;
+            if (shakePivot == null)
+            {
+                var p = transform.Find("ShakePivot");
+                shakePivot = p != null ? p : transform;
+            }
+
+            _baseLocalPosition = (shakePivot != null) ? shakePivot.localPosition : transform.localPosition;
             _traumaSeedX = UnityEngine.Random.Range(0f, 100f);
             _traumaSeedY = UnityEngine.Random.Range(100f, 200f);
             _traumaSeedZ = UnityEngine.Random.Range(200f, 300f);
@@ -90,11 +100,40 @@ namespace OrbitalPanopticon.Player
         public void ResetShake()
         {
             _currentTrauma = 0f;
-            transform.localPosition = _baseLocalPosition;
+            if (shakePivot != null)
+            {
+                if (shakePivot != transform)
+                {
+                    shakePivot.localPosition = Vector3.zero;
+                    shakePivot.localRotation = Quaternion.identity;
+                }
+                else
+                {
+                    shakePivot.localPosition = _baseLocalPosition;
+                }
+            }
         }
 
         private void LateUpdate()
         {
+            bool isMenuPaused = Time.timeScale == 0f || UpgradeTreeManager.IsTreeOpen || PauseMenuController.IsGamePaused || TutorialSlideshowUI.IsTutorialOpen;
+            if (isMenuPaused)
+            {
+                if (shakePivot != null)
+                {
+                    if (shakePivot != transform)
+                    {
+                        shakePivot.localPosition = Vector3.zero;
+                        shakePivot.localRotation = Quaternion.identity;
+                    }
+                    else
+                    {
+                        shakePivot.localPosition = _baseLocalPosition;
+                    }
+                }
+                return;
+            }
+
             Vector3 posOffset = Vector3.zero;
             Vector3 rotOffset = Vector3.zero;
 
@@ -134,10 +173,21 @@ namespace OrbitalPanopticon.Player
             }
 
             // Apply offsets strictly on top of mouse look
-            transform.localPosition = _baseLocalPosition + posOffset;
-            if (rotOffset.sqrMagnitude > 0.0001f)
+            if (shakePivot != null)
             {
-                transform.localRotation = transform.localRotation * Quaternion.Euler(rotOffset);
+                if (shakePivot != transform)
+                {
+                    shakePivot.localPosition = posOffset;
+                    shakePivot.localRotation = Quaternion.Euler(rotOffset);
+                }
+                else
+                {
+                    transform.localPosition = _baseLocalPosition + posOffset;
+                    if (rotOffset.sqrMagnitude > 0.0001f)
+                    {
+                        transform.localRotation = transform.localRotation * Quaternion.Euler(rotOffset);
+                    }
+                }
             }
         }
     }

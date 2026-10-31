@@ -43,8 +43,8 @@ namespace OrbitalPanopticon.Core
         private static readonly Dictionary<string, (string ru, string en)> _translations = new Dictionary<string, (string ru, string en)>
         {
             // Main Menu
-            { "MM_Title", ("ORBITAL PANOPTICON", "ORBITAL PANOPTICON") },
-            { "MM_Subtitle", ("СЕКТОР НАДЗОРА #042 // ОРБИТАЛЬНЫЙ ПАНОПТИКУМ", "SURVEILLANCE SECTOR #042 // ORBITAL PANOPTICON") },
+            { "MM_Title", ("ANGULAR MOMENTUM", "ANGULAR MOMENTUM") },
+            { "MM_Subtitle", ("", "") },
             { "MM_Start", ("НАЧАТЬ ИГРУ", "START GAME") },
             { "MM_Settings", ("НАСТРОЙКИ", "SETTINGS") },
             { "MM_Credits", ("АВТОРЫ / ТИТРЫ", "CREDITS") },
@@ -55,6 +55,21 @@ namespace OrbitalPanopticon.Core
             { "MM_Settings_SoundsVolume", ("Громкость звуков:", "Sound Effects (SFX):") },
             { "MM_Settings_Sens", ("Чувствительность мыши:", "Mouse Sensitivity:") },
             { "MM_Settings_Close", ("ЗАКРЫТЬ", "CLOSE") },
+
+            // Tutorial Slideshow Window
+            { "TUT_Header", ("ANGULAR MOMENTUM", "ANGULAR MOMENTUM") },
+            { "TUT_Placeholder", ("МЕСТО ДЛЯ ИЛЛЮСТРАЦИИ / СКЕТЧБУКА", "ILLUSTRATION / SKETCHBOOK PLACEHOLDER") },
+            { "TUT_Prev", ("< НАЗАД", "< BACK") },
+            { "TUT_Next", ("ДАЛЕЕ >", "NEXT >") },
+            { "TUT_Start", ("НАЧАТЬ ИГРУ", "START GAME") },
+            { "TUT_Slide1_Title", ("Слайд 1/4 — Полет и Импульс", "Slide 1/4 — Flight & Momentum") },
+            { "TUT_Slide1_Desc", ("Управление дроном: [WASD] — горизонтальная тяга, [Пробел / Ctrl] — подъем и спуск. Нажмите [Shift] в сторону движения для резкого импульсного рывка.", "Drone controls: [WASD] — horizontal thrusters, [Space / Ctrl] — ascend and descend. Press [Shift] toward movement direction for a heavy impulse dash.") },
+            { "TUT_Slide2_Title", ("Слайд 2/4 — Грави-пушка и Черная Дыра", "Slide 2/4 — Gravity Manipulator & Black Hole") },
+            { "TUT_Slide2_Desc", ("Удерживайте [ПКМ], чтобы затянуть космический мусор перед собой. Нажмите [ЛКМ], чтобы выстрелить мусором в Черную Дыру и увеличить её массу. Светящийся магмой мусор приносит в разы больше массы и монет!", "Hold [RMB] to pull space debris in front of you. Press [LMB] to punt debris into the Black Hole and grow its mass. Molten lava debris yields significantly more mass and coins!") },
+            { "TUT_Slide3_Title", ("Слайд 3/4 — Очи Корпорации и Стадии", "Slide 3/4 — Overseer Eyes & Stages") },
+            { "TUT_Slide3_Desc", ("Четыре Ока вокруг сектора сдерживают Черную Дыру лучами. Набирайте массу дыры, чтобы поочередно сжечь все 4 предохранителя. Остерегайтесь активных лучей: 3 касания разрушат ваш дрон!", "Four Overseer Eyes surround the sector locking the Black Hole with beams. Feed the singularity mass to blow all 4 locks one by one. Beware of active beams: 3 hits will destroy your drone!") },
+            { "TUT_Slide4_Title", ("Слайд 4/4 — Дерево Прокачки и Роботы", "Slide 4/4 — Upgrade Tree & Helper Bots") },
+            { "TUT_Slide4_Desc", ("Нажмите [TAB] в любой момент, чтобы поставить игру на паузу, прокачать характеристики дрона и купить автономных роботов-помощников, которые будут собирать мусор за вас.", "Press [TAB] at any time to pause the game, upgrade drone specs, and purchase autonomous helper bots that scavenge scrap for you.") },
 
             // HUD Core Minimalist
             { "HUD_ScrapCoins", ("ЛОМ-МОНЕТЫ: {0:N0}", "SCRAP COINS: {0:N0}") },

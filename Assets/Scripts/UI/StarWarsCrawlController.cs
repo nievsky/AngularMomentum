@@ -100,7 +100,7 @@ namespace OrbitalPanopticon.UI
                 "<b>Lead Programmer & Systems Architecture</b>\n" +
                 "<color=#FFFFFF>Antigravity AI Pair Programming Team</color>\n\n" +
                 "<b>Game Designers & Economic Balance</b>\n" +
-                "<color=#FFFFFF>Panopticon Systems Architecture</color>\n\n" +
+                "<color=#FFFFFF>Angular Momentum Systems Architecture</color>\n\n" +
                 "<b>3D Artists — Drones & Overseer Eyes</b>\n" +
                 "<color=#FFFFFF>Corporate Security Assets Dept.</color>\n\n" +
                 "<b>3D Artists — Orbital Debris & Relics</b>\n" +
@@ -124,7 +124,7 @@ namespace OrbitalPanopticon.UI
                 "<b>Lead Programmer & Systems Architecture</b>\n" +
                 "<color=#FFFFFF>Antigravity AI Pair Programming Team</color>\n\n" +
                 "<b>Game Designers & Economic Balance</b>\n" +
-                "<color=#FFFFFF>Panopticon Systems Architecture</color>\n\n" +
+                "<color=#FFFFFF>Angular Momentum Systems Architecture</color>\n\n" +
                 "<b>3D Artists — Drones & Overseer Eyes</b>\n" +
                 "<color=#FFFFFF>Corporate Security Assets Dept.</color>\n\n" +
                 "<b>3D Artists — Orbital Debris & Relics</b>\n" +

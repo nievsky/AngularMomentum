@@ -47,7 +47,8 @@ namespace OrbitalPanopticon.Core
         [SerializeField] private TextMeshProUGUI closeSettingsText;
 
         private bool _isPaused = false;
-        public bool IsGamePaused => _isPaused;
+        public bool IsPausedInstance => _isPaused;
+        public static bool IsGamePaused => Instance != null && Instance._isPaused;
 
         private void Awake()
         {

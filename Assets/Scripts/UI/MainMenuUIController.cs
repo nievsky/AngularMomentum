@@ -59,6 +59,7 @@ namespace OrbitalPanopticon.UI
         public Image ImageFlagEN => imageFlagEN;
 
         [Header("Localized Labels (Auto-Resolved if Unassigned)")]
+        [SerializeField] private TextMeshProUGUI titleText;
         [SerializeField] private TextMeshProUGUI subtitleText;
         [SerializeField] private TextMeshProUGUI startButtonText;
         [SerializeField] private TextMeshProUGUI settingsButtonText;
@@ -160,6 +161,11 @@ namespace OrbitalPanopticon.UI
 
         private void ResolveLabelReferences()
         {
+            if (titleText == null)
+            {
+                var go = GameObject.Find("Text_Title");
+                if (go != null) titleText = go.GetComponent<TextMeshProUGUI>();
+            }
             if (subtitleText == null)
             {
                 var go = GameObject.Find("Text_Subtitle");
@@ -186,7 +192,20 @@ namespace OrbitalPanopticon.UI
 
         public void UpdateLocalizedTexts()
         {
-            if (subtitleText != null) subtitleText.text = LocalizationManager.Get("MM_Subtitle");
+            if (titleText != null) titleText.text = LocalizationManager.Get("MM_Title");
+            if (subtitleText != null)
+            {
+                string sub = LocalizationManager.Get("MM_Subtitle");
+                if (string.IsNullOrEmpty(sub))
+                {
+                    subtitleText.gameObject.SetActive(false);
+                }
+                else
+                {
+                    subtitleText.gameObject.SetActive(true);
+                    subtitleText.text = sub;
+                }
+            }
             if (startButtonText != null) startButtonText.text = LocalizationManager.Get("MM_Start");
             if (settingsButtonText != null) settingsButtonText.text = LocalizationManager.Get("MM_Settings");
             if (creditsButtonText != null) creditsButtonText.text = LocalizationManager.Get("MM_Credits");

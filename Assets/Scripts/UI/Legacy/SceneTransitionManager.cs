@@ -3,6 +3,8 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using OrbitalPanopticon.Core;
+using OrbitalPanopticon.Player;
 
 [DefaultExecutionOrder(-990)]
 [DisallowMultipleComponent]
@@ -63,17 +65,59 @@ public class SceneTransitionManager : MonoBehaviour
         }
     }
 
+    private void OnEnable()
+    {
+        SceneManager.sceneLoaded += HandleSceneLoaded;
+    }
+
+    private void OnDisable()
+    {
+        SceneManager.sceneLoaded -= HandleSceneLoaded;
+    }
+
+    private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        UpdateCanvasCamera();
+    }
+
+    /// <summary>
+    /// Configures the transition Canvas to use ScreenSpaceCamera so URP post-processing (Bloom, ACES)
+    /// actively blazes and glows on the HDR fiery dissolve edge.
+    /// Falls back to ScreenSpaceOverlay if no camera is available.
+    /// </summary>
+    public void UpdateCanvasCamera()
+    {
+        if (_transitionCanvas == null) return;
+
+        Camera cam = Camera.main;
+        if (cam != null)
+        {
+            _transitionCanvas.renderMode = RenderMode.ScreenSpaceCamera;
+            _transitionCanvas.worldCamera = cam;
+            _transitionCanvas.planeDistance = 0.35f;
+            _transitionCanvas.sortingOrder = 9999;
+        }
+        else
+        {
+            _transitionCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            _transitionCanvas.sortingOrder = 9999;
+        }
+    }
+
     public void BuildTransitionUI()
     {
-        if (_transitionCanvas != null) return;
+        if (_transitionCanvas != null)
+        {
+            UpdateCanvasCamera();
+            return;
+        }
 
-        // 1. Create Top-Sorting Canvas (sortingOrder = 9999)
+        // 1. Create Top-Sorting Canvas (ScreenSpaceCamera with fallback)
         GameObject canvasGo = new GameObject("Transition_Canvas");
         canvasGo.transform.SetParent(transform, false);
 
         _transitionCanvas = canvasGo.AddComponent<Canvas>();
-        _transitionCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        _transitionCanvas.sortingOrder = 9999;
+        UpdateCanvasCamera();
 
         var scaler = canvasGo.AddComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
@@ -133,6 +177,9 @@ public class SceneTransitionManager : MonoBehaviour
     private IEnumerator InitialDissolveInRoutine()
     {
         _isTransitioning = true;
+        BuildTransitionUI();
+        UpdateCanvasCamera();
+
         if (_dissolveImage != null)
         {
             _dissolveImage.gameObject.SetActive(true);
@@ -147,8 +194,13 @@ public class SceneTransitionManager : MonoBehaviour
         // Wait 2 settling frames for scene camera, skybox, post-processing to initialize behind black curtain
         yield return null;
         yield return null;
+        UpdateCanvasCamera();
 
-        // Note: Do not play UI_Transition sound on boot when no transition actually occurred
+        if (PostProcessingToolkitController.Instance != null)
+        {
+            PostProcessingToolkitController.Instance.TriggerImpactPulse(bloomBoost: 2.2f, chromaticBoost: 0.2f, lensDistortionBoost: -0.05f, duration: 0.6f);
+        }
+
         float elapsed = 0f;
         float dur = Mathf.Max(0.1f, fadeInDuration);
 
@@ -188,6 +240,22 @@ public class SceneTransitionManager : MonoBehaviour
         StartCoroutine(TransitionRoutine(sceneName));
     }
 
+    /// <summary>
+    /// Specialized scene transition for post-CRT blackout / finale.
+    /// Skips Step 1 (no redundant fade-in when screen is already black),
+    /// loads scene asynchronously, and executes ONLY the fiery dissolve fade-out over 1.2s.
+    /// </summary>
+    public void TransitionFromBlackScreenToScene(string sceneName)
+    {
+        if (_isTransitioning)
+        {
+            Debug.LogWarning($"[SceneTransitionManager] TransitionFromBlackScreen to '{sceneName}' requested while already transitioning. Ignored.");
+            return;
+        }
+
+        StartCoroutine(TransitionFromBlackRoutine(sceneName));
+    }
+
     public static void LoadScene(string sceneName)
     {
         if (Instance != null)
@@ -218,6 +286,7 @@ public class SceneTransitionManager : MonoBehaviour
     {
         _isTransitioning = true;
         BuildTransitionUI();
+        UpdateCanvasCamera();
 
         if (_dissolveImage != null)
         {
@@ -232,6 +301,10 @@ public class SceneTransitionManager : MonoBehaviour
         if (OrbitalPanopticon.Core.FMODAudioManager.Instance != null)
         {
             OrbitalPanopticon.Core.FMODAudioManager.Instance.PlayDissolveTransition();
+        }
+        if (PostProcessingToolkitController.Instance != null)
+        {
+            PostProcessingToolkitController.Instance.TriggerImpactPulse(bloomBoost: 2.2f, chromaticBoost: 0.2f, lensDistortionBoost: -0.05f, duration: 0.6f);
         }
 
         float elapsed = 0f;
@@ -277,6 +350,7 @@ public class SceneTransitionManager : MonoBehaviour
         yield return null;
         yield return null;
         Time.timeScale = 1f;
+        UpdateCanvasCamera();
 
         // -------------------------------------------------------------
         // Step 3 (Dissolve OUT from Black / Fade In New Scene):
@@ -286,6 +360,10 @@ public class SceneTransitionManager : MonoBehaviour
         {
             OrbitalPanopticon.Core.FMODAudioManager.Instance.PlayDissolveTransition();
         }
+        if (PostProcessingToolkitController.Instance != null)
+        {
+            PostProcessingToolkitController.Instance.TriggerImpactPulse(bloomBoost: 2.2f, chromaticBoost: 0.2f, lensDistortionBoost: -0.05f, duration: 0.6f);
+        }
 
         elapsed = 0f;
         float fadeInDur = Mathf.Max(0.1f, fadeInDuration);
@@ -294,6 +372,83 @@ public class SceneTransitionManager : MonoBehaviour
         {
             elapsed += Time.unscaledDeltaTime;
             float progress = 1.0f - Mathf.Clamp01(elapsed / fadeInDur);
+            if (_instancedMat != null)
+            {
+                _instancedMat.SetFloat(DissolveProgressID, progress);
+            }
+            yield return null;
+        }
+
+        if (_instancedMat != null)
+        {
+            _instancedMat.SetFloat(DissolveProgressID, 0.0f);
+        }
+
+        if (_dissolveImage != null)
+        {
+            _dissolveImage.raycastTarget = false;
+            _dissolveImage.gameObject.SetActive(false);
+        }
+
+        _isTransitioning = false;
+    }
+
+    private IEnumerator TransitionFromBlackRoutine(string sceneName)
+    {
+        _isTransitioning = true;
+        BuildTransitionUI();
+        UpdateCanvasCamera();
+
+        if (_dissolveImage != null)
+        {
+            _dissolveImage.gameObject.SetActive(true);
+            _dissolveImage.raycastTarget = true;
+        }
+
+        // Step 1: Immediately snap _DissolveProgress = 1.0f in 0s (no redundant fade-in!)
+        if (_instancedMat != null)
+        {
+            _instancedMat.SetFloat(DissolveProgressID, 1.0f);
+        }
+
+        // Step 2: Async background load while screen is solidly black
+        Time.timeScale = 1f;
+        AsyncOperation op = SceneManager.LoadSceneAsync(sceneName);
+        if (op != null)
+        {
+            while (!op.isDone)
+            {
+                yield return null;
+            }
+        }
+        else
+        {
+            Debug.LogError($"[SceneTransitionManager] Failed to start async load for scene '{sceneName}'.");
+        }
+
+        // Wait 2 settling frames for scene camera, skybox, post-processing to initialize
+        yield return null;
+        yield return null;
+        Time.timeScale = 1f;
+        UpdateCanvasCamera();
+
+        // Step 3: Fiery Dissolve Fade-Out ONLY (1.0f down to 0.0f over 1.2s)
+        if (OrbitalPanopticon.Core.FMODAudioManager.Instance != null)
+        {
+            OrbitalPanopticon.Core.FMODAudioManager.Instance.PlayDissolveTransition();
+        }
+        if (PostProcessingToolkitController.Instance != null)
+        {
+            PostProcessingToolkitController.Instance.TriggerImpactPulse(bloomBoost: 2.2f, chromaticBoost: 0.2f, lensDistortionBoost: -0.05f, duration: 0.8f);
+        }
+
+        float elapsed = 0f;
+        const float fadeOutDur = 1.2f;
+
+        while (elapsed < fadeOutDur)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float progress = 1.0f - Mathf.Clamp01(elapsed / fadeOutDur);
             if (_instancedMat != null)
             {
                 _instancedMat.SetFloat(DissolveProgressID, progress);

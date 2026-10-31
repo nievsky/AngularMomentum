@@ -30,7 +30,8 @@ Material:
     m_Ints: []
     m_Floats:
     - _ColorMask: 15
-    - _DissolveEdgeWidth: 0.045
+    - _DissolveEdgeWidth: 0.09
+    - _SoftGlowWidth: 0.16
     - _DissolveProgress: 0
     - _NoiseScale: 6
     - _Stencil: 0
@@ -41,6 +42,8 @@ Material:
     - _UseUIAlphaClip: 0
     m_Colors:
     - _Color: {r: 0, g: 0, b: 0, a: 1}
-    - _DissolveEdgeColor: {r: 0.1, g: 0.9, b: 1, a: 1}
+    - _DissolveEdgeColor: {r: 4.5, g: 0.9, b: 0.05, a: 1}
+    - _EdgeCoreColor: {r: 8, g: 4.5, b: 1, a: 1}
+    - _EdgeOuterColor: {r: 4.5, g: 0.9, b: 0.05, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

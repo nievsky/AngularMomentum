@@ -460,13 +460,13 @@ namespace OrbitalPanopticon.Player
 
         private void FixedUpdate()
         {
-            if (OrbitalPanopticon.Core.UpgradeTreeManager.IsTreeOpen || (OrbitalPanopticon.Core.PauseMenuController.Instance != null && OrbitalPanopticon.Core.PauseMenuController.Instance.IsGamePaused)) return;
+            if (OrbitalPanopticon.Core.UpgradeTreeManager.IsTreeOpen || OrbitalPanopticon.Core.PauseMenuController.IsGamePaused) return;
             ApplyHoldingPhysics();
         }
 
         private void HandleInputs()
         {
-            if (OrbitalPanopticon.Core.UpgradeTreeManager.IsTreeOpen || (OrbitalPanopticon.Core.PauseMenuController.Instance != null && OrbitalPanopticon.Core.PauseMenuController.Instance.IsGamePaused))
+            if (OrbitalPanopticon.Core.UpgradeTreeManager.IsTreeOpen || OrbitalPanopticon.Core.PauseMenuController.IsGamePaused)
             {
                 _isGrabHeld = false;
                 return;

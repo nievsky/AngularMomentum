@@ -5,8 +5,11 @@ Shader "UI/ScreenDissolve"
         [PerRendererData] _MainTex ("Sprite Texture", 2D) = "white" {}
         _Color ("Tint", Color) = (0,0,0,1)
         _DissolveProgress ("Dissolve Progress", Range(0, 1)) = 0.0
-        _DissolveEdgeWidth ("Edge Width", Range(0.001, 0.15)) = 0.04
-        _DissolveEdgeColor ("Edge Glow Color", Color) = (0.2, 0.9, 1.0, 1.0)
+        _DissolveEdgeWidth ("Edge Width", Range(0.001, 0.25)) = 0.09
+        _SoftGlowWidth ("Soft Glow Width", Range(0.01, 0.4)) = 0.16
+        [HDR] _EdgeCoreColor ("Edge Core Color (Scorching Core)", Color) = (8.0, 4.5, 1.0, 1.0)
+        [HDR] _EdgeOuterColor ("Edge Outer Color (Fiery Orange)", Color) = (4.5, 0.9, 0.05, 1.0)
+        [HDR] _DissolveEdgeColor ("Legacy Edge Color", Color) = (4.5, 0.9, 0.05, 1.0)
         _NoiseScale ("Noise Scale", Float) = 6.0
 
         _StencilComp ("Stencil Comparison", Float) = 8
@@ -79,7 +82,10 @@ Shader "UI/ScreenDissolve"
             float4 _ClipRect;
             float _DissolveProgress;
             float _DissolveEdgeWidth;
-            fixed4 _DissolveEdgeColor;
+            float _SoftGlowWidth;
+            float4 _EdgeCoreColor;
+            float4 _EdgeOuterColor;
+            float4 _DissolveEdgeColor;
             float _NoiseScale;
 
             v2f vert(appdata_t v)
@@ -151,14 +157,39 @@ Shader "UI/ScreenDissolve"
                 float n = fbm(noiseUV * max(1.0, _NoiseScale));
 
                 float edge = max(0.005, _DissolveEdgeWidth);
-                float fill = smoothstep(n - edge, n, progress);
+                float softGlow = max(edge, _SoftGlowWidth);
 
-                float distToEdge = abs(progress - n);
-                float edgeHighlight = saturate(1.0 - (distToEdge / edge));
-                edgeHighlight = pow(edgeHighlight, 2.0) * (1.0 - fill);
+                // Black solid fill behind the burning front
+                float fill = smoothstep(n - 0.01, n + 0.01, progress);
 
-                fixed3 finalRgb = lerp(fixed3(0, 0, 0), _DissolveEdgeColor.rgb, edgeHighlight * _DissolveEdgeColor.a);
-                float finalAlpha = saturate(fill + edgeHighlight);
+                // Distance to burn front (positive = ahead into transparent area, negative = behind in black fill)
+                float dist = n - progress;
+                float coreDist = abs(dist);
+
+                // 1. Inner Scorching Core (bright white-yellow HDR: 8.0, 4.5, 1.0)
+                float coreFactor = saturate(1.0 - (coreDist / (edge * 0.45)));
+                coreFactor = pow(coreFactor, 2.5);
+
+                // 2. Fiery Orange-Red Outer Flame (4.5, 0.9, 0.05)
+                float flameFactor = saturate(1.0 - (coreDist / edge));
+                flameFactor = pow(flameFactor, 1.8);
+
+                // 3. Wide Soft Heat Halo (blooming ambient glow expanding ahead of burn)
+                float haloDist = max(0.0, dist);
+                float haloFactor = saturate(1.0 - (haloDist / softGlow));
+                haloFactor = pow(haloFactor, 2.8) * 0.65;
+
+                // Combine multi-layer fiery gradient
+                float3 coreCol = _EdgeCoreColor.rgb * coreFactor;
+                float3 flameCol = _EdgeOuterColor.rgb * flameFactor;
+                float3 haloCol = _EdgeOuterColor.rgb * haloFactor;
+
+                float3 fireRgb = coreCol + flameCol + haloCol;
+                float fireAlpha = saturate(flameFactor + haloFactor + coreFactor);
+
+                // Burnt area is pitch black, with fiery edge overlaid
+                float3 finalRgb = fireRgb;
+                float finalAlpha = saturate(fill + fireAlpha);
 
                 #ifdef UNITY_UI_CLIP_RECT
                 finalAlpha *= UnityGet2DClipping(IN.worldPosition.xy, _ClipRect);

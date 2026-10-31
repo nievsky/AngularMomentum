@@ -114,6 +114,13 @@ namespace OrbitalPanopticon.Core
 
         private void Start()
         {
+            if (beamAlertPanel != null) beamAlertPanel.SetActive(false);
+            Canvas parentCanvas = GetComponentInParent<Canvas>() ?? UnityEngine.Object.FindAnyObjectByType<Canvas>();
+            if (parentCanvas != null)
+            {
+                Transform p = parentCanvas.transform.Find("Panel_BeamDamageAlert");
+                if (p != null) p.gameObject.SetActive(false);
+            }
             if (quotaManager == null)
             {
                 quotaManager = UnityEngine.Object.FindAnyObjectByType<QuotaAndScoreManager>();
@@ -165,21 +172,12 @@ namespace OrbitalPanopticon.Core
                 }
             }
 
-            // Setup Start Overlay
+            // Setup Start Overlay (Decommissioned in favor of TutorialSlideshowUI)
             if (startOverlayPanel != null)
             {
-                startOverlayPanel.SetActive(true);
-                if (startOverlayCanvasGroup != null) startOverlayCanvasGroup.alpha = 1f;
-                if (startPromptText != null) startPromptText.text = LocalizationManager.Get("HUD_StartPrompt");
-
-                Cursor.lockState = CursorLockMode.None;
-                Cursor.visible = true;
-                _isOperatorConnected = false;
+                startOverlayPanel.SetActive(false);
             }
-            else
-            {
-                _isOperatorConnected = true;
-            }
+            _isOperatorConnected = false;
 
             EnsureMinimalistHUD();
             EnsureViewfinderOverlay();
@@ -210,6 +208,7 @@ namespace OrbitalPanopticon.Core
         private void HandleStartOverlayInput()
         {
             if (_isOperatorConnected) return;
+            if (TutorialSlideshowUI.IsTutorialOpen) return;
 
             if (startPromptText != null)
             {
@@ -910,11 +909,16 @@ namespace OrbitalPanopticon.Core
 
         public void ShowCenterWarningAlert(string message, float duration = 2.0f)
         {
+            // Fully disabled per Task 1 Issue #4: No red UI popups/banners on beam hit
             if (_beamAlertCoroutine != null)
             {
                 StopCoroutine(_beamAlertCoroutine);
+                _beamAlertCoroutine = null;
             }
-            _beamAlertCoroutine = StartCoroutine(ShowCenterWarningAlertRoutine(message, duration));
+            if (beamAlertPanel != null)
+            {
+                beamAlertPanel.SetActive(false);
+            }
         }
 
         private void EnsureBeamAlertPanel()
