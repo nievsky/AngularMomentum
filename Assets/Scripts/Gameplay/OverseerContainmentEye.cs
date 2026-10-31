@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using UnityEngine;
 using OrbitalPanopticon.Core;
+using OrbitalPanopticon.Player;
 
 namespace OrbitalPanopticon.Gameplay
 {
@@ -187,10 +188,112 @@ namespace OrbitalPanopticon.Gameplay
             if (!isConsumedOrCollapsing && !isLockBroken)
             {
                 UpdateOrbitalMovement();
+                CheckBeamPlayerHazard();
             }
 
             LookTowardCenterAndPlayer();
             AnimatePupil();
+        }
+
+        private void CheckBeamPlayerHazard()
+        {
+            if (isLockBroken || isConsumedOrCollapsing) return;
+
+            DroneController drone = DroneController.Instance;
+            if (drone == null || !drone.IsControlEnabled) return;
+
+            if (drone.BeamHitCooldownTimer > 0f) return;
+
+            Vector3 startPos = PupilPosition;
+            Vector3 endPos = centerReference != null ? centerReference.position : Vector3.zero;
+            Vector3 dronePos = drone.transform.position;
+
+            Vector3 closestPoint = GetClosestPointOnSegment(dronePos, startPos, endPos, out float t);
+            float dist = Vector3.Distance(dronePos, closestPoint);
+
+            const float beamHazardRadius = 2.2f;
+            if (dist < beamHazardRadius)
+            {
+                OnPlayerHitByBeam(drone, closestPoint, startPos, endPos);
+            }
+        }
+
+        private static Vector3 GetClosestPointOnSegment(Vector3 point, Vector3 segmentStart, Vector3 segmentEnd, out float t)
+        {
+            Vector3 ab = segmentEnd - segmentStart;
+            float abLenSq = ab.sqrMagnitude;
+            if (abLenSq < 0.0001f)
+            {
+                t = 0f;
+                return segmentStart;
+            }
+            t = Mathf.Clamp01(Vector3.Dot(point - segmentStart, ab) / abLenSq);
+            return segmentStart + (ab * t);
+        }
+
+        private void OnPlayerHitByBeam(DroneController drone, Vector3 closestPoint, Vector3 startPos, Vector3 endPos)
+        {
+            drone.CurrentBeamHits++;
+            drone.BeamHitCooldownTimer = 1.1f; // Prevents multi-hit during single pass
+
+            // Knock player away from the beam segment
+            Vector3 awayDir = (drone.transform.position - closestPoint);
+            if (awayDir.sqrMagnitude < 0.001f)
+            {
+                Vector3 beamDir = (endPos - startPos).normalized;
+                awayDir = Vector3.Cross(beamDir, Vector3.up);
+                if (awayDir.sqrMagnitude < 0.001f) awayDir = Vector3.up;
+            }
+            awayDir.Normalize();
+
+            if (drone.Rigidbody != null)
+            {
+                drone.Rigidbody.AddForce(awayDir * 18f, ForceMode.VelocityChange);
+            }
+
+            // High-impact visual / post-processing / camera glitch cues
+            if (PostProcessingToolkitController.Instance != null)
+            {
+                PostProcessingToolkitController.Instance.TriggerImpactPulse(bloomBoost: 2.2f, chromaticBoost: 0.65f, lensDistortionBoost: -0.18f, duration: 0.35f, motionBlurBoost: 0.7f);
+            }
+            if (VHSCameraController.Instance != null)
+            {
+                VHSCameraController.Instance.TriggerGlitchBurst(0.85f, 0.35f);
+            }
+            if (CameraShakeController.Instance != null)
+            {
+                CameraShakeController.Instance.TriggerShake(duration: 0.45f, magnitude: 0.28f);
+            }
+
+            // Audio shock cue
+            if (FMODAudioManager.Instance != null)
+            {
+                FMODAudioManager.Instance.PlayContainmentLockBreak(closestPoint);
+            }
+            else if (GameAudioManager.Instance != null && GameAudioManager.Instance.Config != null)
+            {
+                GameAudioManager.Instance.PlayOneShot(GameAudioManager.Instance.Config.overseerDestructionSfx, 0.85f);
+            }
+
+            // Evaluate Hits (Strict 3-Hit system, no HP bar)
+            if (drone.CurrentBeamHits < 3)
+            {
+                string warningMsg = $"ВНИМАНИЕ: ПОВРЕЖДЕНИЕ ОТ ЛУЧА СДЕРЖИВАНИЯ! [{drone.CurrentBeamHits}/3]";
+                if (UIManager.Instance != null)
+                {
+                    UIManager.Instance.ShowCenterWarningAlert(warningMsg, 2.0f);
+                }
+                Debug.LogWarning($"<color=#FF5500>[CONTAINMENT BEAM HAZARD] Drone struck by beam! Hits: {drone.CurrentBeamHits}/3</color>");
+            }
+            else
+            {
+                drone.CurrentBeamHits = 0;
+                Debug.LogError("<color=#FF0033>[CONTAINMENT BEAM HAZARD] 3rd Hit sustained: Critical beam overload! Drone destroyed!</color>");
+                if (ArenaBoundaryManager.Instance != null)
+                {
+                    ArenaBoundaryManager.Instance.TriggerSignalLoss("КРИТИЧЕСКАЯ ПЕРЕГРУЗКА ЛУЧОМ — ДРОН УНИЧТОЖЕН", true);
+                }
+            }
         }
 
         private void LateUpdate()
@@ -317,6 +420,10 @@ namespace OrbitalPanopticon.Gameplay
             if (VHSCameraController.Instance != null)
             {
                 VHSCameraController.Instance.TriggerGlitchBurst(0.75f, 0.5f);
+            }
+            if (CameraShakeController.Instance != null)
+            {
+                CameraShakeController.Instance.TriggerStageTransitionShake(1.4f, 0.35f);
             }
 
             // Phase 1: High-intensity electrical overload flash (0.55s)

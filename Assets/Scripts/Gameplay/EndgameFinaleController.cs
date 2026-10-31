@@ -110,9 +110,9 @@ namespace OrbitalPanopticon.Gameplay
             Camera mainCam = Camera.main;
             Vector3 camInitialLocalPos = mainCam != null ? mainCam.transform.localPosition : Vector3.zero;
 
+            // A. All 4 OverseerContainmentEye bosses
             var foundEyes = FindObjectsByType<OverseerContainmentEye>(FindObjectsInactive.Exclude);
             List<OverseerContainmentEye> activeEyes = new List<OverseerContainmentEye>();
-
             foreach (var eye in foundEyes)
             {
                 if (eye == null) continue;
@@ -127,6 +127,39 @@ namespace OrbitalPanopticon.Gameplay
                 if (gb == null) gb = eye.gameObject.AddComponent<GravityBody>();
             }
 
+            // B. ALL active HelperDroneBot instances in the scene
+            var foundHelperBots = FindObjectsByType<HelperDroneBot>(FindObjectsInactive.Exclude);
+            List<HelperDroneBot> activeBots = new List<HelperDroneBot>();
+            foreach (var bot in foundHelperBots)
+            {
+                if (bot == null) continue;
+                bot.ReleaseTargetScrap();
+                bot.enabled = false; // Disable bot AI steering completely
+                activeBots.Add(bot);
+
+                var rb = bot.GetComponent<Rigidbody>();
+                if (rb == null) rb = bot.gameObject.AddComponent<Rigidbody>();
+                rb.isKinematic = true;
+
+                var gb = bot.GetComponent<GravityBody>();
+                if (gb == null) gb = bot.gameObject.AddComponent<GravityBody>();
+            }
+
+            // C. ALL active ScrapItem instances in the scene
+            var foundScraps = FindObjectsByType<ScrapItem>(FindObjectsInactive.Exclude);
+            List<ScrapItem> activeScraps = new List<ScrapItem>();
+            foreach (var scrap in foundScraps)
+            {
+                if (scrap == null || !scrap.gameObject.activeInHierarchy || scrap.CurrentState == ScrapState.Consumed) continue;
+                scrap.SetState(ScrapState.Launched);
+                scrap.hasEnteredVortex = true;
+                if (scrap.Rigidbody != null)
+                {
+                    scrap.Rigidbody.isKinematic = true;
+                }
+                activeScraps.Add(scrap);
+            }
+
             float suspenseTimer = 0f;
             const float suspenseDuration = 4.5f;
             float horizonRadius = config != null ? config.eventHorizonRadius : 4.5f;
@@ -136,7 +169,7 @@ namespace OrbitalPanopticon.Gameplay
                 FMODAudioManager.Instance.PlayFinaleEyesConsumedRumble(center);
             }
 
-            while (suspenseTimer < suspenseDuration && activeEyes.Count > 0)
+            while (suspenseTimer < suspenseDuration && (activeEyes.Count > 0 || activeBots.Count > 0 || activeScraps.Count > 0))
             {
                 suspenseTimer += Time.deltaTime;
                 float progress = suspenseTimer / suspenseDuration;
@@ -148,6 +181,7 @@ namespace OrbitalPanopticon.Gameplay
                     mainCam.transform.localPosition = camInitialLocalPos + (Random.insideUnitSphere * shake);
                 }
 
+                // 1. Spiral & Consume Overseer Eyes
                 for (int i = activeEyes.Count - 1; i >= 0; i--)
                 {
                     var eye = activeEyes[i];
@@ -200,26 +234,106 @@ namespace OrbitalPanopticon.Gameplay
                     }
                 }
 
+                // 2. Spiral & Consume Helper Drone Bots
+                for (int i = activeBots.Count - 1; i >= 0; i--)
+                {
+                    var bot = activeBots[i];
+                    if (bot == null)
+                    {
+                        activeBots.RemoveAt(i);
+                        continue;
+                    }
+
+                    Vector3 toCenter = (center - bot.transform.position);
+                    float dist = toCenter.magnitude;
+                    Vector3 inwardDir = dist > 0.001f ? toCenter / dist : Vector3.forward;
+
+                    Vector3 tangent = Vector3.Cross(Vector3.up, inwardDir).normalized;
+                    Vector3 moveDir = (inwardDir * 1.5f + tangent * 0.75f).normalized;
+
+                    float speed = Mathf.Lerp(22f, 58f, progress);
+                    bot.transform.position += moveDir * (speed * Time.deltaTime);
+                    bot.transform.Rotate(Vector3.up, 420f * Time.deltaTime, Space.World);
+
+                    if (dist <= horizonRadius + 1.5f)
+                    {
+                        Vector3 botPos = bot.transform.position;
+                        var gb = bot.GetComponent<GravityBody>();
+                        if (_blackHole != null && gb != null)
+                        {
+                            _blackHole.ConsumeObject(gb);
+                        }
+                        if (ScorePopupManager.Instance != null)
+                        {
+                            ScorePopupManager.Instance.SpawnPopup(botPos, 50000f, false, false);
+                        }
+                        activeBots.RemoveAt(i);
+                    }
+                }
+
+                // 3. Spiral & Consume Active Scrap Items
+                for (int i = activeScraps.Count - 1; i >= 0; i--)
+                {
+                    var scrap = activeScraps[i];
+                    if (scrap == null || scrap.CurrentState == ScrapState.Consumed)
+                    {
+                        activeScraps.RemoveAt(i);
+                        continue;
+                    }
+
+                    Vector3 toCenter = (center - scrap.transform.position);
+                    float dist = toCenter.magnitude;
+                    Vector3 inwardDir = dist > 0.001f ? toCenter / dist : Vector3.forward;
+
+                    Vector3 tangent = Vector3.Cross(Vector3.up, inwardDir).normalized;
+                    Vector3 moveDir = (inwardDir * 1.6f + tangent * 0.85f).normalized;
+
+                    float speed = Mathf.Lerp(20f, 65f, progress);
+                    scrap.transform.position += moveDir * (speed * Time.deltaTime);
+                    scrap.transform.Rotate(Vector3.right, 300f * Time.deltaTime, Space.Self);
+
+                    if (dist <= horizonRadius + 1.0f)
+                    {
+                        if (_blackHole != null && scrap.GravityBody != null)
+                        {
+                            _blackHole.ConsumeObject(scrap.GravityBody);
+                        }
+                        activeScraps.RemoveAt(i);
+                    }
+                }
+
                 yield return null;
             }
 
-            // Ensure any lingering eyes are fully consumed
-            for (int i = 0; i < activeEyes.Count; i++)
+            // Ensure any lingering eyes, helper bots, and scraps are fully consumed
+            foreach (var eye in activeEyes)
             {
-                if (activeEyes[i] != null)
+                if (eye != null)
                 {
-                    var gb = activeEyes[i].GetComponent<GravityBody>();
-                    if (_blackHole != null && gb != null)
-                    {
-                        _blackHole.ConsumeObject(gb);
-                    }
-                    if (ScorePopupManager.Instance != null)
-                    {
-                        ScorePopupManager.Instance.SpawnPopup(center, 999999f, false, false);
-                    }
+                    var gb = eye.GetComponent<GravityBody>();
+                    if (_blackHole != null && gb != null) _blackHole.ConsumeObject(gb);
                 }
             }
             activeEyes.Clear();
+
+            foreach (var bot in activeBots)
+            {
+                if (bot != null)
+                {
+                    var gb = bot.GetComponent<GravityBody>();
+                    if (_blackHole != null && gb != null) _blackHole.ConsumeObject(gb);
+                }
+            }
+            activeBots.Clear();
+
+            foreach (var scrap in activeScraps)
+            {
+                if (scrap != null && scrap.GravityBody != null)
+                {
+                    if (_blackHole != null) _blackHole.ConsumeObject(scrap.GravityBody);
+                }
+            }
+            activeScraps.Clear();
 
             if (mainCam != null)
             {

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using OrbitalPanopticon.Core;
 using OrbitalPanopticon.Physics;
+using OrbitalPanopticon.Player;
 
 namespace OrbitalPanopticon.Gameplay
 {
@@ -249,6 +250,10 @@ namespace OrbitalPanopticon.Gameplay
                 containmentEyes[stageIdx].BreakContainmentLock();
                 OnContainmentLockBroken?.Invoke(stageIdx);
             }
+            if (CameraShakeController.Instance != null)
+            {
+                CameraShakeController.Instance.TriggerStageTransitionShake(1.4f, 0.35f);
+            }
         }
 
         public void BreakNextContainmentLock()
@@ -259,6 +264,10 @@ namespace OrbitalPanopticon.Gameplay
                 {
                     containmentEyes[i].BreakContainmentLock();
                     OnContainmentLockBroken?.Invoke(i);
+                    if (CameraShakeController.Instance != null)
+                    {
+                        CameraShakeController.Instance.TriggerStageTransitionShake(1.4f, 0.35f);
+                    }
                     return;
                 }
             }

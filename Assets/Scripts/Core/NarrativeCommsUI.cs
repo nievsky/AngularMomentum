@@ -158,7 +158,7 @@ namespace OrbitalPanopticon.Core
             if (boxOutline != null) boxOutline.effectColor = theme;
             if (speakerNameText != null)
             {
-                speakerNameText.text = entry.speakerName;
+                speakerNameText.text = entry.GetSpeakerName();
                 speakerNameText.color = theme;
             }
 
@@ -213,7 +213,7 @@ namespace OrbitalPanopticon.Core
             if (commsCanvasGroup != null) commsCanvasGroup.alpha = 1f;
 
             // 2. Typewriter Effect
-            string fullText = entry.dialogueTextRU;
+            string fullText = entry.GetDialogueText();
             float charDelay = Mathf.Max(0.01f, entry.typewriterCharDelay);
             int charIndex = 0;
             float soundThrottleTimer = 0f;

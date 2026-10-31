@@ -12,12 +12,14 @@ public class SceneTransitionManager : MonoBehaviour
 
     [Header("Transition Settings")]
     [SerializeField] private Material dissolveMaterial;
-    [SerializeField] private float transitionDuration = 0.8f;
+    [SerializeField] private float fadeOutDuration = 0.85f;
+    [SerializeField] private float fadeInDuration = 0.95f;
 
     private Canvas _transitionCanvas;
     private Image _dissolveImage;
     private Material _instancedMat;
     private bool _isTransitioning = false;
+    private static bool _hasPlayedBootDissolve = false;
 
     private static readonly int DissolveProgressID = Shader.PropertyToID("_DissolveProgress");
 
@@ -53,6 +55,12 @@ public class SceneTransitionManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
 
         BuildTransitionUI();
+
+        if (!_hasPlayedBootDissolve && Application.isPlaying)
+        {
+            _hasPlayedBootDissolve = true;
+            StartCoroutine(InitialDissolveInRoutine());
+        }
     }
 
     public void BuildTransitionUI()
@@ -107,7 +115,70 @@ public class SceneTransitionManager : MonoBehaviour
             _instancedMat.SetFloat(DissolveProgressID, 0f);
         }
 
-        imgGo.SetActive(false);
+        if (!_hasPlayedBootDissolve && Application.isPlaying)
+        {
+            if (_instancedMat != null)
+            {
+                _instancedMat.SetFloat(DissolveProgressID, 1.0f);
+            }
+            _dissolveImage.raycastTarget = true;
+            imgGo.SetActive(true);
+        }
+        else
+        {
+            imgGo.SetActive(false);
+        }
+    }
+
+    private IEnumerator InitialDissolveInRoutine()
+    {
+        _isTransitioning = true;
+        if (_dissolveImage != null)
+        {
+            _dissolveImage.gameObject.SetActive(true);
+            _dissolveImage.raycastTarget = true;
+        }
+
+        if (_instancedMat != null)
+        {
+            _instancedMat.SetFloat(DissolveProgressID, 1.0f);
+        }
+
+        // Wait 2 settling frames for scene camera, skybox, post-processing to initialize behind black curtain
+        yield return null;
+        yield return null;
+
+        if (OrbitalPanopticon.Core.FMODAudioManager.Instance != null)
+        {
+            OrbitalPanopticon.Core.FMODAudioManager.Instance.PlayDissolveTransition();
+        }
+
+        float elapsed = 0f;
+        float dur = Mathf.Max(0.1f, fadeInDuration);
+
+        while (elapsed < dur)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float progress = 1.0f - Mathf.Clamp01(elapsed / dur);
+            if (_instancedMat != null)
+            {
+                _instancedMat.SetFloat(DissolveProgressID, progress);
+            }
+            yield return null;
+        }
+
+        if (_instancedMat != null)
+        {
+            _instancedMat.SetFloat(DissolveProgressID, 0.0f);
+        }
+
+        if (_dissolveImage != null)
+        {
+            _dissolveImage.raycastTarget = false;
+            _dissolveImage.gameObject.SetActive(false);
+        }
+
+        _isTransitioning = false;
     }
 
     public void TransitionToScene(string sceneName)
@@ -159,8 +230,8 @@ public class SceneTransitionManager : MonoBehaviour
         }
 
         // -------------------------------------------------------------
-        // Step 1 (Dissolve IN to Black):
-        // Animate _DissolveProgress from 0.0 to 1.0 over 0.8f seconds (unscaledDeltaTime)
+        // Step 1 (Dissolve IN to Black / Fade Out Current Scene):
+        // Animate _DissolveProgress from 0.0 to 1.0 over fadeOutDuration (unscaledDeltaTime)
         // -------------------------------------------------------------
         if (OrbitalPanopticon.Core.FMODAudioManager.Instance != null)
         {
@@ -168,12 +239,12 @@ public class SceneTransitionManager : MonoBehaviour
         }
 
         float elapsed = 0f;
-        float dur = Mathf.Max(0.1f, transitionDuration);
+        float fadeOutDur = Mathf.Max(0.1f, fadeOutDuration);
 
-        while (elapsed < dur)
+        while (elapsed < fadeOutDur)
         {
             elapsed += Time.unscaledDeltaTime;
-            float progress = Mathf.Clamp01(elapsed / dur);
+            float progress = Mathf.Clamp01(elapsed / fadeOutDur);
             if (_instancedMat != null)
             {
                 _instancedMat.SetFloat(DissolveProgressID, progress);
@@ -189,6 +260,7 @@ public class SceneTransitionManager : MonoBehaviour
         // -------------------------------------------------------------
         // Step 2 (Load Scene in Background while Screen is Black):
         // AsyncOperation op = SceneManager.LoadSceneAsync(sceneName); wait until op.isDone
+        // Then wait 2 settling frames for scene camera, skybox, post-processing to initialize
         // -------------------------------------------------------------
         Time.timeScale = 1f;
 
@@ -205,12 +277,14 @@ public class SceneTransitionManager : MonoBehaviour
             Debug.LogError($"[SceneTransitionManager] Failed to start async load for scene '{sceneName}'.");
         }
 
+        // Wait 2 settling frames for scene initialization behind the black curtain
+        yield return null;
         yield return null;
         Time.timeScale = 1f;
 
         // -------------------------------------------------------------
-        // Step 3 (Dissolve OUT from Black):
-        // Animate _DissolveProgress from 1.0 back down to 0.0 over 0.8f seconds
+        // Step 3 (Dissolve OUT from Black / Fade In New Scene):
+        // Animate _DissolveProgress from 1.0 back down to 0.0 over fadeInDuration (unscaledDeltaTime)
         // -------------------------------------------------------------
         if (OrbitalPanopticon.Core.FMODAudioManager.Instance != null)
         {
@@ -218,10 +292,12 @@ public class SceneTransitionManager : MonoBehaviour
         }
 
         elapsed = 0f;
-        while (elapsed < dur)
+        float fadeInDur = Mathf.Max(0.1f, fadeInDuration);
+
+        while (elapsed < fadeInDur)
         {
             elapsed += Time.unscaledDeltaTime;
-            float progress = 1.0f - Mathf.Clamp01(elapsed / dur);
+            float progress = 1.0f - Mathf.Clamp01(elapsed / fadeInDur);
             if (_instancedMat != null)
             {
                 _instancedMat.SetFloat(DissolveProgressID, progress);

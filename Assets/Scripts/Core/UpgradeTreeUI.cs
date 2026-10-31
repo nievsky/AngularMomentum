@@ -71,6 +71,8 @@ namespace OrbitalPanopticon.Core
                 UpgradeTreeManager.Instance.OnUpgradeTreeChanged += RefreshUI;
             }
 
+            LocalizationManager.OnLanguageChanged += HandleLanguageChanged;
+
             var quotaManager = Object.FindAnyObjectByType<QuotaAndScoreManager>();
             if (quotaManager != null)
             {
@@ -85,11 +87,18 @@ namespace OrbitalPanopticon.Core
                 UpgradeTreeManager.Instance.OnUpgradeTreeChanged -= RefreshUI;
             }
 
+            LocalizationManager.OnLanguageChanged -= HandleLanguageChanged;
+
             var quotaManager = Object.FindAnyObjectByType<QuotaAndScoreManager>();
             if (quotaManager != null)
             {
                 quotaManager.OnScoreAdded -= HandleScoreAdded;
             }
+        }
+
+        private void HandleLanguageChanged(GameLanguage lang)
+        {
+            RefreshUI();
         }
 
         private void Update()
@@ -740,6 +749,16 @@ namespace OrbitalPanopticon.Core
 
         public void RefreshUI()
         {
+            if (headerText != null)
+            {
+                headerText.text = LocalizationManager.Get("TREE_Header");
+            }
+            if (resetCameraButton != null)
+            {
+                var rTxt = resetCameraButton.GetComponentInChildren<TextMeshProUGUI>();
+                if (rTxt != null) rTxt.text = LocalizationManager.Get("TREE_ResetCam");
+            }
+
             RefreshCurrencyText();
             RefreshNodeVisuals();
             RefreshLineVisuals();
@@ -751,7 +770,7 @@ namespace OrbitalPanopticon.Core
             if (currencyText == null) return;
             var quotaManager = Object.FindAnyObjectByType<QuotaAndScoreManager>();
             int coins = quotaManager != null ? quotaManager.ScrapCoins : 0;
-            currencyText.text = $"Баланс: <color=#FFE640>{coins}</color> Scrap Coins";
+            currencyText.text = LocalizationManager.Get("TREE_Balance", coins);
         }
 
         private void RefreshNodeVisuals()
@@ -759,6 +778,10 @@ namespace OrbitalPanopticon.Core
             if (UpgradeTreeManager.Instance == null) return;
             var quotaManager = Object.FindAnyObjectByType<QuotaAndScoreManager>();
             int coins = quotaManager != null ? quotaManager.ScrapCoins : 0;
+
+            string activeTag = LocalizationManager.Get("TREE_Active");
+            string maxTag = LocalizationManager.Get("TREE_MaxLevel");
+            string lockTag = LocalizationManager.Get("TREE_Locked");
 
             foreach (var kvp in _nodeUIElements)
             {
@@ -770,19 +793,21 @@ namespace OrbitalPanopticon.Core
                 bool isMax = node.IsMaxLevel;
                 bool canPurchase = prereqsMet && canAfford && !isMax;
 
+                string nodeTitle = node.GetTitle();
+
                 // Color coding
                 if (node.nodeId == "hub")
                 {
                     elem.outline.effectColor = standardOutlineColor;
                     elem.background.color = nodeBgColor;
-                    elem.label.text = $"<b>{node.titleRU}</b>\n<size=10><color=#00FF88>[АКТИВНО]</color></size>";
+                    elem.label.text = $"<b>{nodeTitle}</b>\n<size=10><color=#00FF88>{activeTag}</color></size>";
                     elem.button.interactable = false;
                 }
                 else if (isMax)
                 {
                     elem.outline.effectColor = maxedOutlineColor;
                     elem.background.color = new Color(0.05f, 0.16f, 0.08f, 0.95f);
-                    elem.label.text = $"<b>{node.titleRU}</b>\n<size=10><color=#00FF88>[МАКС. УР.]</color></size>";
+                    elem.label.text = $"<b>{nodeTitle}</b>\n<size=10><color=#00FF88>{maxTag}</color></size>";
                     elem.button.interactable = false;
                 }
                 else if (prereqsMet)
@@ -800,7 +825,7 @@ namespace OrbitalPanopticon.Core
 
                     string costColor = canAfford ? "#FFD700" : "#FF5555";
                     string levelStr = node.maxLevel > 1 ? $"Lv.{node.currentLevel}/{node.maxLevel}" : "";
-                    elem.label.text = $"<b>{node.titleRU}</b>\n<size=10><color={costColor}>{node.CurrentCost}©</color>  {levelStr}</size>";
+                    elem.label.text = $"<b>{nodeTitle}</b>\n<size=10><color={costColor}>{node.CurrentCost}©</color>  {levelStr}</size>";
                     elem.button.interactable = canPurchase;
                 }
                 else
@@ -808,7 +833,7 @@ namespace OrbitalPanopticon.Core
                     // Locked
                     elem.outline.effectColor = lockedOutlineColor;
                     elem.background.color = new Color(0.04f, 0.05f, 0.07f, 0.85f);
-                    elem.label.text = $"<color=#778899><b>{node.titleRU}</b>\n<size=10>[ЗАКРЫТО]</size></color>";
+                    elem.label.text = $"<color=#778899><b>{nodeTitle}</b>\n<size=10>{lockTag}</size></color>";
                     elem.button.interactable = false;
                 }
 
@@ -855,7 +880,7 @@ namespace OrbitalPanopticon.Core
             bool canAfford = coins >= cost;
 
             string costColor = canAfford ? "#FFD700" : "#FF5555";
-            _robotButtonElement.label.text = $"<b>Купить робота</b>\n<size=10><color={costColor}>{cost}©</color> (В строю: {robots})</size>";
+            _robotButtonElement.label.text = LocalizationManager.Get("TREE_BuyRobot", costColor, cost, robots);
             _robotButtonElement.button.interactable = canAfford;
             _robotButtonElement.animator?.RefreshBaseColors();
         }

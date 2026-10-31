@@ -226,9 +226,10 @@ namespace OrbitalPanopticon.Physics
                         continue;
                     }
 
-                    // ZONE A: Outer Calm Zone (dist3D > accretionThresholdRadius AND Floating)
+                    // ZONE A: Outer Calm Zone (dist3D > accretionThresholdRadius AND Floating, NOT locked in vortex)
                     // Scrap MUST NOT fall into the black hole on its own!
-                    bool isFloating = (scrap == null || scrap.CurrentState == ScrapState.Floating);
+                    bool isVortexLocked = scrap != null && scrap.hasEnteredVortex;
+                    bool isFloating = (scrap == null || (scrap.CurrentState == ScrapState.Floating && !isVortexLocked));
                     if (dist3D > config.accretionThresholdRadius && isFloating)
                     {
                         float homeRadius = scrap != null && scrap.HomeOrbitRadius > 0.1f ? scrap.HomeOrbitRadius : dist3D;
@@ -248,7 +249,7 @@ namespace OrbitalPanopticon.Physics
                     }
                     else
                     {
-                        // ZONE B: Inner Accretion Threshold (dist3D <= accretionThresholdRadius OR Launched)
+                        // ZONE B: Inner Accretion Threshold (dist3D <= accretionThresholdRadius OR Launched OR hasEnteredVortex)
                         // Once launched or pushed into threshold, it commits to active inward swirl
                         if (scrap != null && scrap.CurrentState == ScrapState.Floating)
                         {
@@ -287,15 +288,17 @@ namespace OrbitalPanopticon.Physics
                         float thresholdRange = Mathf.Max(0.1f, config.accretionThresholdRadius - config.eventHorizonRadius);
                         float depth01 = 1f - Mathf.Clamp01((dist3D - config.eventHorizonRadius) / thresholdRange);
 
-                        // Step 1 — Shrink the target radius continuously
+                        // Step 1 — Shrink the target radius continuously down toward event horizon
                         if (scrap != null)
                         {
-                            scrap.currentSpiralRadius -= config.spiralRadiusShrinkRate * (1f + depth01 * 1.5f) * config.globalSimulationSpeed * Time.fixedDeltaTime;
+                            float shrinkStep = config.spiralRadiusShrinkRate * (1f + depth01 * 1.5f) * config.globalSimulationSpeed * Time.fixedDeltaTime;
+                            scrap.currentSpiralRadius = Mathf.Max(config.eventHorizonRadius * 0.8f, scrap.currentSpiralRadius - shrinkStep);
                         }
 
-                        // Step 2 — Fast Exponential Clockwise Swirl
+                        // Step 2 — Fast Exponential Clockwise Swirl scaled smoothly by radius to eliminate Stage 1 slingshot fling
                         float stageGravityMult = (BlackHoleStageManager.Instance != null) ? BlackHoleStageManager.Instance.CurrentStageGravityMultiplier : ((BlackHoleMassAndEnergyManager.Instance != null) ? BlackHoleMassAndEnergyManager.Instance.CurrentStageGravityMultiplier : 1.0f);
                         float swirlSpeed = Mathf.Lerp(config.innerMinSwirlSpeed, config.innerMaxSwirlSpeed, Mathf.Pow(depth01, config.swirlExponentialPower)) * config.globalSimulationSpeed * stageGravityMult;
+                        float maxSafeTangentialSpeed = scrap != null ? Mathf.Min(swirlSpeed, scrap.currentSpiralRadius * 3.8f) : swirlSpeed;
 
                         // Step 3 — Compensate Centrifugal Drift & Pull Inward strictly along dirToCenter3D (True 3D Center Pull)
                         float targetRadius = scrap != null ? scrap.currentSpiralRadius : Mathf.Min(dist3D, config.accretionThresholdRadius);
@@ -309,17 +312,25 @@ namespace OrbitalPanopticon.Physics
                         // Keep object locked onto its tilted orbital plane passing through center (0,0,0)
                         Vector3 planeDriftCorrection = -Vector3.Project(rb.position - center, orbitAxis) * 6.0f;
 
-                        Vector3 targetVel = (tangent3D * swirlSpeed) + (dirToCenter3D * inwardSpeed) + planeDriftCorrection;
+                        Vector3 targetVel = (tangent3D * maxSafeTangentialSpeed) + (dirToCenter3D * inwardSpeed) + planeDriftCorrection;
 
-                        rb.linearVelocity = Vector3.Lerp(rb.linearVelocity, targetVel, 12f * Time.fixedDeltaTime);
+                        rb.linearVelocity = Vector3.Lerp(rb.linearVelocity, targetVel, 14f * Time.fixedDeltaTime);
 
-                        // Directly constrain the 3D distance so it cannot exceed currentSpiralRadius:
-                        // If dist3D > targetRadius, smoothly pull toward the shrinking 3D sphere around center
-                        if (dist3D > targetRadius)
+                        // Hard Spherical Clamping:
+                        // If dist3D exceeds targetRadius, clamp directly back onto the shrinking sphere and strip outward velocity
+                        if (scrap != null && scrap.hasEnteredVortex)
                         {
-                            float excess = dist3D - targetRadius;
-                            float pullStep = Mathf.Min(excess, excess * config.spiralTightnessSpring * Time.fixedDeltaTime);
-                            rb.position += dirToCenter3D * pullStep;
+                            if (dist3D > scrap.currentSpiralRadius)
+                            {
+                                rb.position = center - dirToCenter3D * scrap.currentSpiralRadius;
+                            }
+
+                            // Strip outward radial velocity so scrap can never fling or slingshot outward
+                            float radialDot = Vector3.Dot(rb.linearVelocity, dirToCenter3D);
+                            if (radialDot < 0f)
+                            {
+                                rb.linearVelocity -= dirToCenter3D * radialDot;
+                            }
                         }
                     }
                 }

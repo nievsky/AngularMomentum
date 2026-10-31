@@ -22,6 +22,7 @@ namespace OrbitalPanopticon.Core
     {
         public string nodeId;
         public string titleRU;
+        public string titleEN;
         public UpgradeBranch branch;
         public int currentLevel;
         public int maxLevel = 1;
@@ -30,9 +31,22 @@ namespace OrbitalPanopticon.Core
         public bool isWowPerk;
         public Vector2 uiPosition;
         [TextArea(1, 2)] public string descriptionRU;
+        [TextArea(1, 2)] public string descriptionEN;
 
         public bool IsUnlocked => currentLevel > 0;
         public bool IsMaxLevel => currentLevel >= maxLevel;
+
+        public string GetTitle()
+        {
+            if (LocalizationManager.IsRussian) return !string.IsNullOrEmpty(titleRU) ? titleRU : titleEN;
+            return !string.IsNullOrEmpty(titleEN) ? titleEN : titleRU;
+        }
+
+        public string GetDescription()
+        {
+            if (LocalizationManager.IsRussian) return !string.IsNullOrEmpty(descriptionRU) ? descriptionRU : descriptionEN;
+            return !string.IsNullOrEmpty(descriptionEN) ? descriptionEN : descriptionRU;
+        }
 
         public int CurrentCost
         {
@@ -335,6 +349,7 @@ namespace OrbitalPanopticon.Core
             {
                 nodeId = "hub",
                 titleRU = "Навыки",
+                titleEN = "Core Hub",
                 branch = UpgradeBranch.Hub,
                 currentLevel = 1,
                 maxLevel = 1,
@@ -342,7 +357,8 @@ namespace OrbitalPanopticon.Core
                 prerequisiteNodeIds = new string[0],
                 isWowPerk = false,
                 uiPosition = new Vector2(0f, 0f),
-                descriptionRU = "Центральный узел дерева"
+                descriptionRU = "Центральный узел дерева",
+                descriptionEN = "Central system hub"
             });
 
             // Left Branch: Player Track 1 - Speed
@@ -350,6 +366,7 @@ namespace OrbitalPanopticon.Core
             {
                 nodeId = "player_speed_1",
                 titleRU = "Скорость 1",
+                titleEN = "Speed 1",
                 branch = UpgradeBranch.Player,
                 currentLevel = 0,
                 maxLevel = 1,
@@ -357,12 +374,14 @@ namespace OrbitalPanopticon.Core
                 prerequisiteNodeIds = new string[] { "hub" },
                 isWowPerk = false,
                 uiPosition = new Vector2(-150f, 130f),
-                descriptionRU = "+22% тяга и скорость"
+                descriptionRU = "+22% тяга и скорость",
+                descriptionEN = "+22% thrust and max speed"
             });
             nodes.Add(new UpgradeNodeData
             {
                 nodeId = "player_speed_2",
                 titleRU = "Скорость 2",
+                titleEN = "Speed 2",
                 branch = UpgradeBranch.Player,
                 currentLevel = 0,
                 maxLevel = 1,
@@ -370,12 +389,14 @@ namespace OrbitalPanopticon.Core
                 prerequisiteNodeIds = new string[] { "player_speed_1" },
                 isWowPerk = false,
                 uiPosition = new Vector2(-280f, 160f),
-                descriptionRU = "+22% тяга и скорость"
+                descriptionRU = "+22% тяга и скорость",
+                descriptionEN = "+22% thrust and max speed"
             });
             nodes.Add(new UpgradeNodeData
             {
                 nodeId = "player_speed_3",
                 titleRU = "Скорость 3",
+                titleEN = "Speed 3",
                 branch = UpgradeBranch.Player,
                 currentLevel = 0,
                 maxLevel = 1,
@@ -383,7 +404,8 @@ namespace OrbitalPanopticon.Core
                 prerequisiteNodeIds = new string[] { "player_speed_2" },
                 isWowPerk = false,
                 uiPosition = new Vector2(-410f, 180f),
-                descriptionRU = "+22% тяга и скорость"
+                descriptionRU = "+22% тяга и скорость",
+                descriptionEN = "+22% thrust and max speed"
             });
 
             // Left Branch: Player Track 2 - Handling
@@ -391,6 +413,7 @@ namespace OrbitalPanopticon.Core
             {
                 nodeId = "player_handling_1",
                 titleRU = "Маневр 1",
+                titleEN = "Handling 1",
                 branch = UpgradeBranch.Player,
                 currentLevel = 0,
                 maxLevel = 1,
@@ -398,12 +421,14 @@ namespace OrbitalPanopticon.Core
                 prerequisiteNodeIds = new string[] { "hub" },
                 isWowPerk = false,
                 uiPosition = new Vector2(-160f, 25f),
-                descriptionRU = "+20% маневр, -18% откат"
+                descriptionRU = "+20% маневр, -18% откат",
+                descriptionEN = "+20% handling, -18% dash cooldown"
             });
             nodes.Add(new UpgradeNodeData
             {
                 nodeId = "player_handling_2",
                 titleRU = "Маневр 2",
+                titleEN = "Handling 2",
                 branch = UpgradeBranch.Player,
                 currentLevel = 0,
                 maxLevel = 1,
@@ -411,12 +436,14 @@ namespace OrbitalPanopticon.Core
                 prerequisiteNodeIds = new string[] { "player_handling_1" },
                 isWowPerk = false,
                 uiPosition = new Vector2(-290f, 25f),
-                descriptionRU = "+20% маневр, -18% откат"
+                descriptionRU = "+20% маневр, -18% откат",
+                descriptionEN = "+20% handling, -18% dash cooldown"
             });
             nodes.Add(new UpgradeNodeData
             {
                 nodeId = "player_handling_3",
                 titleRU = "Маневр 3",
+                titleEN = "Handling 3",
                 branch = UpgradeBranch.Player,
                 currentLevel = 0,
                 maxLevel = 1,
@@ -424,7 +451,8 @@ namespace OrbitalPanopticon.Core
                 prerequisiteNodeIds = new string[] { "player_handling_2" },
                 isWowPerk = false,
                 uiPosition = new Vector2(-420f, 25f),
-                descriptionRU = "+20% маневр, -18% откат"
+                descriptionRU = "+20% маневр, -18% откат",
+                descriptionEN = "+20% handling, -18% dash cooldown"
             });
 
             // Left Branch: Player Track 3 - Cargo
@@ -432,6 +460,7 @@ namespace OrbitalPanopticon.Core
             {
                 nodeId = "player_cargo_1",
                 titleRU = "Объем 1",
+                titleEN = "Cargo 1",
                 branch = UpgradeBranch.Player,
                 currentLevel = 0,
                 maxLevel = 1,
@@ -439,12 +468,14 @@ namespace OrbitalPanopticon.Core
                 prerequisiteNodeIds = new string[] { "hub" },
                 isWowPerk = false,
                 uiPosition = new Vector2(-150f, -80f),
-                descriptionRU = "Вместимость: 2 объекта"
+                descriptionRU = "Вместимость: 2 объекта",
+                descriptionEN = "Hold Capacity: 2 items"
             });
             nodes.Add(new UpgradeNodeData
             {
                 nodeId = "player_cargo_2",
                 titleRU = "Объем 2",
+                titleEN = "Cargo 2",
                 branch = UpgradeBranch.Player,
                 currentLevel = 0,
                 maxLevel = 1,
@@ -452,12 +483,14 @@ namespace OrbitalPanopticon.Core
                 prerequisiteNodeIds = new string[] { "player_cargo_1" },
                 isWowPerk = false,
                 uiPosition = new Vector2(-280f, -110f),
-                descriptionRU = "Вместимость: 4 объекта"
+                descriptionRU = "Вместимость: 4 объекта",
+                descriptionEN = "Hold Capacity: 4 items"
             });
             nodes.Add(new UpgradeNodeData
             {
                 nodeId = "player_cargo_3",
                 titleRU = "Объем 3",
+                titleEN = "Cargo 3",
                 branch = UpgradeBranch.Player,
                 currentLevel = 0,
                 maxLevel = 1,
@@ -465,7 +498,8 @@ namespace OrbitalPanopticon.Core
                 prerequisiteNodeIds = new string[] { "player_cargo_2" },
                 isWowPerk = false,
                 uiPosition = new Vector2(-410f, -135f),
-                descriptionRU = "Вместимость: 7 объектов"
+                descriptionRU = "Вместимость: 7 объектов",
+                descriptionEN = "Hold Capacity: 7 items"
             });
 
             // Left WOW Capstone
@@ -473,6 +507,7 @@ namespace OrbitalPanopticon.Core
             {
                 nodeId = "player_wow",
                 titleRU = "ВАУ: Игрок",
+                titleEN = "WOW: Overdrive",
                 branch = UpgradeBranch.Player,
                 currentLevel = 0,
                 maxLevel = 1,
@@ -480,7 +515,8 @@ namespace OrbitalPanopticon.Core
                 prerequisiteNodeIds = new string[] { "player_speed_3", "player_handling_3", "player_cargo_3" },
                 isWowPerk = true,
                 uiPosition = new Vector2(-545f, 25f),
-                descriptionRU = "x2 импульс удара и сверх-рывок"
+                descriptionRU = "x2 импульс удара и сверх-рывок",
+                descriptionEN = "2x punt impulse and relativistic overdrive"
             });
 
             // Top Branch: Black Hole
@@ -488,6 +524,7 @@ namespace OrbitalPanopticon.Core
             {
                 nodeId = "hole_heat_fill",
                 titleRU = "КПД воронки",
+                titleEN = "Vortex Efficiency",
                 branch = UpgradeBranch.BlackHole,
                 currentLevel = 0,
                 maxLevel = 5,
@@ -495,12 +532,14 @@ namespace OrbitalPanopticon.Core
                 prerequisiteNodeIds = new string[] { "hub" },
                 isWowPerk = false,
                 uiPosition = new Vector2(0f, 150f),
-                descriptionRU = "+15% КПД энергии, +10% макс. масса"
+                descriptionRU = "+15% КПД энергии, +10% макс. масса",
+                descriptionEN = "+15% energy rate, +10% mass threshold"
             });
             nodes.Add(new UpgradeNodeData
             {
                 nodeId = "hole_wow",
                 titleRU = "ВАУ: Дыра",
+                titleEN = "WOW: Singularity",
                 branch = UpgradeBranch.BlackHole,
                 currentLevel = 0,
                 maxLevel = 1,
@@ -508,7 +547,8 @@ namespace OrbitalPanopticon.Core
                 prerequisiteNodeIds = new string[] { "hole_heat_fill" },
                 isWowPerk = true,
                 uiPosition = new Vector2(0f, 280f),
-                descriptionRU = "x2 множитель в воронке"
+                descriptionRU = "x2 множитель в воронке",
+                descriptionEN = "2x orbital accretion bonus multiplier"
             });
 
             // Right Branch: Scrap
@@ -516,6 +556,7 @@ namespace OrbitalPanopticon.Core
             {
                 nodeId = "scrap_spawn_freq",
                 titleRU = "Частота мусора",
+                titleEN = "Debris Density",
                 branch = UpgradeBranch.Scrap,
                 currentLevel = 0,
                 maxLevel = 3,
@@ -523,12 +564,14 @@ namespace OrbitalPanopticon.Core
                 prerequisiteNodeIds = new string[] { "hub" },
                 isWowPerk = false,
                 uiPosition = new Vector2(170f, 85f),
-                descriptionRU = "-20% интервал, +15 макс. мусора"
+                descriptionRU = "-20% интервал, +15 макс. мусора",
+                descriptionEN = "-20% spawn delay, +15 max debris"
             });
             nodes.Add(new UpgradeNodeData
             {
                 nodeId = "scrap_tier_plus",
                 titleRU = "Тир мусора +1",
+                titleEN = "Debris Tier +1",
                 branch = UpgradeBranch.Scrap,
                 currentLevel = 0,
                 maxLevel = 2,
@@ -536,12 +579,14 @@ namespace OrbitalPanopticon.Core
                 prerequisiteNodeIds = new string[] { "scrap_spawn_freq" },
                 isWowPerk = false,
                 uiPosition = new Vector2(310f, 85f),
-                descriptionRU = "Разблокирует Тир 2 и Тир 3 мусор"
+                descriptionRU = "Разблокирует Тир 2 и Тир 3 мусор",
+                descriptionEN = "Unlocks Tier 2 and Tier 3 debris types"
             });
             nodes.Add(new UpgradeNodeData
             {
                 nodeId = "scrap_wow",
                 titleRU = "Аномалия Т4",
+                titleEN = "WOW: Anomaly T4",
                 branch = UpgradeBranch.Scrap,
                 currentLevel = 0,
                 maxLevel = 1,
@@ -549,7 +594,8 @@ namespace OrbitalPanopticon.Core
                 prerequisiteNodeIds = new string[] { "scrap_tier_plus" },
                 isWowPerk = true,
                 uiPosition = new Vector2(460f, 85f),
-                descriptionRU = "Космическая аномалия: ценный мусор"
+                descriptionRU = "Космическая аномалия: ценный мусор",
+                descriptionEN = "Cosmic anomaly: rare high-value debris"
             });
 
             // Bottom-Right Branch: Valuable Glowing Scrap & Matter Enrichment
@@ -557,6 +603,7 @@ namespace OrbitalPanopticon.Core
             {
                 nodeId = "valuable_scrap_chance",
                 titleRU = "Шанс ценного мусора",
+                titleEN = "Anomaly Rate",
                 branch = UpgradeBranch.Energy,
                 currentLevel = 0,
                 maxLevel = 3,
@@ -564,12 +611,14 @@ namespace OrbitalPanopticon.Core
                 prerequisiteNodeIds = new string[] { "hub" },
                 isWowPerk = false,
                 uiPosition = new Vector2(170f, -65f),
-                descriptionRU = "Шанс ценного мусора: 15% -> 25% -> 35% -> 50%"
+                descriptionRU = "Шанс ценного мусора: 15% -> 25% -> 35% -> 50%",
+                descriptionEN = "Valuable scrap chance: 15% -> 25% -> 35% -> 50%"
             });
             nodes.Add(new UpgradeNodeData
             {
                 nodeId = "valuable_scrap_mult",
                 titleRU = "Обогащение материи",
+                titleEN = "Matter Enrichment",
                 branch = UpgradeBranch.Energy,
                 currentLevel = 0,
                 maxLevel = 3,
@@ -577,12 +626,14 @@ namespace OrbitalPanopticon.Core
                 prerequisiteNodeIds = new string[] { "valuable_scrap_chance" },
                 isWowPerk = false,
                 uiPosition = new Vector2(310f, -65f),
-                descriptionRU = "Множитель ценного мусора: x3 -> x5 -> x8 -> x12"
+                descriptionRU = "Множитель ценного мусора: x3 -> x5 -> x8 -> x12",
+                descriptionEN = "Valuable scrap multiplier: 3x -> 5x -> 8x -> 12x"
             });
             nodes.Add(new UpgradeNodeData
             {
                 nodeId = "quantum_decay_wow",
                 titleRU = "ВАУ: Квантовый распад",
+                titleEN = "WOW: Quantum Decay",
                 branch = UpgradeBranch.Energy,
                 currentLevel = 0,
                 maxLevel = 1,
@@ -590,7 +641,8 @@ namespace OrbitalPanopticon.Core
                 prerequisiteNodeIds = new string[] { "valuable_scrap_mult" },
                 isWowPerk = true,
                 uiPosition = new Vector2(460f, -65f),
-                descriptionRU = "ВАУ-перк: Квантовый распад\nУдваивает массу и монеты со всего мусора"
+                descriptionRU = "ВАУ-перк: Квантовый распад\nУдваивает массу и монеты со всего мусора",
+                descriptionEN = "WOW Perk: Quantum Decay\nDoubles mass and coins from all scrap"
             });
 
             // Bottom Branch: Robots
@@ -598,6 +650,7 @@ namespace OrbitalPanopticon.Core
             {
                 nodeId = "robot_trawl",
                 titleRU = "Мощность трала",
+                titleEN = "Trawl Power",
                 branch = UpgradeBranch.Robots,
                 currentLevel = 0,
                 maxLevel = 3,
@@ -605,12 +658,14 @@ namespace OrbitalPanopticon.Core
                 prerequisiteNodeIds = new string[] { "hub" },
                 isWowPerk = false,
                 uiPosition = new Vector2(-60f, -145f),
-                descriptionRU = "+25% сила захвата магнита"
+                descriptionRU = "+25% сила захвата магнита",
+                descriptionEN = "+25% magnet tractor force"
             });
             nodes.Add(new UpgradeNodeData
             {
                 nodeId = "robot_speed",
                 titleRU = "Скорость роботов",
+                titleEN = "Bot Thrusters",
                 branch = UpgradeBranch.Robots,
                 currentLevel = 0,
                 maxLevel = 3,
@@ -618,12 +673,14 @@ namespace OrbitalPanopticon.Core
                 prerequisiteNodeIds = new string[] { "robot_trawl" },
                 isWowPerk = false,
                 uiPosition = new Vector2(-155f, -265f),
-                descriptionRU = "+30% скорость роботов за ур."
+                descriptionRU = "+30% скорость роботов за ур.",
+                descriptionEN = "+30% helper bot speed per level"
             });
             nodes.Add(new UpgradeNodeData
             {
                 nodeId = "robot_magnet_range",
                 titleRU = "Радиус захвата",
+                titleEN = "Magnet Aperture",
                 branch = UpgradeBranch.Robots,
                 currentLevel = 0,
                 maxLevel = 3,
@@ -631,12 +688,14 @@ namespace OrbitalPanopticon.Core
                 prerequisiteNodeIds = new string[] { "robot_trawl" },
                 isWowPerk = false,
                 uiPosition = new Vector2(35f, -265f),
-                descriptionRU = "Магнит захватывает дальше и шире"
+                descriptionRU = "Магнит захватывает дальше и шире",
+                descriptionEN = "Tractor beam reaches farther and wider"
             });
             nodes.Add(new UpgradeNodeData
             {
                 nodeId = "robot_wow",
                 titleRU = "Камикадзе",
+                titleEN = "WOW: Kamikaze",
                 branch = UpgradeBranch.Robots,
                 currentLevel = 0,
                 maxLevel = 1,
@@ -644,7 +703,8 @@ namespace OrbitalPanopticon.Core
                 prerequisiteNodeIds = new string[] { "robot_speed", "robot_magnet_range" },
                 isWowPerk = true,
                 uiPosition = new Vector2(-60f, -385f),
-                descriptionRU = "Протокол Камикадзе для роботов"
+                descriptionRU = "Протокол Камикадзе для роботов",
+                descriptionEN = "Kamikaze overload protocol for helper bots"
             });
 
             BuildNodeMap();

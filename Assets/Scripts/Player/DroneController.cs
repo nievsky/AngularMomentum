@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using DG.Tweening;
 using OrbitalPanopticon.Core;
 
 namespace OrbitalPanopticon.Player
@@ -33,6 +34,8 @@ namespace OrbitalPanopticon.Player
         [SerializeField] private ParticleSystem shiftDashBurstParticles;
 
         private float _baseCameraFov = 60f;
+        private float _cameraRollTilt = 0f;
+        private float _cameraPitchKick = 0f;
         private Coroutine _dashFovCoroutine;
 
         public ParticleSystem SpaceDustParticles
@@ -81,6 +84,10 @@ namespace OrbitalPanopticon.Player
         public Rigidbody Rigidbody => rb;
         public Camera MainCamera => mainCamera;
 
+        [Header("Containment Beam Hazard State")]
+        public int CurrentBeamHits { get; set; } = 0;
+        public float BeamHitCooldownTimer { get; set; } = 0f;
+
         public void SetControlEnabled(bool enabled)
         {
             isControlEnabled = enabled;
@@ -111,6 +118,14 @@ namespace OrbitalPanopticon.Player
             currentYaw = rotation.eulerAngles.y;
             currentPitch = 0f;
             transform.rotation = Quaternion.Euler(0f, currentYaw, 0f);
+
+            CurrentBeamHits = 0;
+            BeamHitCooldownTimer = 0f;
+
+            if (CameraShakeController.Instance != null)
+            {
+                CameraShakeController.Instance.ResetShake();
+            }
 
             if (mainCamera != null)
             {
@@ -153,6 +168,10 @@ namespace OrbitalPanopticon.Player
             if (mainCamera != null)
             {
                 _baseCameraFov = mainCamera.fieldOfView;
+                if (mainCamera.GetComponent<CameraShakeController>() == null)
+                {
+                    mainCamera.gameObject.AddComponent<CameraShakeController>();
+                }
             }
 
             SetupDashTrail();
@@ -291,6 +310,11 @@ namespace OrbitalPanopticon.Player
                 }
             }
 
+            if (BeamHitCooldownTimer > 0f)
+            {
+                BeamHitCooldownTimer -= Time.deltaTime;
+            }
+
             // Update Space Dust streaming lines opposite to velocity
             if (spaceDustParticles != null && rb != null)
             {
@@ -344,11 +368,11 @@ namespace OrbitalPanopticon.Player
             currentYaw += mouseX;
             transform.rotation = Quaternion.Euler(0f, currentYaw, 0f);
 
-            // Pitch: Vertical look clamped [-80, +80], Roll strictly zero
+            // Pitch: Vertical look clamped [-80, +80], Roll strictly zero with dynamic dash weight tilt
             currentPitch = Mathf.Clamp(currentPitch - mouseY, -80f, 80f);
             if (mainCamera != null)
             {
-                mainCamera.transform.localRotation = Quaternion.Euler(currentPitch, 0f, 0f);
+                mainCamera.transform.localRotation = Quaternion.Euler(currentPitch + _cameraPitchKick, 0f, _cameraRollTilt);
             }
         }
 
@@ -418,9 +442,38 @@ namespace OrbitalPanopticon.Player
                     _dashFovCoroutine = StartCoroutine(DashFovKickRoutine(8f, 0.25f));
                 }
 
+                // Camera & Weapon Physical Weight Feedback
+                float targetRoll = 0f;
+                if (_moveInput.x > 0.1f) targetRoll = -5.5f;
+                else if (_moveInput.x < -0.1f) targetRoll = 5.5f;
+
+                float targetPitch = -4.0f;
+
+                _cameraRollTilt = targetRoll;
+                _cameraPitchKick = targetPitch;
+
+                DOTween.Kill("DroneDashRollTilt");
+                DOTween.Kill("DroneDashPitchKick");
+
+                DOTween.To(() => _cameraRollTilt, x => _cameraRollTilt = x, 0f, 0.3f)
+                    .SetEase(Ease.OutBack)
+                    .SetId("DroneDashRollTilt");
+
+                DOTween.To(() => _cameraPitchKick, x => _cameraPitchKick = x, 0f, 0.3f)
+                    .SetEase(Ease.OutBack)
+                    .SetId("DroneDashPitchKick");
+
+                // Dip RoboArmVisual slightly backward and downward with spring recovery
+                Transform arm = mainCamera != null ? mainCamera.transform.Find("RoboArmVisual") : null;
+                if (arm != null)
+                {
+                    arm.DOKill();
+                    arm.DOPunchPosition(new Vector3(0f, -0.06f, -0.08f), 0.32f, 7, 0.6f);
+                }
+
                 if (PostProcessingToolkitController.Instance != null)
                 {
-                    PostProcessingToolkitController.Instance.TriggerImpactPulse(0.6f, 0.2f, 0.25f);
+                    PostProcessingToolkitController.Instance.TriggerImpactPulse(bloomBoost: 1.8f, chromaticBoost: 0.45f, lensDistortionBoost: -0.14f, duration: 0.25f, motionBlurBoost: 0.65f);
                 }
 
                 if (FMODAudioManager.Instance != null)

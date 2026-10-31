@@ -21,7 +21,9 @@
 The player assumes the role of indentured salvage drone **Operator #042** contracted by an ominous corporate entity. Patrolling the outer boundary are **4 Identical Corporate Overseer Eyes** projecting continuous **Containment Beams** straight into the central Black Hole.
 
 > [!IMPORTANT]
-> **Containment Beams are 100% Visual Only**: They have NO colliders, NO physics triggers, and grant NO gameplay multipliers. They serve strictly as a dramatic visual progress indicator showing how many containment locks remain active (`4 -> 3 -> 2 -> 1 -> 0`).
+> **Containment Beams Interaction**:
+> - **For Scrap**: Beams remain 100% visual only (no colliders, no scrap physics triggers, and no scrap multipliers).
+> - **For Player Drone**: Active beams act as a physical hazard! Proximity check detects if the drone is within `2.2m` of the 3D line segment between an Eye and the Singularity. 3 hits destroy the drone (signal loss & wreckage spawned into the black hole, no HP bar).
 > There is **NO energy battery, NO siphoning from the Black Hole, NO shooting lasers at bosses, and NO boss HP bars**. The game is focused on pure incremental trash collection, exponential mass growth, and narrative radio transmissions.
 
 ### 1.2 Core Gameplay Loop
@@ -112,12 +114,15 @@ The game is structured into a clean 3-scene flow configured in `EditorBuildSetti
 * **Global Singleton**: Instantiated via `[RuntimeInitializeOnLoadMethod(BeforeSceneLoad)]`, marked with `DontDestroyOnLoad`.
 * **Top-Sorting Overlay**: Dedicated `Transition_Canvas` with `sortingOrder = 9999` and full-screen `BlackDissolveOverlay` Image.
 * **Procedural Black Screen Dissolve Shader (`S_ScreenDissolve.shader`)**:
-  * Renders a solid `#000000` screen masked by procedural multi-frequency noise.
+  * Renders a solid `#000000` screen masked by procedural multi-frequency noise with glowing edge highlights.
   * Driven by `_DissolveProgress` (`0.0` = completely clear/invisible, `1.0` = completely solid black).
-* **Three-Step Async Transition Coroutine**:
-  1. **Dissolve IN to Black (0.8s)**: Animates `_DissolveProgress` `0.0 -> 1.0` (using `Time.unscaledDeltaTime`) while playing `dissolveTransitionOneShot`.
-  2. **Async Scene Load in Background**: Screen is pitch black; starts `SceneManager.LoadSceneAsync(sceneName)` and waits until `op.isDone` is true (`Time.timeScale = 1f`).
-  3. **Dissolve OUT from Black (0.8s)**: Once the new scene is loaded behind the black veil, animates `_DissolveProgress` `1.0 -> 0.0`, playing `dissolveTransitionOneShot` and revealing the active scene.
+* **Game Launch Boot Dissolve-In**:
+  * On initial boot, starts at `_DissolveProgress = 1.0f` (solid black overlay) and waits **2 settling frames** behind the curtain for cameras, skybox, and post-processing to initialize.
+  * Then runs `InitialDissolveInRoutine()` animating `_DissolveProgress` `1.0 -> 0.0` over `0.85s` (`Time.unscaledDeltaTime`) with audio cue, seamlessly revealing `MainMenuScene`.
+* **Three-Step Async Scene Transition (`TransitionRoutine`)**:
+  1. **Step 1 (Fade In Black Screen / Dissolve Out Current Scene)**: Animates `_DissolveProgress` `0.0 -> 1.0` over `0.85s` (using `Time.unscaledDeltaTime`) while playing `dissolveTransitionOneShot`.
+  2. **Step 2 (Background Async Load & Frame Settle)**: Screen is pitch black; loads scene via `SceneManager.LoadSceneAsync(sceneName)` until `op.isDone`, then waits **2 extra frames** (`yield return null; yield return null;`) behind the curtain so the new scene's camera, skybox, and post-processing initialize without frame drops or visual glitches (`Time.timeScale = 1f`).
+  3. **Step 3 (Fade Out Black Screen / Dissolve In New Scene)**: Animates `_DissolveProgress` `1.0 -> 0.0` over `0.95s` (using `Time.unscaledDeltaTime`) while playing `dissolveTransitionOneShot` and smoothly revealing the active scene.
 
 ### 3.2 Main Menu Scene (`MainMenuScene.unity`)
 * **Live 3D Simulation Background**: Space skybox, `BlackHoleSystem` at `(0,0,0)`, and pre-warmed `ScrapSpawner` (40 debris items orbiting and spiraling inward).
@@ -152,7 +157,7 @@ Assets/
 │   ├── Prefabs/                           <-- VFX_ValuableLavaEmbers.prefab, VFX_GravityPullStream.prefab, VFX_GravityPuntBlast.prefab, VFX_SpaceFlightDust.prefab, VFX_ShiftDashBurst.prefab, VFX_AccretionSparks.prefab, VFX_SingularityImplosion.prefab, HelperDroneBot.prefab
 │   ├── Scenes/                            <-- MainMenuScene.unity, GameplayScene.unity, CreditsScene.unity
 │   ├── Settings/                          <-- MainPostProcessProfile.asset
-│   └── ScriptableObjects/                 <-- GameBalanceConfig.asset, FMODAudioConfig.asset, NarrativeDialogueConfig.asset, GlobalFontConfig.asset
+│   └── ScriptableObjects/                 <-- GameBalanceConfig.asset, FMODAudioConfig.asset, NarrativeDialogueConfig.asset, GlobalFontConfig.asset, VisualEnvironmentConfig.asset
 ├── Scripts/
 │   ├── Core/                              <-- Game management, balance, audio, UI, comms
 │   ├── Player/                            <-- FPV 6DoF flight and gravity manipulator
@@ -175,9 +180,10 @@ Assets/
 | [`SkillTreeViewportController.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/SkillTreeViewportController.cs) | Fullscreen viewport pan and scroll-wheel zoom controller (`0.45x` to `2.2x`) zooming toward cursor position, drag panning, and Space / `[СБРОСИТЬ КАМЕРУ]` recentering. | `CurrentZoom`, `MapContainer`, `HandleZoom()`, `ResetView()` |
 | [`UIButtonTweenAnimator.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/UIButtonTweenAnimator.cs) | Reusable juicy procedural button animator (`IPointerEnterHandler`, `IPointerDownHandler`, etc.). Hover scale (`1.08x`), exit scale (`1.0x`), punch click, purchase success green flash, and failure horizontal shake. | `PlayPurchaseSuccessAnimation()`, `PlayInsufficientCoinsAnimation()`, `SetOriginalScale()`, `RefreshBaseColors()` |
 | [`MusicPlaylistManager.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/MusicPlaylistManager.cs) | Manages multi-track sequential music playlists across scenes (MainMenu, Gameplay, Credits) with smooth unscaled-time crossfades, FMOD EventReferences & Unity AudioClip fallbacks, and track completion monitoring. | `Instance`, `PlayPlaylist()`, `CrossfadeToTrack()`, `PlayNextTrack()`, `PlayPreviousTrack()`, `CurrentPlaylistType`, `CurrentTrackIndex` |
-| [`PostProcessingToolkitController.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/PostProcessingToolkitController.cs) | Master Post-Processing Volume controller exposing live Inspector sliders for ACES Tonemapping, Bloom, Vignette, Chromatic Aberration, Lens Distortion, Color Adjustments, Film Grain, and Motion Blur. Coordinates gameplay impact pulses. | `Instance`, `TriggerImpactPulse()`, `ApplySettingsToVolume()`, `SetBloomIntensity()`, `SetChromaticAberration()` |
-| [`VHSCameraController.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/VHSCameraController.cs) | Live CCTV/VHS surveillance monitor controller (`[ExecuteAlways]`) driving `S_VHSMonitorEffect.shader` properties (scanlines, tracking glitch, RGB shift, tape noise, CRT curvature, vertical jitter). | `Instance`, `TriggerGlitchBurst()`, `SetMasterBlend()`, `SetVHSEnabled()`, `UpdateMaterialProperties()` |
-| [`SpaceSkyboxController.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/SpaceSkyboxController.cs) | Live procedural skybox controller (`[ExecuteAlways]`) driving `S_ProceduralSpaceSkybox.shader` and `RenderSettings.skybox`. Exposes full Inspector controls for gradient colors, multi-tier starfields, 3D rotatable Milky Way band with dust lanes, and domain-warped nebulae. | `Instance`, `SkyboxMaterial`, `SetMilkyWayRotation()`, `SetStarDensity()`, `UpdateMaterialProperties()` |
+| [`VisualEnvironmentConfigSO.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/VisualEnvironmentConfigSO.cs) | Persistent visual environment configuration ScriptableObject holding all persistent settings for Skybox, VHS monitor effect, and URP Post-Processing toolkit. Prevents settings reset across scenes. | [`VisualEnvironmentConfig.asset`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/ScriptableObjects/VisualEnvironmentConfig.asset), `MarkDirty()` |
+| [`SpaceSkyboxController.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/SpaceSkyboxController.cs) | Live procedural skybox controller (`[ExecuteAlways]`) driving `S_ProceduralSpaceSkybox.shader` and `RenderSettings.skybox`. Exposes full Inspector controls for gradient colors, multi-tier starfields, 3D rotatable Milky Way band with dust lanes, and domain-warped nebulae. Reads/writes directly to `VisualEnvironmentConfig.asset`. | `Instance`, `visualConfig`, `SkyboxMaterial`, `SetMilkyWayRotation()`, `SetStarDensity()`, `UpdateMaterialProperties()`, `LoadFromConfig()`, `SaveToConfig()` |
+| [`VHSCameraController.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/VHSCameraController.cs) | Live CCTV/VHS surveillance monitor controller (`[ExecuteAlways]`) driving `S_VHSMonitorEffect.shader` properties (scanlines, tracking glitch, RGB shift, tape noise, CRT curvature, vertical jitter, overscan scale). Reads/writes directly to `VisualEnvironmentConfig.asset`. | `Instance`, `visualConfig`, `TriggerGlitchBurst()`, `SetMasterBlend()`, `SetVHSEnabled()`, `UpdateMaterialProperties()`, `LoadFromConfig()`, `SaveToConfig()` |
+| [`PostProcessingToolkitController.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/PostProcessingToolkitController.cs) | Master Post-Processing Volume controller exposing live Inspector sliders for ACES Tonemapping, Bloom, Vignette, Chromatic Aberration, Lens Distortion (with auto-compensated scale 1.15 to eliminate empty borders), Color Adjustments, Film Grain, and Motion Blur. Coordinates gameplay impact pulses and reads/writes to `VisualEnvironmentConfig.asset`. | `Instance`, `visualConfig`, `TriggerImpactPulse()`, `ApplySettingsToVolume()`, `SetBloomIntensity()`, `SetChromaticAberration()`, `LoadFromConfig()`, `SaveToConfig()` |
 | [`GlobalFontConfigSO.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/GlobalFontConfigSO.cs) | Centralized typography ScriptableObject defining master TextMeshPro font asset, master legacy UI font, global scale multiplier, and character spacing. Auto-triggers live scene updates on Inspector modification. | `masterTMPFont`, `masterLegacyFont`, `globalFontScaleMultiplier`, `globalCharacterSpacing` |
 | [`GlobalFontApplier.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/GlobalFontApplier.cs) | Project-wide typography singleton and runtime applier (`[ExecuteAlways]`). Traverses active scenes and instantiated UI to apply master fonts and spacing with `GlobalFontTracker` base size protection. | `Instance`, `FontConfig`, `ApplyGlobalFontToEverything()`, `ApplyToHierarchy()`, `GlobalFontApplier.ApplyTo()` |
 | [`FMODAudioConfigSO.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/FMODAudioConfigSO.cs) | Centralized configuration for FMOD Studio 2.03.08 exposing background music playlists, 18 sound designer event references, fallback clips, and global automation parameters. | [`FMODAudioConfig.asset`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/ScriptableObjects/FMODAudioConfig.asset) |
@@ -187,14 +193,15 @@ Assets/
 ### 4.2 `Player/`
 | Script | Key Responsibilities | Key Public API |
 | :--- | :--- | :--- |
-| [`DroneController.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Player/DroneController.cs) | First-Person 6DoF cockpit flight controller (New Input System). Mouse look (clamped pitch, locked roll), look-directed thrusters (`W`/`S`), strafing (`A`/`D`), vertical lift (`Space`/`LeftCtrl`/`C`), retro-braking (`X`), and instant Directional Dash (`Left Shift`). | `Teleport()`, `SetControlEnabled()`, `SetMovementLocked()`, `IsDashing`, `CurrentCargoMass`, `MainCamera` |
+| [`DroneController.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Player/DroneController.cs) | First-Person 6DoF cockpit flight controller (New Input System). Mouse look (clamped pitch, locked roll), look-directed thrusters (`W`/`S`), strafing (`A`/`D`), vertical lift (`Space`/`LeftCtrl`/`C`), retro-braking (`X`), Directional Dash (`Left Shift`), and containment beam hit state tracking. | `Teleport()`, `SetControlEnabled()`, `SetMovementLocked()`, `CurrentBeamHits`, `BeamHitCooldownTimer`, `IsDashing`, `CurrentCargoMass`, `MainCamera` |
+| [`CameraShakeController.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Player/CameraShakeController.cs) | Trauma-based camera shake and psychological ambient tremor system. Operates strictly in `LateUpdate` applying non-destructive positional and rotational offsets on top of mouse look. | `Instance`, `TriggerShake()`, `TriggerStageTransitionShake()`, `ResetShake()`, `CurrentTrauma` |
 | [`GravityManipulatorController.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Player/GravityManipulatorController.cs) | Authentic Half-Life 2 Gravity Gun. Strict RMB pull/hold, LMB punt launch and dry punt shockwave cast. Cluster holding (up to 3 items) with semi-transparency. | `HeldItems`, `HeldCount`, `IsHolding`, `HoldPoint`, `ReleaseAllHeld()`, `PlayPuntAnimation()` |
 
 ### 4.3 `Gameplay/`
 | Script | Key Responsibilities | Key Public API |
 | :--- | :--- | :--- |
-| [`BlackHoleStageManager.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Gameplay/BlackHoleStageManager.cs) | Pure mass progression manager. Interpolates Black Hole visual scale (`6m -> 22m`), event horizon, and accretion vortex across Stages 1–4. Coordinates containment lock shattering and triggers narrative transmissions. | `Instance`, `CurrentMass`, `CurrentStage`, `ActiveContainmentLocksCount`, `AddMass()` |
-| [`OverseerContainmentEye.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Gameplay/OverseerContainmentEye.cs) | Four identical Overseer Eyes (live-tunable scale 14m, orbit radius 78m, angular speed 8 deg/s, tilted normal axes) with 100% visual containment beams (`LineRenderer`). Executes `BreakContainmentLock()` overload shutdown. | `IsActiveLock`, `BreakContainmentLock()`, `PupilPosition` |
+| [`BlackHoleStageManager.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Gameplay/BlackHoleStageManager.cs) | Pure mass progression manager. Interpolates Black Hole visual scale (`6m -> 22m`), event horizon, and accretion vortex across Stages 1–4. Coordinates containment lock shattering, stage transition shockwaves, and narrative transmissions. | `Instance`, `CurrentMass`, `CurrentStage`, `ActiveContainmentLocksCount`, `AddMass()` |
+| [`OverseerContainmentEye.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Gameplay/OverseerContainmentEye.cs) | Four identical Overseer Eyes (live-tunable scale 14m, orbit radius 78m, angular speed 8 deg/s, tilted normal axes) with containment beams (`LineRenderer`). Executes 3D line segment player hazard collision (3 hits = drone destroyed) and `BreakContainmentLock()` overload shutdown. | `IsActiveLock`, `BreakContainmentLock()`, `PupilPosition` |
 | [`EndgameFinaleController.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Gameplay/EndgameFinaleController.cs) | Orchestrates the suspense finale sequence when the 4th containment lock shatters: red alert sirens -> 4-Eye inward death spiral -> relativistic player horizon pull (`FOV 60 -> 115`) -> transition to `CreditsScene`. | `TriggerEndgameFinale()`, `IsFinaleTriggered` |
 | [`ScrapSimulationManager.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Gameplay/ScrapSimulationManager.cs) | Data-oriented pool (100 items) and batched simulation manager for debris orbiting in the arena. | `Instance`, `ActiveScrap`, `SpawnScrap()`, `ReturnToPool()` |
 
@@ -470,6 +477,143 @@ Orbital Panopticon features an overhauled AAA-indie VFX pipeline combining Visua
   - Instantiated at the singularity center `(0,0,0)` whenever an object crosses the event horizon and completes spaghettification.
   - 45 stretched billboard particles (`lengthScale = 2.8`) with HDR White-Gold gradient (`Color(4.5, 3.8, 1.8)`), particle trails, and negative radial velocity (`-8.0 m/s`) sucked inward into the singularity.
   - Accompanied by a dramatic Post-Processing bloom flash via `TriggerImpactPulse(1.8f, 0.25f, 0.25f)`.
+
+### 5.11 Persistent Visual Config Asset, Fullscreen Lens Overscan & Two-Way Dissolve Transition
+
+#### 1. Persistent Visual Environment Config Asset ([`VisualEnvironmentConfigSO.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/VisualEnvironmentConfigSO.cs))
+- **Single Source of Truth**: Persistent ScriptableObject asset [`VisualEnvironmentConfig.asset`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/ScriptableObjects/VisualEnvironmentConfig.asset) storing unified parameters across:
+  - **Skybox**: `spaceZenithColor`, `spaceHorizonColor`, `spaceNadirColor`, `starDensity` (`110`), `starSize` (`0.016`), `starBrightness` (`2.2`), `starTwinkleSpeed`, `milkyWayRotationAngles` (`(32, 45, 18)`), `milkyWayWidth` (`0.32`), `nebulaIntensity` (`0.95`), and nebula colors.
+  - **VHS Camera Effect**: `masterBlend` (`0.65`), `overscanScale` (`0.90`), `scanlineIntensity` (`0.28`), `trackingBarIntensity` (`0.45`), `rgbShiftAmount` (`0.0035`), `tapeNoiseIntensity` (`0.14`), `screenCurvature` (`0.12`), `verticalJitter` (`0.0018`), and CRT screen tint.
+  - **Post-Processing Volume**: `tonemappingMode` (`ACES`), `bloomIntensity` (`1.6`), `bloomThreshold` (`0.85`), `vignetteIntensity` (`0.28`), `chromaticAberrationIntensity` (`0.22`), `lensDistortionIntensity` (`-0.32`), `lensDistortionScale` (`1.15`), `autoCompensateDistortionScale` (`true`), `filmGrainIntensity` (`0.18`), and `motionBlurIntensity` (`0.25`).
+- **Zero Accidental Cloning**: Never instantiated with `Instantiate()`. Tweaks in the Inspector during Edit Mode or Play Mode synchronize bidirectionally and mark the asset dirty via `EditorUtility.SetDirty(config)`.
+- **Linked Across All Scenes**: `SpaceSkyboxController`, `VHSCameraController`, and `PostProcessingToolkitController` across `MainMenuScene`, `GameplayScene`, and `CreditsScene` link directly to this asset in `OnEnable()` and `Start()`.
+
+#### 2. Fullscreen Lens Overscan & Elimination of Gray Borders
+- **VHS CRT Curvature Border Fix ([`S_VHSMonitorEffect.shader`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/Materials/S_VHSMonitorEffect.shader))**:
+  - Removed old hard cutoff logic `if (isOutside) vhsColor = float3(0.015, 0.015, 0.015);` that generated ugly gray/black border lines around curved screen edges.
+  - Added `_OverscanScale` (default `0.90f`): Zooms input UV inward around `(0.5, 0.5)` before CRT curvature distortion (`(uv - 0.5) * _OverscanScale + 0.5`), clamped to `[0.001, 0.999]`. This fills the entire viewport edge-to-edge with rendered space graphics while maintaining authentic CRT tube curvature.
+- **URP Lens Distortion Scale Compensation ([`PostProcessingToolkitController.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/PostProcessingToolkitController.cs))**:
+  - Sets `lensDistortionIntensity = -0.32f` for strong cockpit fisheye curvature.
+  - When `autoCompensateDistortionScale = true`, computes `LensDistortion.scale = 1.0f + Mathf.Abs(intensity) * 0.45f` (e.g. `1.15f`), scaling the camera frame outward so barrel-distorted corners never reveal black or empty screen margins.
+
+#### 3. Two-Way Procedural Dissolve Transition ([`SceneTransitionManager.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/UI/Legacy/SceneTransitionManager.cs))
+- **Boot Dissolve-In**:
+  - On game launch, the fullscreen overlay starts at `_DissolveProgress = 1.0f` (solid black) and waits **2 settling frames** behind the curtain for cameras, skybox, and shaders to compile and initialize.
+  - Smoothly animates `_DissolveProgress` from `1.0` down to `0.0` over `0.85s` (`Time.unscaledDeltaTime`) with audio cue, presenting a polished entry into `MainMenuScene`.
+- **Two-Way Scene Transitions**:
+  - **Step 1 (Fade Out Current Scene to Black)**: Animates `_DissolveProgress` `0.0 -> 1.0` over `0.85s` (`Time.unscaledDeltaTime`) with FMOD audio cue.
+  - **Step 2 (Async Scene Load & 2-Frame Settle)**: Loads scene asynchronously via `SceneManager.LoadSceneAsync(sceneName)`; once complete, waits **2 extra settling frames** (`yield return null; yield return null;`) behind the curtain so the incoming scene's lighting, skybox, and post-processing initialize before the veil lifts.
+  - **Step 3 (Fade In New Scene from Black)**: Smoothly animates `_DissolveProgress` `1.0 -> 0.0` over `0.95s` (`Time.unscaledDeltaTime`) with FMOD audio cue.
+
+### 5.12 Physics & VFX Enhancements: Stage 1 Vortex Clamping, Vacuum Muzzle Nozzle, Heavy Dash & Total Finale Consumption
+
+#### 1. Stage 1 Black Hole Slingshot Elimination & Hard Spherical Clamping ([`BlackHoleGravity.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Physics/BlackHoleGravity.cs))
+- **Permanent Vortex Lock**: Once a `ScrapItem` enters the accretion zone (`item.hasEnteredVortex == true`), it is permanently locked into Zone B physics (unless grabbed by the player's tractor beam). It can never transition back to `Floating` or trigger boundary escape in `ScrapSimulationManager`.
+- **Radius-Proportional Swirl Speed**:
+  `float maxSafeTangentialSpeed = Mathf.Min(swirlSpeed, scrap.currentSpiralRadius * 3.8f);`
+  Prevents discrete `FixedUpdate` time-step overshoot and eliminates centrifugal slingshot flinging on Stage 1.
+- **Hard Spherical Clamping & Outward Velocity Stripping**:
+  - `scrap.currentSpiralRadius` shrinks steadily toward `eventHorizonRadius * 0.8f`.
+  - If `dist3D > scrap.currentSpiralRadius`, position is clamped directly onto the shrinking sphere:
+    `rb.position = center - dirToCenter3D * scrap.currentSpiralRadius;`
+  - Any outward radial velocity is stripped:
+    `if (Vector3.Dot(rb.linearVelocity, dirToCenter3D) < 0f) rb.linearVelocity -= dirToCenter3D * radialDot;`
+  - 100% of thrown scrap reliably spirals inward and gets consumed on Stage 1.
+
+#### 2. Vacuum Nozzle Pull VFX & Muzzle Swirl Ring ([`GravityManipulatorController.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Player/GravityManipulatorController.cs))
+- **`MuzzleNozzlePoint` Anchor**: Located at the exact front tip of `RoboArmVisual` in front of the camera (`(0, 0.05, 0.78)`).
+- **Vacuum Pull Stream Overhaul (`VFX_GravityPullStream`)**:
+  - `Simulation Space = Local` parented to `MuzzleNozzlePoint`.
+  - Spawns in front at `z = 2.8m` (`HoldPoint`) with linear Z velocity `-10.0 m/s`, inward radial velocity `-4.5 m/s`, and orbital Z velocity `6.0 rad/s`.
+  - Timed with `startLifetime = 0.28s` and tapering size so **100% of particles converge to radius 0 and terminate directly inside `MuzzleNozzlePoint` (`z = 0`)** without ever flying behind the camera.
+- **Spinning Vortex Intake Ring (`VFX_VacuumNozzleSwirl`)**:
+  - Emits tightly at `z = 0`, rotating at `720°/s` with HDR cyan/violet glow at the weapon nozzle orifice while RMB is held.
+- **Continuous Suction Filaments**:
+  - Helical dual-stream lines originate at `MuzzleNozzlePoint.position` and stretch directly to `_heldItems[0]` or the pull target, maintaining visual suction feedback while holding scrap.
+
+#### 3. Heavy Physical Shift Dash Feedback ([`DroneController.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Player/DroneController.cs) & [`PostProcessingToolkitController.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/PostProcessingToolkitController.cs))
+- **Camera Weight & Tilts**:
+  - Dashing right: DOTween roll tilt `-5.5°` on Z returning over `0.3s` via `Ease.OutBack`.
+  - Dashing left: DOTween roll tilt `+5.5°` on Z returning over `0.3s` via `Ease.OutBack`.
+  - Forward/Back dash: `-4°` pitch kick with spring recovery.
+- **Weapon Physical Inertia**:
+  - Dips `RoboArmVisual` backward and downward (`DOPunchPosition(new Vector3(0, -0.06f, -0.08f), 0.32f, 7, 0.6f)`) simulating heavy mechanical suspension.
+- **Visual Impact Pulse**:
+  - Calls `PostProcessingToolkitController.Instance.TriggerImpactPulse(bloomBoost: 1.8f, chromaticBoost: 0.45f, lensDistortionBoost: -0.14f, duration: 0.25f, motionBlurBoost: 0.65f)`.
+
+#### 4. Total Scene Consumption in Finale ([`EndgameFinaleController.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Gameplay/EndgameFinaleController.cs))
+- When the 4th Containment Lock breaks:
+  - Disables AI steering on **ALL active `HelperDroneBot` instances**, attaches kinematic `GravityBody`, and spirals them rapidly into the Black Hole with spaghettification and score popups (`+50,000`).
+  - Converts **ALL active `ScrapItem` instances** into kinematic vortex spiral, spaghettifying and consuming all debris.
+  - Sucks in and destroys all 4 `OverseerContainmentEye` bosses with massive rumbles and `+999,999` score popups.
+  - Leaves the sector completely cleared of entities before initiating the final relativistic player horizon pull.
+
+### 5.13 Lethal Containment Beams & Dynamic Camera Shake Pipeline (Issues #4 & #3)
+
+#### 1. Lethal Containment Beams for Player Drone ([`OverseerContainmentEye.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Gameplay/OverseerContainmentEye.cs) & [`DroneController.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Player/DroneController.cs))
+- **Strict Separation of Entity Interaction**:
+  - **Scrap**: Beams remain 100% visual with zero colliders, triggers, or scoring multipliers.
+  - **Player Drone**: Active beams (`!isLockBroken && !isConsumedOrCollapsing`) project an impassable energy hazard.
+- **3D Line Segment Proximity Hazard Check**:
+  - Every frame, each active Eye calculates the shortest 3D distance from `PlayerDrone.transform.position` to the line segment between `PupilPosition` and `BlackHoleCenter (0,0,0)`:
+    $$\vec{AB} = B - A, \quad t = \text{clamp01}\left(\frac{(\vec{P} - A) \cdot \vec{AB}}{|\vec{AB}|^2}\right), \quad \text{closestPoint} = A + t \cdot \vec{AB}$$
+  - Hazard threshold radius: `2.2m`.
+- **Hit Feedback & Knockback**:
+  - When `dist < 2.2f` and `drone.BeamHitCooldownTimer <= 0f`:
+    - Increments `drone.CurrentBeamHits++` and applies a `1.1s` cooldown timer (preventing multi-hit clipping during a single pass).
+    - Applies a strong knockback away from the beam: `rb.AddForce(awayFromBeamDir * 18f, ForceMode.VelocityChange)`.
+    - Triggers full sensory shock:
+      - `PostProcessingToolkitController.Instance.TriggerImpactPulse(2.2f, 0.65f, -0.18f, 0.35f, 0.7f)`
+      - `VHSCameraController.Instance.TriggerGlitchBurst(0.85f, 0.35f)`
+      - `CameraShakeController.Instance.TriggerShake(0.45f, 0.28f)`
+      - Audio shock one-shot via `FMODAudioManager.Instance.PlayContainmentLockBreak(closestPoint)`.
+- **Strict 3-Hit System (No Player HP Bar)**:
+  - **Hits 1 and 2**: Displays a center screen warning alert via [`UIManager.ShowCenterWarningAlert`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/UIManager.cs) (`"ВНИМАНИЕ: ПОВРЕЖДЕНИЕ ОТ ЛУЧА СДЕРЖИВАНИЯ! [1/3]"` / `"[2/3]"`).
+  - **Hit 3**: Calls [`ArenaBoundaryManager.Instance.TriggerSignalLoss("КРИТИЧЕСКАЯ ПЕРЕГРУЗКА ЛУЧОМ — ДРОН УНИЧТОЖЕН", true)`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Gameplay/ArenaBoundaryManager.cs), destroying the drone, spawning physical wreckage into the Black Hole, resetting `CurrentBeamHits = 0`, and respawning the drone at a safe distance after `1.2s`.
+
+#### 2. Trauma-Based Camera Shake & Stage 4 Ambient Tremor ([`CameraShakeController.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Player/CameraShakeController.cs))
+- **Architecture**:
+  - Dedicated controller attached to `Main Camera` running strictly in `LateUpdate`.
+  - Appends positional (`maxPositionShake = 0.45m`) and rotational (`maxRotationShake = 5.0°`) offsets on top of mouse look, completely eliminating transform snapping, mouse jitter, or aiming conflicts.
+- **Stage Transition Shockwave**:
+  - Whenever a Stage completes and a Containment Lock shatters in [`BlackHoleStageManager.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Gameplay/BlackHoleStageManager.cs), calls `CameraShakeController.Instance.TriggerStageTransitionShake(duration: 1.4f, magnitude: 0.35f)` with decaying quadratic trauma (`trauma * trauma`).
+- **Stage 4 Continuous Psychological Ambient Tremor**:
+  - While `BlackHoleStageManager.Instance.CurrentStage == 4`, automatically blends in continuous low-frequency 3D Perlin noise tremor:
+    - `ambientTremorPositionAmplitude = 0.025m`
+    - `ambientTremorAngleAmplitude = 0.35°`
+    - `ambientTremorFrequency = 9.0Hz`
+  - Generates an eerie, immersive rumble building suspense before the critical mass finale without impeding player aim or navigation.
+
+### 5.14 Minimalist In-Game HUD, Star Wars Crawl Top-Center Pivot & Full Dual-Language RU/EN Localization (Issues #11, #2, #12)
+
+#### 1. Complete Minimalist HUD Overhaul ([`UIManager.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/UIManager.cs))
+- **Permanent Clutter Removal**:
+  - Permanently removed legacy prototyping clutter: `SurveillanceMonitorFrame`, `Text_REC_Status`, `Panel_QuotaAndHeat`, `Text_BossTracker`, `Panel_CriticalMassWarning`, and `Bar_Battery`.
+  - Preserved `Panel_UpgradeTree` (TAB) and `Panel_NarrativeComms` (Star Fox comms) without alteration.
+- **Strictly 3 Core Gameplay Metrics**:
+  1. **Scrap Coins Counter (Top-Right)**: Sleek glass badge `Panel_ScrapCoins` (anchored top-right at `-40, -36`) displaying `"ЛОМ-МОНЕТЫ: 1,250"` (or `"SCRAP COINS: 1,250"` in EN). Punches scale via `DOTween` whenever scrap coins increase.
+  2. **Black Hole Mass Progress Bar (Bottom-Center)**: Minimalist `520x22` horizontal bar `Bar_BlackHole` (anchored bottom-center at `0, 32`) displaying `"МАССА ДЫРЫ: 420 / 500 ТОНН"` (or `"BLACK HOLE MASS: 420 / 500 TONS"` in EN) with dynamic cyan/blue fill.
+  3. **Stage Indicator (Directly above Mass Bar)**: Clean header `Text_StageHeader` (anchored bottom-center at `0, 6`) displaying `"СТАДИЯ 1 / 4"` (or `"STAGE 1 / 4"` in EN), shifting to a dramatic pulsing neon-red warning on Stage 4: `"СТАДИЯ 4 / 4 — КРИТИЧЕСКАЯ МАССА"` (`"STAGE 4 / 4 — CRITICAL MASS"`).
+- **Retained Overlays**: Center aiming crosshair dot, Star Fox radio comms (`NarrativeCommsUI`), transient warnings (Boundary warning, Beam alert, Start overlay, Signal lost overlay, Quota celebration, Observed scrap).
+
+#### 2. Star Wars Crawl Top-Center Pivot Fix ([`StarWarsCrawlController.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/UI/StarWarsCrawlController.cs))
+- **Top-Center Pivot Enforcement**:
+  - `CreditsTextContainer` RectTransform pivot is strictly enforced to `(0.5f, 1.0f)` (top-center pivot).
+  - `initialYOffset = -280f` guarantees that line 1 (`"ЭПИЗОД #042: ЗА ГОРИЗОНТОМ СОБЫТИЙ"` / `"EPISODE #042: BEYOND THE EVENT HORIZON"`) begins below the screen edge and enters cleanly from the bottom in proper reading order.
+  - `endYThreshold = 3400f` and `crawlSpeed = 38f` (with 3x speedup on Space/LMB) ensures the entire credits roll completes seamlessly.
+  - Credits role headers follow standard industry practice in English (`Lead Programmer`, `Game Designers`, `3D Artists`, `2D Artist`, `Sound Designer (FMOD)`), while narrative intro, synopsis, and thank-you footer are localized.
+
+#### 3. Full Russian Default Localization & Main Menu Flag Switcher ([`LocalizationManager.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/LocalizationManager.cs))
+- **Architecture**:
+  - `LocalizationManager` persistent singleton (`DontDestroyOnLoad`) with PlayerPrefs persistence (`OrbitalPanopticon_Language`), defaulting to Russian (`GameLanguage.RU`).
+  - `LocalizedText.cs` component automatically updates attached `TextMeshProUGUI` whenever language changes.
+  - Dual-language support across all dialogues (`NarrativeDialogueConfigSO`), Upgrade Tree nodes (`UpgradeTreeManager`), Main Menu labels, HUD metrics, and Credits crawl.
+- **Main Menu Language Switcher**:
+  - `LanguageSwitcherPanel` anchored bottom-right `(-40, 40)` in `MainMenuScene` with `Btn_Lang_RU` (`[RU]`) and `Btn_Lang_EN` (`[EN]`).
+  - Active button highlighted with an accent outline and DOTween punch scale on click.
+  - Instant live update of all scene text upon switching without scene reloading.
+- **Unified Font Rendering**:
+  - `GlobalFontApplier.ApplyToAll()` ensures all localized Cyrillic and Latin characters render cleanly using the master font assets.
 
 ---
 

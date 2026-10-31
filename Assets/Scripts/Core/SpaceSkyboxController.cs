@@ -8,7 +8,8 @@ namespace OrbitalPanopticon.Core
     {
         public static SpaceSkyboxController Instance { get; private set; }
 
-        [Header("Skybox Material Reference")]
+        [Header("Configuration & Material References")]
+        [SerializeField] public VisualEnvironmentConfigSO visualConfig;
         [SerializeField] private Material skyboxMaterial;
 
         [Header("1. Deep Space Gradient")]
@@ -103,26 +104,112 @@ namespace OrbitalPanopticon.Core
             }
         }
 
+        public VisualEnvironmentConfigSO VisualConfig => visualConfig;
+
+        public void EnsureConfig()
+        {
+            if (visualConfig == null)
+            {
+#if UNITY_EDITOR
+                visualConfig = UnityEditor.AssetDatabase.LoadAssetAtPath<VisualEnvironmentConfigSO>("Assets/_Project/ScriptableObjects/VisualEnvironmentConfig.asset");
+#else
+                visualConfig = Resources.Load<VisualEnvironmentConfigSO>("VisualEnvironmentConfig");
+#endif
+            }
+        }
+
+        public void LoadFromConfig()
+        {
+            EnsureConfig();
+            if (visualConfig == null) return;
+
+            spaceZenithColor = visualConfig.spaceZenithColor;
+            spaceHorizonColor = visualConfig.spaceHorizonColor;
+            spaceNadirColor = visualConfig.spaceNadirColor;
+            gradientExponent = visualConfig.gradientExponent;
+
+            starDensity = visualConfig.starDensity;
+            starSize = visualConfig.starSize;
+            starBrightness = visualConfig.starBrightness;
+            starColorVariation = visualConfig.starColorVariation;
+            starTwinkleSpeed = visualConfig.starTwinkleSpeed;
+            starTwinkleAmount = visualConfig.starTwinkleAmount;
+
+            milkyWayRotationAngles = visualConfig.milkyWayRotationAngles;
+            milkyWayWidth = visualConfig.milkyWayWidth;
+            milkyWayFalloff = visualConfig.milkyWayFalloff;
+            milkyWayCoreHDRColor = visualConfig.milkyWayCoreHDRColor;
+            milkyWayOuterColor = visualConfig.milkyWayOuterColor;
+            dustLaneDarkness = visualConfig.dustLaneDarkness;
+            milkyWayStarBoost = visualConfig.milkyWayStarBoost;
+            milkyWayNoiseScale = visualConfig.milkyWayNoiseScale;
+
+            nebulaIntensity = visualConfig.nebulaIntensity;
+            nebulaScale = visualConfig.nebulaScale;
+            nebulaColorA = visualConfig.nebulaColorA;
+            nebulaColorB = visualConfig.nebulaColorB;
+            nebulaOffset = visualConfig.nebulaOffset;
+
+            EnsureMaterial();
+            UpdateMaterialProperties();
+        }
+
+        public void SaveToConfig()
+        {
+            EnsureConfig();
+            if (visualConfig == null) return;
+
+            visualConfig.spaceZenithColor = spaceZenithColor;
+            visualConfig.spaceHorizonColor = spaceHorizonColor;
+            visualConfig.spaceNadirColor = spaceNadirColor;
+            visualConfig.gradientExponent = gradientExponent;
+
+            visualConfig.starDensity = starDensity;
+            visualConfig.starSize = starSize;
+            visualConfig.starBrightness = starBrightness;
+            visualConfig.starColorVariation = starColorVariation;
+            visualConfig.starTwinkleSpeed = starTwinkleSpeed;
+            visualConfig.starTwinkleAmount = starTwinkleAmount;
+
+            visualConfig.milkyWayRotationAngles = milkyWayRotationAngles;
+            visualConfig.milkyWayWidth = milkyWayWidth;
+            visualConfig.milkyWayFalloff = milkyWayFalloff;
+            visualConfig.milkyWayCoreHDRColor = milkyWayCoreHDRColor;
+            visualConfig.milkyWayOuterColor = milkyWayOuterColor;
+            visualConfig.dustLaneDarkness = dustLaneDarkness;
+            visualConfig.milkyWayStarBoost = milkyWayStarBoost;
+            visualConfig.milkyWayNoiseScale = milkyWayNoiseScale;
+
+            visualConfig.nebulaIntensity = nebulaIntensity;
+            visualConfig.nebulaScale = nebulaScale;
+            visualConfig.nebulaColorA = nebulaColorA;
+            visualConfig.nebulaColorB = nebulaColorB;
+            visualConfig.nebulaOffset = nebulaOffset;
+
+            visualConfig.MarkDirty();
+        }
+
         private void Awake()
         {
             if (Application.isPlaying)
             {
                 if (Instance == null) Instance = this;
             }
-            EnsureMaterial();
-            UpdateMaterialProperties();
+            EnsureConfig();
+            LoadFromConfig();
         }
 
         private void OnEnable()
         {
             if (Instance == null) Instance = this;
-            EnsureMaterial();
-            UpdateMaterialProperties();
+            EnsureConfig();
+            LoadFromConfig();
         }
 
         private void OnValidate()
         {
-            EnsureMaterial();
+            EnsureConfig();
+            SaveToConfig();
             UpdateMaterialProperties();
         }
 
@@ -204,18 +291,21 @@ namespace OrbitalPanopticon.Core
         public void SetMilkyWayRotation(Vector3 angles)
         {
             milkyWayRotationAngles = angles;
+            SaveToConfig();
             UpdateMaterialProperties();
         }
 
         public void SetStarDensity(float density)
         {
             starDensity = density;
+            SaveToConfig();
             UpdateMaterialProperties();
         }
 
         public void SetNebulaIntensity(float intensity)
         {
             nebulaIntensity = intensity;
+            SaveToConfig();
             UpdateMaterialProperties();
         }
     }

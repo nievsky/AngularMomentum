@@ -35,6 +35,8 @@ namespace OrbitalPanopticon.Player
         [Header("Production Manipulator VFX")]
         [SerializeField] private ParticleSystem pullVortexParticles;
         [SerializeField] private ParticleSystem puntBlastParticles;
+        [SerializeField] private ParticleSystem vacuumNozzleSwirlParticles;
+        [SerializeField] private Transform muzzleNozzlePoint;
 
         public ParticleSystem PullVortexParticles
         {
@@ -47,6 +49,15 @@ namespace OrbitalPanopticon.Player
             get => puntBlastParticles;
             set => puntBlastParticles = value;
         }
+
+        public ParticleSystem VacuumNozzleSwirlParticles
+        {
+            get => vacuumNozzleSwirlParticles;
+            set => vacuumNozzleSwirlParticles = value;
+        }
+
+        public Transform MuzzleNozzlePoint => muzzleNozzlePoint;
+        public Transform RoboArmVisual => roboArmVisual;
 
         [Header("Observed Scrap Indicator on Arm")]
         [SerializeField] private Light armIndicatorLight;
@@ -140,32 +151,98 @@ namespace OrbitalPanopticon.Player
         {
             if (roboArmVisual == null) return;
 
+            // 1. Ensure MuzzleNozzlePoint exists at the exact front tip of RoboArmVisual
+            if (muzzleNozzlePoint == null)
+            {
+                Transform muzzleT = roboArmVisual.Find("MuzzleNozzlePoint");
+                if (muzzleT == null)
+                {
+                    GameObject muzzleGo = new GameObject("MuzzleNozzlePoint");
+                    muzzleGo.transform.SetParent(roboArmVisual, false);
+                    muzzleGo.transform.localPosition = new Vector3(0f, 0.05f, 0.78f);
+                    muzzleGo.transform.localRotation = Quaternion.identity;
+                    muzzleT = muzzleGo.transform;
+                }
+                muzzleNozzlePoint = muzzleT;
+            }
+
+            // 2. Overhaul Vacuum Pull Stream Particle System strictly inside MuzzleNozzlePoint
             if (pullVortexParticles == null)
             {
-                var found = roboArmVisual.Find("VFX_GravityPullStream");
-                if (found != null) pullVortexParticles = found.GetComponentInChildren<ParticleSystem>();
-                if (pullVortexParticles == null)
+                var found = muzzleNozzlePoint.Find("VFX_GravityPullStream");
+                if (found == null) found = roboArmVisual.Find("VFX_GravityPullStream");
+                if (found != null)
+                {
+                    pullVortexParticles = found.GetComponentInChildren<ParticleSystem>();
+                    found.SetParent(muzzleNozzlePoint, false);
+                    found.localPosition = Vector3.zero;
+                    found.localRotation = Quaternion.identity;
+                }
+                else
                 {
                     GameObject pullPrefab = Resources.Load<GameObject>("VFX_GravityPullStream");
 #if UNITY_EDITOR
                     if (pullPrefab == null) pullPrefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/VFX_GravityPullStream.prefab");
 #endif
+                    GameObject go;
                     if (pullPrefab != null)
                     {
-                        GameObject go = Instantiate(pullPrefab, roboArmVisual);
-                        go.name = "VFX_GravityPullStream";
-                        go.transform.localPosition = new Vector3(0f, 0.05f, 0.65f);
-                        go.transform.localRotation = Quaternion.identity;
-                        pullVortexParticles = go.GetComponentInChildren<ParticleSystem>();
+                        go = Instantiate(pullPrefab, muzzleNozzlePoint);
                     }
+                    else
+                    {
+                        go = new GameObject("VFX_GravityPullStream");
+                        go.transform.SetParent(muzzleNozzlePoint, false);
+                        go.AddComponent<ParticleSystem>();
+                    }
+                    go.name = "VFX_GravityPullStream";
+                    go.transform.localPosition = Vector3.zero;
+                    go.transform.localRotation = Quaternion.identity;
+                    pullVortexParticles = go.GetComponentInChildren<ParticleSystem>();
                 }
             }
 
+            if (pullVortexParticles != null)
+            {
+                ConfigureVacuumPullStream(pullVortexParticles);
+            }
+
+            // 3. Second Juicy Layer: Spinning Vortex Intake Ring (VFX_VacuumNozzleSwirl)
+            if (vacuumNozzleSwirlParticles == null)
+            {
+                var swirlT = muzzleNozzlePoint.Find("VFX_VacuumNozzleSwirl");
+                if (swirlT != null)
+                {
+                    vacuumNozzleSwirlParticles = swirlT.GetComponent<ParticleSystem>();
+                }
+                else
+                {
+                    GameObject swirlGo = new GameObject("VFX_VacuumNozzleSwirl");
+                    swirlGo.transform.SetParent(muzzleNozzlePoint, false);
+                    swirlGo.transform.localPosition = Vector3.zero;
+                    swirlGo.transform.localRotation = Quaternion.identity;
+                    vacuumNozzleSwirlParticles = swirlGo.AddComponent<ParticleSystem>();
+                }
+            }
+
+            if (vacuumNozzleSwirlParticles != null)
+            {
+                ConfigureVacuumNozzleSwirl(vacuumNozzleSwirlParticles);
+            }
+
+            // 4. Punt Blast Particles
             if (puntBlastParticles == null)
             {
-                var found = roboArmVisual.Find("VFX_GravityPuntBlast");
-                if (found != null) puntBlastParticles = found.GetComponentInChildren<ParticleSystem>();
-                if (puntBlastParticles == null)
+                var found = muzzleNozzlePoint.Find("VFX_GravityPuntBlast");
+                if (found == null) found = roboArmVisual.Find("VFX_GravityPuntBlast");
+                if (found != null)
+                {
+                    puntBlastParticles = found.GetComponentInChildren<ParticleSystem>();
+                    found.SetParent(muzzleNozzlePoint, false);
+                    found.localPosition = Vector3.zero;
+                    found.localRotation = Quaternion.identity;
+                }
+                else
                 {
                     GameObject puntPrefab = Resources.Load<GameObject>("VFX_GravityPuntBlast");
 #if UNITY_EDITOR
@@ -173,28 +250,31 @@ namespace OrbitalPanopticon.Player
 #endif
                     if (puntPrefab != null)
                     {
-                        GameObject go = Instantiate(puntPrefab, roboArmVisual);
+                        GameObject go = Instantiate(puntPrefab, muzzleNozzlePoint);
                         go.name = "VFX_GravityPuntBlast";
-                        go.transform.localPosition = new Vector3(0f, 0.05f, 0.75f);
+                        go.transform.localPosition = Vector3.zero;
                         go.transform.localRotation = Quaternion.identity;
                         puntBlastParticles = go.GetComponentInChildren<ParticleSystem>();
                     }
                 }
             }
 
-            // Setup Muzzle Flash Light
+            // 5. Setup Muzzle Flash Light
             if (puntMuzzleLight == null)
             {
-                Transform lightT = roboArmVisual.Find("PuntMuzzleFlashLight");
+                Transform lightT = muzzleNozzlePoint.Find("PuntMuzzleFlashLight");
+                if (lightT == null) lightT = roboArmVisual.Find("PuntMuzzleFlashLight");
                 if (lightT != null)
                 {
                     puntMuzzleLight = lightT.GetComponent<Light>();
+                    lightT.SetParent(muzzleNozzlePoint, false);
+                    lightT.localPosition = Vector3.zero;
                 }
                 else
                 {
                     GameObject lightGo = new GameObject("PuntMuzzleFlashLight");
-                    lightGo.transform.SetParent(roboArmVisual, false);
-                    lightGo.transform.localPosition = new Vector3(0f, 0.05f, 0.8f);
+                    lightGo.transform.SetParent(muzzleNozzlePoint, false);
+                    lightGo.transform.localPosition = Vector3.zero;
                     puntMuzzleLight = lightGo.AddComponent<Light>();
                     puntMuzzleLight.type = LightType.Point;
                     puntMuzzleLight.range = 8.0f;
@@ -210,6 +290,106 @@ namespace OrbitalPanopticon.Player
             {
                 Destroy(oldRing.gameObject);
                 puntShockwaveRing = null;
+            }
+        }
+
+        private void ConfigureVacuumPullStream(ParticleSystem ps)
+        {
+            var main = ps.main;
+            main.playOnAwake = false;
+            main.loop = true;
+            main.simulationSpace = ParticleSystemSimulationSpace.Local;
+            main.startLifetime = 0.28f;
+            main.startSpeed = 0f;
+            main.startSize = new ParticleSystem.MinMaxCurve(0.06f, 0.14f);
+            main.startColor = new ParticleSystem.MinMaxGradient(new Color(0.2f, 2.5f, 5.0f, 0.9f), new Color(3.5f, 0.4f, 5.0f, 0.9f));
+
+            var emission = ps.emission;
+            emission.enabled = true;
+            emission.rateOverTime = 85f;
+
+            var shape = ps.shape;
+            shape.enabled = true;
+            shape.shapeType = ParticleSystemShapeType.Circle;
+            shape.radius = 0.85f;
+            shape.position = new Vector3(0f, 0f, 2.8f);
+            shape.rotation = Vector3.zero;
+
+            var vel = ps.velocityOverLifetime;
+            vel.enabled = true;
+            vel.space = ParticleSystemSimulationSpace.Local;
+            vel.x = new ParticleSystem.MinMaxCurve(0f);
+            vel.y = new ParticleSystem.MinMaxCurve(0f);
+            vel.z = new ParticleSystem.MinMaxCurve(-10.0f);
+            vel.orbitalX = new ParticleSystem.MinMaxCurve(0f);
+            vel.orbitalY = new ParticleSystem.MinMaxCurve(0f);
+            vel.orbitalZ = new ParticleSystem.MinMaxCurve(6.0f);
+            vel.radial = new ParticleSystem.MinMaxCurve(-4.5f);
+
+            var sizeOverLifetime = ps.sizeOverLifetime;
+            sizeOverLifetime.enabled = true;
+            AnimationCurve sizeCurve = AnimationCurve.Linear(0f, 1f, 1f, 0f);
+            sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1f, sizeCurve);
+
+            var col = ps.colorOverLifetime;
+            col.enabled = true;
+            Gradient grad = new Gradient();
+            grad.SetKeys(
+                new GradientColorKey[] { new GradientColorKey(new Color(0.2f, 2.5f, 5f), 0f), new GradientColorKey(new Color(3.5f, 0.4f, 5f), 1f) },
+                new GradientAlphaKey[] { new GradientAlphaKey(0.85f, 0f), new GradientAlphaKey(0.95f, 0.5f), new GradientAlphaKey(0.1f, 1f) }
+            );
+            col.color = grad;
+
+            Material mat = AssetDatabaseLoadMaterial();
+            var rend = ps.GetComponent<ParticleSystemRenderer>();
+            if (rend != null && mat != null)
+            {
+                rend.sharedMaterial = mat;
+                rend.renderMode = ParticleSystemRenderMode.Billboard;
+            }
+        }
+
+        private void ConfigureVacuumNozzleSwirl(ParticleSystem ps)
+        {
+            var main = ps.main;
+            main.playOnAwake = false;
+            main.loop = true;
+            main.simulationSpace = ParticleSystemSimulationSpace.Local;
+            main.startLifetime = 0.22f;
+            main.startSpeed = 0f;
+            main.startSize = new ParticleSystem.MinMaxCurve(0.18f, 0.32f);
+            main.startRotation = new ParticleSystem.MinMaxCurve(0f, Mathf.PI * 2f);
+            main.startColor = new ParticleSystem.MinMaxGradient(new Color(0.1f, 3.0f, 5.0f, 0.8f), new Color(2.5f, 0.2f, 5.0f, 0.8f));
+
+            var emission = ps.emission;
+            emission.enabled = true;
+            emission.rateOverTime = 32f;
+
+            var shape = ps.shape;
+            shape.enabled = true;
+            shape.shapeType = ParticleSystemShapeType.Circle;
+            shape.radius = 0.12f;
+            shape.position = Vector3.zero;
+
+            var rot = ps.rotationOverLifetime;
+            rot.enabled = true;
+            rot.z = new ParticleSystem.MinMaxCurve(720f * Mathf.Deg2Rad);
+
+            var sizeOverLifetime = ps.sizeOverLifetime;
+            sizeOverLifetime.enabled = true;
+            AnimationCurve swirlCurve = new AnimationCurve(
+                new Keyframe(0f, 0.3f),
+                new Keyframe(0.5f, 1.0f),
+                new Keyframe(1f, 0f)
+            );
+            sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1f, swirlCurve);
+
+            Material mat = AssetDatabaseLoadMaterial();
+            var rend = ps.GetComponent<ParticleSystemRenderer>();
+            if (rend != null && mat != null)
+            {
+                rend.sharedMaterial = mat;
+                rend.renderMode = ParticleSystemRenderMode.Billboard;
             }
         }
 
@@ -359,6 +539,10 @@ namespace OrbitalPanopticon.Player
                 {
                     pullVortexParticles.Play();
                 }
+                if (vacuumNozzleSwirlParticles != null && !vacuumNozzleSwirlParticles.isPlaying)
+                {
+                    vacuumNozzleSwirlParticles.Play();
+                }
 
                 if (_heldItems.Count < config.maxHeldObjects)
                 {
@@ -371,6 +555,10 @@ namespace OrbitalPanopticon.Player
                 if (pullVortexParticles != null && pullVortexParticles.isPlaying)
                 {
                     pullVortexParticles.Stop();
+                }
+                if (vacuumNozzleSwirlParticles != null && vacuumNozzleSwirlParticles.isPlaying)
+                {
+                    vacuumNozzleSwirlParticles.Stop();
                 }
 
                 if (_heldItems.Count > 0)
@@ -790,8 +978,12 @@ namespace OrbitalPanopticon.Player
                 _muzzleLightCoroutine = StartCoroutine(MuzzleLightFlashRoutine());
             }
 
-            // 2. Camera Punch (DOTween Shake Position & Rotation)
-            if (mainCamera != null)
+            // 2. Camera Punch (CameraShakeController & DOTween Shake)
+            if (CameraShakeController.Instance != null)
+            {
+                CameraShakeController.Instance.TriggerShake(0.22f, 0.18f);
+            }
+            else if (mainCamera != null)
             {
                 mainCamera.transform.DOShakePosition(0.18f, new Vector3(0.08f, 0.08f, -0.15f), 25, 90f, false, true).SetUpdate(true);
                 mainCamera.transform.DOShakeRotation(0.18f, new Vector3(2.5f, 1.5f, 1.5f), 20, 90f).SetUpdate(true);
@@ -1078,13 +1270,12 @@ namespace OrbitalPanopticon.Player
                 return;
             }
 
-            GameBalanceConfig config = GameManager.GameBalanceConfigInstance;
-            int maxHeld = config != null ? config.maxHeldObjects : 3;
+            bool isPullingOrHolding = _isGrabHeld && (_heldItems.Count > 0 || _currentPullTarget != null);
 
-            if (_isGrabHeld && _currentPullTarget != null && _heldItems.Count < maxHeld)
+            if (isPullingOrHolding)
             {
-                Vector3 startPos = roboArmVisual != null ? roboArmVisual.position : transform.position;
-                Vector3 endPos = _currentPullTarget.transform.position;
+                Vector3 startPos = muzzleNozzlePoint != null ? muzzleNozzlePoint.position : (roboArmVisual != null ? roboArmVisual.position : transform.position);
+                Vector3 endPos = _heldItems.Count > 0 ? _heldItems[0].transform.position : _currentPullTarget.transform.position;
                 Vector3 diff = endPos - startPos;
                 float distance = diff.magnitude;
 
@@ -1095,9 +1286,9 @@ namespace OrbitalPanopticon.Player
                     Vector3 right = Vector3.Cross(forward, tempUp).normalized;
                     Vector3 up = Vector3.Cross(right, forward).normalized;
 
-                    float spiralTurns = Mathf.Clamp(distance * 0.35f, 2f, 5.5f);
-                    float spiralSpeed = Time.time * 16f;
-                    float maxRadius = 0.22f;
+                    float spiralTurns = Mathf.Clamp(distance * 0.45f, 2.5f, 6.0f);
+                    float spiralSpeed = Time.time * 20f;
+                    float maxRadius = 0.18f;
 
                     for (int i = 0; i < HELIX_POINTS; i++)
                     {

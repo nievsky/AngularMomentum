@@ -3,11 +3,17 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
 using TMPro;
+using DG.Tweening;
 using OrbitalPanopticon.Gameplay;
 using OrbitalPanopticon.Player;
 
 namespace OrbitalPanopticon.Core
 {
+    /// <summary>
+    /// Minimalist HUD Controller for Orbital Panopticon.
+    /// Manages strictly 3 core gameplay metrics (Scrap Coins Badge, Mass Bar, and Stage Indicator),
+    /// the central aiming crosshair, and transient overlay notifications.
+    /// </summary>
     [DisallowMultipleComponent]
     public class UIManager : MonoBehaviour
     {
@@ -18,33 +24,27 @@ namespace OrbitalPanopticon.Core
         [SerializeField] private ArenaBoundaryManager arenaBoundaryManager;
         [SerializeField] private DroneController droneController;
 
-        [Header("Surveillance Monitor Overlay")]
-        [SerializeField] private GameObject surveillanceFramePanel;
-        [SerializeField] private TextMeshProUGUI recStatusText;
-        [SerializeField] private TextMeshProUGUI sectorInfoText;
-        [SerializeField] private TextMeshProUGUI telemetryRightText;
-        [SerializeField] private TextMeshProUGUI controlHintsText;
-
-        [Header("HUD Core Elements")]
-        [SerializeField] private TextMeshProUGUI quotaText;
-        [SerializeField] private Image quotaFillImage;
-        [SerializeField] private TextMeshProUGUI heatMultiplierText;
+        [Header("Minimalist Core HUD Elements")]
+        [SerializeField] private GameObject scrapCoinsBadge;
         [SerializeField] private TextMeshProUGUI scrapCoinsText;
-
-        [Header("Overhauled Bottom HUD: Black Hole & Battery Bars")]
         [SerializeField] private GameObject bottomHUDPanel;
         [SerializeField] private Image blackHoleBarFill;
         [SerializeField] private TextMeshProUGUI blackHoleBarText;
-        [SerializeField] private Image playerEnergyBarFill;
-        [SerializeField] private TextMeshProUGUI playerEnergyBarText;
-        [SerializeField] private TextMeshProUGUI topBossTrackerText;
+        [SerializeField] private TextMeshProUGUI stageHeaderText;
+
+        public GameObject ScrapCoinsBadge => scrapCoinsBadge;
+        public TextMeshProUGUI ScrapCoinsText => scrapCoinsText;
+        public GameObject BottomHUDPanel => bottomHUDPanel;
+        public Image BlackHoleBarFill => blackHoleBarFill;
+        public TextMeshProUGUI BlackHoleBarText => blackHoleBarText;
+        public TextMeshProUGUI StageHeaderText => stageHeaderText;
 
         [Header("Crosshair Elements")]
         [SerializeField] private Image crosshairImage;
         [SerializeField] private Image[] crosshairTickImages;
         [SerializeField] private Color crosshairNormalColor = new Color(1f, 1f, 1f, 0.45f);
-        [SerializeField] private Color crosshairTargetInRangeColor = new Color(0.2f, 0.95f, 1f, 0.95f); // Bright Cyan
-        [SerializeField] private Color crosshairObservedTargetColor = new Color(1.0f, 0.85f, 0.15f, 1f); // Rich Gold
+        [SerializeField] private Color crosshairTargetInRangeColor = new Color(0.2f, 0.95f, 1f, 0.95f);
+        [SerializeField] private Color crosshairObservedTargetColor = new Color(1.0f, 0.85f, 0.15f, 1f);
         [SerializeField] private Color crosshairHoldingColor = new Color(0.15f, 0.85f, 1f, 0.95f);
 
         [Header("Operator Start Screen")]
@@ -52,43 +52,35 @@ namespace OrbitalPanopticon.Core
         [SerializeField] private CanvasGroup startOverlayCanvasGroup;
         [SerializeField] private TextMeshProUGUI startPromptText;
 
-        [Header("Quota Celebration Banner")]
-        [SerializeField] private GameObject quotaCelebrationPanel;
-        [SerializeField] private CanvasGroup quotaCelebrationCanvasGroup;
-        [SerializeField] private TextMeshProUGUI quotaCelebrationText;
-
-        [Header("Critical Mass Warning")]
-        [SerializeField] private GameObject criticalMassWarningPanel;
-        [SerializeField] private TextMeshProUGUI criticalMassWarningText;
-
-        [Header("Boundary Warning Elements")]
+        [Header("Transient Notifications")]
         [SerializeField] private GameObject warningPanel;
         [SerializeField] private TextMeshProUGUI warningCountdownText;
         [SerializeField] private Image warningBorderImage;
         [SerializeField] private Color warningBorderPulsingColor = new Color(1f, 0.15f, 0.1f, 0.75f);
 
-        [Header("Signal Lost Overlay")]
+        [SerializeField] private GameObject beamAlertPanel;
+        [SerializeField] private TextMeshProUGUI beamAlertText;
+        [SerializeField] private CanvasGroup beamAlertCanvasGroup;
+        private Coroutine _beamAlertCoroutine;
+
         [SerializeField] private GameObject signalLostOverlay;
         [SerializeField] private TextMeshProUGUI signalLostReasonText;
 
-        [Header("Observed Scrap Notification")]
         [SerializeField] private GameObject observedNoticePanel;
         [SerializeField] private TextMeshProUGUI observedNoticeText;
         [SerializeField] private Image observedNoticeBorder;
         [SerializeField] private Color observedGoldColor = new Color(1f, 0.85f, 0.1f, 1f);
 
-        [Header("Heat Colors")]
-        [SerializeField] private Color heat1xColor = Color.white;
-        [SerializeField] private Color heat2xColor = new Color(1f, 0.9f, 0.2f);
-        [SerializeField] private Color heat4xColor = new Color(1f, 0.5f, 0.1f);
-        [SerializeField] private Color heat8xColor = new Color(1f, 0.2f, 0.2f);
-        [SerializeField] private Color heat16xColor = new Color(1f, 0.1f, 0.9f);
+        [SerializeField] private GameObject quotaCelebrationPanel;
+        [SerializeField] private CanvasGroup quotaCelebrationCanvasGroup;
+        [SerializeField] private TextMeshProUGUI quotaCelebrationText;
 
         private Coroutine _signalLostCoroutine;
         private Coroutine _celebrationCoroutine;
         private bool _isWarningActive = false;
         private float _warningRemainingSeconds = 0f;
         private bool _isOperatorConnected = false;
+        private int _lastCoins = -1;
 
         private void Awake()
         {
@@ -123,25 +115,10 @@ namespace OrbitalPanopticon.Core
                 arenaBoundaryManager.OnBoundaryWarningChanged += HandleBoundaryWarning;
             }
 
-            if (signalLostOverlay != null)
-            {
-                signalLostOverlay.SetActive(false);
-            }
-
-            if (warningPanel != null)
-            {
-                warningPanel.SetActive(false);
-            }
-
-            if (observedNoticePanel != null)
-            {
-                observedNoticePanel.SetActive(false);
-            }
-
-            if (quotaCelebrationPanel != null)
-            {
-                quotaCelebrationPanel.SetActive(false);
-            }
+            if (signalLostOverlay != null) signalLostOverlay.SetActive(false);
+            if (warningPanel != null) warningPanel.SetActive(false);
+            if (observedNoticePanel != null) observedNoticePanel.SetActive(false);
+            if (quotaCelebrationPanel != null) quotaCelebrationPanel.SetActive(false);
 
             // Auto-detect crosshair ticks if needed
             if (crosshairImage == null)
@@ -158,10 +135,9 @@ namespace OrbitalPanopticon.Core
             if (startOverlayPanel != null)
             {
                 startOverlayPanel.SetActive(true);
-                if (startOverlayCanvasGroup != null)
-                {
-                    startOverlayCanvasGroup.alpha = 1f;
-                }
+                if (startOverlayCanvasGroup != null) startOverlayCanvasGroup.alpha = 1f;
+                if (startPromptText != null) startPromptText.text = LocalizationManager.Get("HUD_StartPrompt");
+
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
                 _isOperatorConnected = false;
@@ -171,7 +147,7 @@ namespace OrbitalPanopticon.Core
                 _isOperatorConnected = true;
             }
 
-            EnsureBottomHUDAndBossTracker();
+            EnsureMinimalistHUD();
         }
 
         private void OnDestroy()
@@ -193,7 +169,6 @@ namespace OrbitalPanopticon.Core
             HandleStartOverlayInput();
             UpdateHUD();
             UpdateWarningHUD();
-            UpdateCriticalMassWarningHUD();
             UpdateObservedNotice();
         }
 
@@ -201,7 +176,6 @@ namespace OrbitalPanopticon.Core
         {
             if (_isOperatorConnected) return;
 
-            // Pulse the click prompt
             if (startPromptText != null)
             {
                 float pulse = 0.5f + (Mathf.Sin(Time.unscaledTime * 5f) * 0.5f);
@@ -270,7 +244,7 @@ namespace OrbitalPanopticon.Core
             }
         }
 
-        public void SetObservedNotice(bool show, string message = "OBSERVED TARGET GRABBED - x3 VALUE!")
+        public void SetObservedNotice(bool show, string message = null)
         {
             if (observedNoticePanel != null && observedNoticePanel.activeSelf != show)
             {
@@ -278,7 +252,7 @@ namespace OrbitalPanopticon.Core
             }
             if (show && observedNoticeText != null)
             {
-                observedNoticeText.text = message;
+                observedNoticeText.text = !string.IsNullOrEmpty(message) ? message : LocalizationManager.Get("HUD_ObservedNotice");
             }
         }
 
@@ -309,9 +283,23 @@ namespace OrbitalPanopticon.Core
             int stage = stageMgr != null ? stageMgr.CurrentStage : (BlackHoleMassAndEnergyManager.Instance != null ? BlackHoleMassAndEnergyManager.Instance.CurrentStage : 1);
             int stageIndex = stageMgr != null ? stageMgr.CurrentStageIndex : (stage - 1);
             float targetMass = stageMgr != null ? stageMgr.CurrentStageTargetMass : (config != null && config.stageMassTargets != null && stageIndex < config.stageMassTargets.Length ? config.stageMassTargets[stageIndex] : 500f);
-            int activeBeams = stageMgr != null ? stageMgr.ActiveContainmentLocksCount : Mathf.Max(0, 4 - stageIndex);
 
-            // 1. Single Clean Bottom Bar: Black Hole Mass, Stage & Containment Beams
+            // 1. Scrap Coins Counter (Top-Right Badge)
+            int coins = quotaManager != null ? quotaManager.ScrapCoins : 0;
+            if (_lastCoins != -1 && coins > _lastCoins && scrapCoinsBadge != null)
+            {
+                scrapCoinsBadge.transform.DOKill();
+                scrapCoinsBadge.transform.localScale = Vector3.one;
+                scrapCoinsBadge.transform.DOPunchScale(Vector3.one * 0.18f, 0.22f, 6, 0.5f).SetUpdate(true);
+            }
+            _lastCoins = coins;
+
+            if (scrapCoinsText != null)
+            {
+                scrapCoinsText.text = LocalizationManager.Get("HUD_ScrapCoins", coins);
+            }
+
+            // 2. Black Hole Mass Progress Bar (Bottom-Center)
             float prevTarget = (stageIndex > 0 && config != null && config.stageMassTargets != null && stageIndex - 1 < config.stageMassTargets.Length)
                 ? config.stageMassTargets[stageIndex - 1]
                 : 0f;
@@ -321,19 +309,9 @@ namespace OrbitalPanopticon.Core
             {
                 blackHoleBarFill.fillAmount = fillNorm;
 
-                // Color shifts by stage: Cyan (Stage 1) -> Yellow (Stage 2) -> Orange (Stage 3) -> Flashing Red/Gold (Stage 4)
-                if (stage == 1)
-                {
-                    blackHoleBarFill.color = new Color(0.15f, 0.9f, 1.0f, 0.95f);
-                }
-                else if (stage == 2)
-                {
-                    blackHoleBarFill.color = new Color(1.0f, 0.88f, 0.2f, 0.95f);
-                }
-                else if (stage == 3)
-                {
-                    blackHoleBarFill.color = new Color(1.0f, 0.55f, 0.1f, 0.95f);
-                }
+                if (stage == 1) blackHoleBarFill.color = new Color(0.15f, 0.9f, 1.0f, 0.95f);
+                else if (stage == 2) blackHoleBarFill.color = new Color(1.0f, 0.88f, 0.2f, 0.95f);
+                else if (stage == 3) blackHoleBarFill.color = new Color(1.0f, 0.55f, 0.1f, 0.95f);
                 else
                 {
                     float pulse = 0.5f + (0.5f * Mathf.Sin(Time.time * 8f));
@@ -343,197 +321,220 @@ namespace OrbitalPanopticon.Core
 
             if (blackHoleBarText != null)
             {
+                blackHoleBarText.text = LocalizationManager.Get("HUD_MassBar", mass, targetMass);
+            }
+
+            // 3. Stage Indicator (Directly above the Mass Bar)
+            if (stageHeaderText != null)
+            {
                 if (stage >= 4)
                 {
-                    blackHoleBarText.text = "STAGE 4/4: FINAL CONTAINMENT LOCK FAILING — CRITICAL MASS!";
+                    stageHeaderText.text = LocalizationManager.Get("HUD_Stage4_Critical");
+                    float pulse = 0.5f + (0.5f * Mathf.Sin(Time.time * 10f));
+                    stageHeaderText.color = Color.Lerp(new Color(1f, 0.2f, 0.15f), new Color(1f, 0.9f, 0.2f), pulse);
                 }
                 else
                 {
-                    blackHoleBarText.text = $"BLACK HOLE MASS: {mass:N0} / {targetMass:N0} TONS | STAGE {stage}/4 | CONTAINMENT BEAMS ACTIVE: {activeBeams}/4";
+                    stageHeaderText.text = LocalizationManager.Get("HUD_Stage", stage);
+                    if (stage == 1) stageHeaderText.color = new Color(0.2f, 0.92f, 1.0f);
+                    else if (stage == 2) stageHeaderText.color = new Color(1.0f, 0.88f, 0.2f);
+                    else if (stage == 3) stageHeaderText.color = new Color(1.0f, 0.55f, 0.1f);
                 }
-            }
-
-            // 2. Scrap Coins
-            if (scrapCoinsText != null && quotaManager != null)
-            {
-                scrapCoinsText.text = $"SCRAP COINS: {quotaManager.ScrapCoins}";
-            }
-
-            // 3. REC Status & Sector Telemetry (Top-Left)
-            if (recStatusText != null)
-            {
-                bool blink = (Time.time % 1.2f) < 0.8f;
-                recStatusText.text = blink
-                    ? "<color=#FF2233>●</color> REC | CAM_FEED: DRONE #001"
-                    : "<color=#551111>○</color> REC | CAM_FEED: DRONE #001";
-            }
-
-            if (sectorInfoText != null)
-            {
-                sectorInfoText.text = "SECTOR 7-G // ORBITAL PANOPTICON";
-            }
-
-            // 4. Telemetry (Top-Right)
-            if (telemetryRightText != null)
-            {
-                int activeBots = 0;
-                if (HelperDroneManager.Instance != null)
-                {
-                    activeBots = HelperDroneManager.Instance.ActiveBots.Count;
-                }
-                else if (config != null)
-                {
-                    activeBots = config.activeHelperRobotsCount;
-                }
-
-                telemetryRightText.text = $"HULL: 100% | BOTS: {activeBots} | LOCKS: <color=#00FFCC>{activeBeams}/4</color>\nBH: <color=#FFD700>STAGE {stage}/4</color> ({mass:N0}/{targetMass:N0} TONS)";
-            }
-
-            // 5. Context Control Hints (Bottom-Left)
-            if (controlHintsText != null)
-            {
-                controlHintsText.text = "[RMB] Grab Scrap | [LMB] Launch / Dry Punt Scrap | [SHIFT] Dash | [TAB] Upgrades";
             }
         }
 
-        private void EnsureBottomHUDAndBossTracker()
+        private static void SafeDestroy(GameObject go)
+        {
+            if (go == null) return;
+#if UNITY_EDITOR
+            if (!Application.isPlaying)
+                DestroyImmediate(go);
+            else
+                Destroy(go);
+#else
+            Destroy(go);
+#endif
+        }
+
+        public void EnsureMinimalistHUD()
         {
             Canvas canvas = GetComponentInParent<Canvas>();
             if (canvas == null) canvas = FindAnyObjectByType<Canvas>();
             if (canvas == null) return;
 
-            // 1. Hide old Quota panel if present
-            Transform oldQuotaPanel = canvas.transform.Find("Panel_QuotaAndHeat");
-            if (oldQuotaPanel != null)
+            // 1. Permanently remove all legacy clutter elements
+            string[] legacyNames = { "SurveillanceMonitorFrame", "Text_REC_Status", "Panel_QuotaAndHeat", "Text_BossTracker", "Panel_CriticalMassWarning" };
+            foreach (var legName in legacyNames)
             {
-                oldQuotaPanel.gameObject.SetActive(false);
+                Transform t = canvas.transform.Find(legName);
+                if (t != null)
+                {
+                    SafeDestroy(t.gameObject);
+                }
             }
 
-            // 2. Setup or Find Panel_BottomHUD
+            // 2. Setup or find Scrap Coins Counter Badge (Top-Right)
+            if (scrapCoinsBadge == null)
+            {
+                Transform existingBadge = canvas.transform.Find("Panel_ScrapCoins");
+                if (existingBadge != null)
+                {
+                    scrapCoinsBadge = existingBadge.gameObject;
+                    scrapCoinsText = scrapCoinsBadge.GetComponentInChildren<TextMeshProUGUI>();
+                }
+            }
+
+            if (scrapCoinsBadge == null)
+            {
+                GameObject badgeGo = new GameObject("Panel_ScrapCoins", typeof(RectTransform), typeof(Image), typeof(Outline));
+                badgeGo.transform.SetParent(canvas.transform, false);
+
+                RectTransform badgeRt = badgeGo.GetComponent<RectTransform>();
+                badgeRt.anchorMin = new Vector2(1f, 1f);
+                badgeRt.anchorMax = new Vector2(1f, 1f);
+                badgeRt.pivot = new Vector2(1f, 1f);
+                badgeRt.anchoredPosition = new Vector2(-40f, -36f);
+                badgeRt.sizeDelta = new Vector2(250f, 44f);
+
+                Image bg = badgeGo.GetComponent<Image>();
+                bg.color = new Color(0.04f, 0.07f, 0.12f, 0.90f);
+
+                Outline outline = badgeGo.GetComponent<Outline>();
+                outline.effectColor = new Color(0.2f, 0.85f, 1f, 0.8f);
+                outline.effectDistance = new Vector2(1.5f, -1.5f);
+
+                GameObject textGo = new GameObject("Text_Coins", typeof(RectTransform), typeof(TextMeshProUGUI));
+                textGo.transform.SetParent(badgeGo.transform, false);
+                RectTransform textRt = textGo.GetComponent<RectTransform>();
+                textRt.anchorMin = Vector2.zero;
+                textRt.anchorMax = Vector2.one;
+                textRt.sizeDelta = Vector2.zero;
+
+                scrapCoinsText = textGo.GetComponent<TextMeshProUGUI>();
+                scrapCoinsText.alignment = TextAlignmentOptions.Center;
+                scrapCoinsText.fontSize = 15;
+                scrapCoinsText.fontStyle = FontStyles.Bold;
+                scrapCoinsText.color = new Color(1.0f, 0.88f, 0.25f);
+
+                scrapCoinsBadge = badgeGo;
+            }
+
+            // Remove standalone legacy Text_ScrapCoins if present
+            Transform oldCoins = canvas.transform.Find("Text_ScrapCoins");
+            if (oldCoins != null && oldCoins.gameObject != scrapCoinsBadge && oldCoins.parent == canvas.transform)
+            {
+                SafeDestroy(oldCoins.gameObject);
+            }
+
+            // 3. Setup or find Bottom HUD (Mass Bar & Stage Header)
             if (bottomHUDPanel == null)
             {
-                Transform existing = canvas.transform.Find("Panel_BottomHUD");
-                if (existing != null)
+                Transform existingBottom = canvas.transform.Find("Panel_BottomHUD");
+                if (existingBottom != null)
                 {
-                    bottomHUDPanel = existing.gameObject;
-                    blackHoleBarFill = bottomHUDPanel.transform.Find("Bar_BlackHole/Fill")?.GetComponent<Image>();
-                    blackHoleBarText = bottomHUDPanel.transform.Find("Bar_BlackHole/Text")?.GetComponent<TextMeshProUGUI>();
-                    
-                    // Hide legacy battery bar if present
-                    Transform batT = bottomHUDPanel.transform.Find("Bar_Battery");
-                    if (batT != null) batT.gameObject.SetActive(false);
-
-                    // Re-anchor Bar_BlackHole to fill the entire bar cleanly
-                    Transform bhT = bottomHUDPanel.transform.Find("Bar_BlackHole");
-                    if (bhT != null)
-                    {
-                        RectTransform bhRtExisting = bhT.GetComponent<RectTransform>();
-                        if (bhRtExisting != null)
-                        {
-                            bhRtExisting.anchorMin = Vector2.zero;
-                            bhRtExisting.anchorMax = Vector2.one;
-                            bhRtExisting.sizeDelta = Vector2.zero;
-                            bhRtExisting.anchoredPosition = Vector2.zero;
-                        }
-                    }
+                    bottomHUDPanel = existingBottom.gameObject;
                 }
             }
 
             if (bottomHUDPanel == null)
             {
-                GameObject hudGo = new GameObject("Panel_BottomHUD");
+                GameObject hudGo = new GameObject("Panel_BottomHUD", typeof(RectTransform));
                 hudGo.transform.SetParent(canvas.transform, false);
-                RectTransform hudRt = hudGo.AddComponent<RectTransform>();
-                hudRt.anchorMin = new Vector2(0.5f, 0f);
-                hudRt.anchorMax = new Vector2(0.5f, 0f);
-                hudRt.pivot = new Vector2(0.5f, 0f);
-                hudRt.anchoredPosition = new Vector2(0f, 32f);
-                hudRt.sizeDelta = new Vector2(700f, 38f);
-
-                // Single Clean Bar: Black Hole Mass, Stage & Containment Beams
-                GameObject bhBarGo = new GameObject("Bar_BlackHole");
-                bhBarGo.transform.SetParent(hudGo.transform, false);
-                RectTransform bhRt = bhBarGo.AddComponent<RectTransform>();
-                bhRt.anchorMin = Vector2.zero;
-                bhRt.anchorMax = Vector2.one;
-                bhRt.sizeDelta = Vector2.zero;
-                bhRt.anchoredPosition = Vector2.zero;
-
-                Image bhBg = bhBarGo.AddComponent<Image>();
-                bhBg.color = new Color(0.04f, 0.07f, 0.12f, 0.88f);
-                Outline bhOutline = bhBarGo.AddComponent<Outline>();
-                bhOutline.effectColor = new Color(0.2f, 0.85f, 1f, 0.75f);
-                bhOutline.effectDistance = new Vector2(1.5f, -1.5f);
-
-                GameObject bhFillGo = new GameObject("Fill");
-                bhFillGo.transform.SetParent(bhBarGo.transform, false);
-                RectTransform bhFillRt = bhFillGo.AddComponent<RectTransform>();
-                bhFillRt.anchorMin = Vector2.zero;
-                bhFillRt.anchorMax = Vector2.one;
-                bhFillRt.sizeDelta = Vector2.zero;
-                blackHoleBarFill = bhFillGo.AddComponent<Image>();
-                blackHoleBarFill.type = Image.Type.Filled;
-                blackHoleBarFill.fillMethod = Image.FillMethod.Horizontal;
-                blackHoleBarFill.color = new Color(0.2f, 0.9f, 1f, 0.95f);
-
-                GameObject bhTextGo = new GameObject("Text");
-                bhTextGo.transform.SetParent(bhBarGo.transform, false);
-                RectTransform bhTextRt = bhTextGo.AddComponent<RectTransform>();
-                bhTextRt.anchorMin = Vector2.zero;
-                bhTextRt.anchorMax = Vector2.one;
-                bhTextRt.sizeDelta = Vector2.zero;
-                blackHoleBarText = bhTextGo.AddComponent<TextMeshProUGUI>();
-                blackHoleBarText.alignment = TextAlignmentOptions.Center;
-                blackHoleBarText.fontSize = 13;
-                blackHoleBarText.fontStyle = FontStyles.Bold;
-                blackHoleBarText.color = Color.white;
-
                 bottomHUDPanel = hudGo;
             }
 
-            // 3. Remove/Hide Boss HP Tracker
-            Transform existingTracker = canvas.transform.Find("Text_BossTracker");
-            if (existingTracker != null)
+            RectTransform bottomRt = bottomHUDPanel.GetComponent<RectTransform>();
+            bottomRt.anchorMin = new Vector2(0.5f, 0f);
+            bottomRt.anchorMax = new Vector2(0.5f, 0f);
+            bottomRt.pivot = new Vector2(0.5f, 0f);
+            bottomRt.anchoredPosition = new Vector2(0f, 32f);
+            bottomRt.sizeDelta = new Vector2(520f, 22f);
+
+            // Hide legacy battery bar if present
+            Transform batT = bottomHUDPanel.transform.Find("Bar_Battery");
+            if (batT != null) SafeDestroy(batT.gameObject);
+
+            // Re-anchor Bar_BlackHole
+            Transform bhT = bottomHUDPanel.transform.Find("Bar_BlackHole");
+            GameObject bhBarGo;
+            if (bhT == null)
             {
-                existingTracker.gameObject.SetActive(false);
+                bhBarGo = new GameObject("Bar_BlackHole", typeof(RectTransform), typeof(Image), typeof(Outline));
+                bhBarGo.transform.SetParent(bottomHUDPanel.transform, false);
             }
-        }
-
-        private void UpdateCriticalMassWarningHUD()
-        {
-            var massMgr = BlackHoleMassAndEnergyManager.Instance;
-            bool isStage4 = massMgr != null && massMgr.CurrentStage == 4 && !massMgr.IsCatastrophicCollapse;
-
-            if (criticalMassWarningPanel == null)
+            else
             {
-                var canvas = GetComponentInParent<Canvas>();
-                if (canvas != null)
-                {
-                    var found = canvas.transform.Find("Panel_CriticalMassWarning");
-                    if (found != null)
-                    {
-                        criticalMassWarningPanel = found.gameObject;
-                        criticalMassWarningText = criticalMassWarningPanel.GetComponentInChildren<TextMeshProUGUI>();
-                    }
-                }
+                bhBarGo = bhT.gameObject;
             }
 
-            if (criticalMassWarningPanel != null)
-            {
-                if (criticalMassWarningPanel.activeSelf != isStage4)
-                {
-                    criticalMassWarningPanel.SetActive(isStage4);
-                }
+            RectTransform bhRt = bhBarGo.GetComponent<RectTransform>();
+            bhRt.anchorMin = Vector2.zero;
+            bhRt.anchorMax = Vector2.one;
+            bhRt.sizeDelta = Vector2.zero;
+            bhRt.anchoredPosition = Vector2.zero;
 
-                if (isStage4 && criticalMassWarningText != null)
-                {
-                    float pulse = (Mathf.Sin(Time.time * 10f) + 1f) * 0.5f;
-                    Color c = Color.Lerp(new Color(1f, 0.2f, 0.1f), new Color(1f, 0.9f, 0.1f), pulse);
-                    criticalMassWarningText.color = c;
-                    float mass = massMgr != null ? massMgr.CurrentBlackHoleMass : 850f;
-                    criticalMassWarningText.text = $"STAGE 4: CRITICAL MASS ({mass:F0}/1000)!\nSIPHON ENERGY IMMEDIATELY OR COLLAPSE IMMINENT!";
-                }
+            Image bhBg = bhBarGo.GetComponent<Image>();
+            bhBg.color = new Color(0.04f, 0.07f, 0.12f, 0.92f);
+
+            Outline bhOutline = bhBarGo.GetComponent<Outline>();
+            bhOutline.effectColor = new Color(0.2f, 0.85f, 1f, 0.75f);
+            bhOutline.effectDistance = new Vector2(1.5f, -1.5f);
+
+            Transform fillT = bhBarGo.transform.Find("Fill");
+            if (fillT == null)
+            {
+                GameObject fillGo = new GameObject("Fill", typeof(RectTransform), typeof(Image));
+                fillGo.transform.SetParent(bhBarGo.transform, false);
+                fillT = fillGo.transform;
             }
+            RectTransform fillRt = fillT.GetComponent<RectTransform>();
+            fillRt.anchorMin = Vector2.zero;
+            fillRt.anchorMax = Vector2.one;
+            fillRt.sizeDelta = Vector2.zero;
+
+            blackHoleBarFill = fillT.GetComponent<Image>();
+            blackHoleBarFill.type = Image.Type.Filled;
+            blackHoleBarFill.fillMethod = Image.FillMethod.Horizontal;
+            blackHoleBarFill.color = new Color(0.2f, 0.9f, 1f, 0.95f);
+
+            Transform textT = bhBarGo.transform.Find("Text");
+            if (textT == null)
+            {
+                GameObject tGo = new GameObject("Text", typeof(RectTransform), typeof(TextMeshProUGUI));
+                tGo.transform.SetParent(bhBarGo.transform, false);
+                textT = tGo.transform;
+            }
+            RectTransform tRt = textT.GetComponent<RectTransform>();
+            tRt.anchorMin = Vector2.zero;
+            tRt.anchorMax = Vector2.one;
+            tRt.sizeDelta = Vector2.zero;
+
+            blackHoleBarText = textT.GetComponent<TextMeshProUGUI>();
+            blackHoleBarText.alignment = TextAlignmentOptions.Center;
+            blackHoleBarText.fontSize = 13;
+            blackHoleBarText.fontStyle = FontStyles.Bold;
+            blackHoleBarText.color = Color.white;
+
+            // Stage Header (directly above the Mass Bar)
+            Transform stageHeaderT = bottomHUDPanel.transform.Find("Text_StageHeader");
+            if (stageHeaderT == null)
+            {
+                GameObject shGo = new GameObject("Text_StageHeader", typeof(RectTransform), typeof(TextMeshProUGUI));
+                shGo.transform.SetParent(bottomHUDPanel.transform, false);
+                stageHeaderT = shGo.transform;
+            }
+            RectTransform shRt = stageHeaderT.GetComponent<RectTransform>();
+            shRt.anchorMin = new Vector2(0.5f, 1f);
+            shRt.anchorMax = new Vector2(0.5f, 1f);
+            shRt.pivot = new Vector2(0.5f, 0f);
+            shRt.anchoredPosition = new Vector2(0f, 6f);
+            shRt.sizeDelta = new Vector2(520f, 26f);
+
+            stageHeaderText = stageHeaderT.GetComponent<TextMeshProUGUI>();
+            stageHeaderText.alignment = TextAlignmentOptions.Center;
+            stageHeaderText.fontSize = 14;
+            stageHeaderText.fontStyle = FontStyles.Bold;
+            stageHeaderText.color = new Color(0.2f, 0.92f, 1f);
         }
 
         private void UpdateWarningHUD()
@@ -542,7 +543,7 @@ namespace OrbitalPanopticon.Core
 
             if (warningCountdownText != null)
             {
-                warningCountdownText.text = $"WARNING: BOUNDARY BREACH DETECTED\nSIGNAL LOSS IN {_warningRemainingSeconds:F1}s";
+                warningCountdownText.text = LocalizationManager.Get("HUD_BoundaryWarning", _warningRemainingSeconds);
             }
 
             if (warningBorderImage != null)
@@ -648,7 +649,7 @@ namespace OrbitalPanopticon.Core
             int speedBonus = quotaManager != null ? Mathf.CeilToInt(quotaManager.SpeedBonusPercent) : 0;
             if (quotaCelebrationText != null)
             {
-                quotaCelebrationText.text = $"<color=#00FFAA>QUOTA #{quotaLevel} COMPLETED!</color>\n<size=80%>+{rewardCoins} SCRAP COINS  <color=#FFD700>(SPEED BONUS +{speedBonus}%)</color></size>";
+                quotaCelebrationText.text = LocalizationManager.Get("HUD_QuotaCelebration", quotaLevel, rewardCoins, speedBonus);
             }
 
             quotaCelebrationPanel.SetActive(true);
@@ -659,7 +660,6 @@ namespace OrbitalPanopticon.Core
                 GameAudioManager.Instance.PlayQuotaComplete();
             }
 
-            // Animate In (Bounce Scale + Fade In)
             const float inDuration = 0.35f;
             float elapsed = 0f;
             while (elapsed < inDuration)
@@ -679,10 +679,8 @@ namespace OrbitalPanopticon.Core
             bannerT.localScale = Vector3.one;
             if (quotaCelebrationCanvasGroup != null) quotaCelebrationCanvasGroup.alpha = 1f;
 
-            // Hold on screen
             yield return new WaitForSecondsRealtime(2.5f);
 
-            // Animate Out (Fade Out)
             const float outDuration = 0.45f;
             elapsed = 0f;
             while (elapsed < outDuration)
@@ -697,15 +695,6 @@ namespace OrbitalPanopticon.Core
             }
 
             quotaCelebrationPanel.SetActive(false);
-        }
-
-        private Color GetHeatColor(int multiplier)
-        {
-            if (multiplier >= 16) return heat16xColor;
-            if (multiplier >= 8) return heat8xColor;
-            if (multiplier >= 4) return heat4xColor;
-            if (multiplier >= 2) return heat2xColor;
-            return heat1xColor;
         }
 
         private void HandleSignalLost(string reason)
@@ -734,6 +723,104 @@ namespace OrbitalPanopticon.Core
             {
                 signalLostOverlay.SetActive(false);
             }
+        }
+
+        public void ShowCenterWarningAlert(string message, float duration = 2.0f)
+        {
+            if (_beamAlertCoroutine != null)
+            {
+                StopCoroutine(_beamAlertCoroutine);
+            }
+            _beamAlertCoroutine = StartCoroutine(ShowCenterWarningAlertRoutine(message, duration));
+        }
+
+        private void EnsureBeamAlertPanel()
+        {
+            if (beamAlertPanel != null && beamAlertText != null) return;
+
+            Canvas canvas = GetComponentInParent<Canvas>();
+            if (canvas == null) canvas = FindAnyObjectByType<Canvas>();
+            if (canvas == null) return;
+
+            Transform existing = canvas.transform.Find("Panel_BeamDamageAlert");
+            if (existing != null)
+            {
+                beamAlertPanel = existing.gameObject;
+                beamAlertText = beamAlertPanel.GetComponentInChildren<TextMeshProUGUI>();
+                beamAlertCanvasGroup = beamAlertPanel.GetComponent<CanvasGroup>();
+                return;
+            }
+
+            GameObject panelGo = new GameObject("Panel_BeamDamageAlert");
+            panelGo.transform.SetParent(canvas.transform, false);
+            RectTransform rt = panelGo.AddComponent<RectTransform>();
+            rt.anchorMin = new Vector2(0.5f, 0.72f);
+            rt.anchorMax = new Vector2(0.5f, 0.72f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = Vector2.zero;
+            rt.sizeDelta = new Vector2(720f, 52f);
+
+            Image bg = panelGo.AddComponent<Image>();
+            bg.color = new Color(0.12f, 0.02f, 0.03f, 0.88f);
+
+            Outline outline = panelGo.AddComponent<Outline>();
+            outline.effectColor = new Color(1f, 0.25f, 0.1f, 0.95f);
+            outline.effectDistance = new Vector2(2f, -2f);
+
+            beamAlertCanvasGroup = panelGo.AddComponent<CanvasGroup>();
+
+            GameObject textGo = new GameObject("Text_Alert");
+            textGo.transform.SetParent(panelGo.transform, false);
+            RectTransform textRt = textGo.GetComponent<RectTransform>();
+            textRt.anchorMin = Vector2.zero;
+            textRt.anchorMax = Vector2.one;
+            textRt.sizeDelta = Vector2.zero;
+            textRt.anchoredPosition = Vector2.zero;
+
+            beamAlertText = textGo.AddComponent<TextMeshProUGUI>();
+            beamAlertText.alignment = TextAlignmentOptions.Center;
+            beamAlertText.fontSize = 17;
+            beamAlertText.fontStyle = FontStyles.Bold;
+            beamAlertText.color = new Color(1f, 0.35f, 0.15f);
+
+            beamAlertPanel = panelGo;
+            beamAlertPanel.SetActive(false);
+        }
+
+        private IEnumerator ShowCenterWarningAlertRoutine(string message, float duration)
+        {
+            EnsureBeamAlertPanel();
+
+            if (beamAlertPanel != null && beamAlertText != null)
+            {
+                beamAlertText.text = message;
+                beamAlertPanel.SetActive(true);
+                if (beamAlertCanvasGroup != null) beamAlertCanvasGroup.alpha = 1f;
+
+                float elapsed = 0f;
+                while (elapsed < duration)
+                {
+                    elapsed += Time.unscaledDeltaTime;
+                    float pulse = (Mathf.Sin(elapsed * 20f) + 1f) * 0.5f;
+                    beamAlertText.color = Color.Lerp(new Color(1f, 0.2f, 0.1f), new Color(1f, 0.95f, 0.2f), pulse);
+                    yield return null;
+                }
+
+                float fadeElapsed = 0f;
+                const float fadeDuration = 0.35f;
+                while (fadeElapsed < fadeDuration)
+                {
+                    fadeElapsed += Time.unscaledDeltaTime;
+                    if (beamAlertCanvasGroup != null)
+                    {
+                        beamAlertCanvasGroup.alpha = Mathf.Lerp(1f, 0f, fadeElapsed / fadeDuration);
+                    }
+                    yield return null;
+                }
+
+                beamAlertPanel.SetActive(false);
+            }
+            _beamAlertCoroutine = null;
         }
     }
 }

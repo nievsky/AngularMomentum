@@ -197,9 +197,9 @@ namespace OrbitalPanopticon.Gameplay
                     continue;
                 }
 
-                // Boundary escape check
+                // Boundary escape check (vortex-locked scrap cannot escape)
                 float dist = Vector3.Distance(scrap.transform.position, center);
-                if (dist > config.arenaMaxRadius)
+                if (dist > config.arenaMaxRadius && !scrap.hasEnteredVortex)
                 {
                     _activeScrap.RemoveAt(i);
                     _fadingScrap.Add(scrap);

@@ -363,7 +363,7 @@ namespace OrbitalPanopticon.Gameplay
             return best;
         }
 
-        private void ReleaseTargetScrap()
+        public void ReleaseTargetScrap()
         {
             if (targetScrap != null && HelperDroneManager.Instance != null)
             {

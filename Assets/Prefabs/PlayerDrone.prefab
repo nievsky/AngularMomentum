@@ -10347,11 +10347,16 @@ MonoBehaviour:
   roboArmVisual: {fileID: 6847709197394062973}
   blackHoleCenter: {fileID: 0}
   magnetBeamLine: {fileID: 0}
+  magnetBeamSecondaryLine: {fileID: 0}
   magnetBeamColor: {r: 0.2, g: 0.9, b: 1, a: 0.85}
+  magnetBeamSecondaryColor: {r: 3.5, g: 0.4, b: 5, a: 1}
   shockwaveColor: {r: 1, g: 0.8, b: 0.1, a: 1}
   puntShockwaveRing: {fileID: 0}
+  puntMuzzleLight: {fileID: 0}
   pullVortexParticles: {fileID: 5106876171968736773}
   puntBlastParticles: {fileID: 0}
+  vacuumNozzleSwirlParticles: {fileID: 0}
+  muzzleNozzlePoint: {fileID: 0}
   armIndicatorLight: {fileID: 0}
   observedArmGlowColor: {r: 1, g: 0.85, b: 0.1, a: 1}
 --- !u!1 &5065773862195546071

@@ -3,6 +3,7 @@ Shader "OrbitalPanopticon/VHSMonitorEffect"
     Properties
     {
         _MasterBlend ("Master Blend", Range(0.0, 1.0)) = 0.65
+        _OverscanScale ("Overscan Scale", Range(0.5, 1.0)) = 0.90
 
         [Header(CRT Scanlines)]
         _ScanlineIntensity ("Scanline Intensity", Range(0.0, 1.0)) = 0.28
@@ -57,6 +58,7 @@ Shader "OrbitalPanopticon/VHSMonitorEffect"
 
             CBUFFER_START(UnityPerMaterial)
                 float _MasterBlend;
+                float _OverscanScale;
                 float _ScanlineIntensity;
                 float _ScanlineCount;
                 float _ScanlineScrollSpeed;
@@ -87,13 +89,14 @@ Shader "OrbitalPanopticon/VHSMonitorEffect"
 
                 float timeVal = _Time.y;
 
-                // 1. CRT Screen Curvature (Barrel Distortion)
-                float2 centered = rawUV * 2.0 - 1.0;
+                // 1. CRT Screen Curvature (Barrel Distortion) with Fullscreen Overscan
+                float scale = (_OverscanScale > 0.001) ? _OverscanScale : 0.90;
+                float2 overscanUV = (rawUV - 0.5) * scale + 0.5;
+                float2 centered = overscanUV * 2.0 - 1.0;
                 float r2 = dot(centered, centered);
                 float2 curvedCentered = centered * (1.0 + r2 * _ScreenCurvature);
                 float2 uv = curvedCentered * 0.5 + 0.5;
-
-                bool isOutside = (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0);
+                uv = clamp(uv, 0.001, 0.999);
 
                 // 2. Signal Interlacing & Vertical Jitter
                 float jitterSeed = floor(timeVal * 14.0);
@@ -145,16 +148,11 @@ Shader "OrbitalPanopticon/VHSMonitorEffect"
                 float3 tintedColor = lerp(vhsColor, luma * _CCTVTint.rgb, _CCTVTintIntensity);
                 vhsColor = tintedColor;
 
-                // 8. Corner Vignette & Bezel
-                float corner = (1.0 - curvedCentered.x * curvedCentered.x) * (1.0 - curvedCentered.y * curvedCentered.y);
-                corner = saturate(corner);
-                corner = pow(corner, _CornerVignette * 3.5);
-                vhsColor *= corner;
-
-                if (isOutside)
-                {
-                    vhsColor = float3(0.015, 0.015, 0.015);
-                }
+                // 8. Corner Vignette (Smooth, no hard cutoff or gray borders)
+                float2 vigCoords = rawUV * (1.0 - rawUV.yx);
+                float vig = saturate(vigCoords.x * vigCoords.y * 16.0);
+                vig = pow(vig, max(0.01, _CornerVignette * 0.35));
+                vhsColor *= lerp(1.0, vig, _CornerVignette * 0.6);
 
                 // 9. Master Blend
                 float3 finalRgb = lerp(origColor.rgb, vhsColor, _MasterBlend);

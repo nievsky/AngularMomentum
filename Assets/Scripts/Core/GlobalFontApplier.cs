@@ -40,6 +40,15 @@ namespace OrbitalPanopticon.Core
             }
         }
 
+        public static void ApplyToAll()
+        {
+            var applier = Instance ?? Object.FindAnyObjectByType<GlobalFontApplier>();
+            if (applier != null)
+            {
+                applier.ApplyGlobalFontToEverything();
+            }
+        }
+
         private void Awake()
         {
             if (Instance == null)

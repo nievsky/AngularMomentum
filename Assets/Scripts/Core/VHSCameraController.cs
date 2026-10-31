@@ -9,12 +9,14 @@ namespace OrbitalPanopticon.Core
     {
         public static VHSCameraController Instance { get; private set; }
 
-        [Header("Material Reference")]
+        [Header("Configuration & Material References")]
+        [SerializeField] public VisualEnvironmentConfigSO visualConfig;
         [SerializeField] private Material vhsMaterial;
 
         [Header("Master VHS Controls")]
         [SerializeField] private bool enableVHSEffect = true;
         [Range(0f, 1f)] [SerializeField] private float masterBlend = 0.65f;
+        [Range(0.5f, 1.0f)] [SerializeField] private float overscanScale = 0.90f;
 
         [Header("1. CRT Scanlines")]
         [Range(0f, 1f)] [SerializeField] private float scanlineIntensity = 0.28f;
@@ -46,6 +48,7 @@ namespace OrbitalPanopticon.Core
 
         // Shader Property IDs
         private static readonly int PropMasterBlend = Shader.PropertyToID("_MasterBlend");
+        private static readonly int PropOverscanScale = Shader.PropertyToID("_OverscanScale");
         private static readonly int PropScanlineIntensity = Shader.PropertyToID("_ScanlineIntensity");
         private static readonly int PropScanlineCount = Shader.PropertyToID("_ScanlineCount");
         private static readonly int PropScanlineScrollSpeed = Shader.PropertyToID("_ScanlineScrollSpeed");
@@ -83,26 +86,106 @@ namespace OrbitalPanopticon.Core
             set { masterBlend = Mathf.Clamp01(value); UpdateMaterialProperties(); }
         }
 
+        public VisualEnvironmentConfigSO VisualConfig => visualConfig;
+
+        public float OverscanScale
+        {
+            get => overscanScale;
+            set { overscanScale = Mathf.Clamp(value, 0.5f, 1.0f); SaveToConfig(); UpdateMaterialProperties(); }
+        }
+
+        public void EnsureConfig()
+        {
+            if (visualConfig == null)
+            {
+#if UNITY_EDITOR
+                visualConfig = UnityEditor.AssetDatabase.LoadAssetAtPath<VisualEnvironmentConfigSO>("Assets/_Project/ScriptableObjects/VisualEnvironmentConfig.asset");
+#else
+                visualConfig = Resources.Load<VisualEnvironmentConfigSO>("VisualEnvironmentConfig");
+#endif
+            }
+        }
+
+        public void LoadFromConfig()
+        {
+            EnsureConfig();
+            if (visualConfig == null) return;
+
+            enableVHSEffect = visualConfig.enableVHSEffect;
+            masterBlend = visualConfig.masterBlend;
+            overscanScale = visualConfig.overscanScale;
+
+            scanlineIntensity = visualConfig.scanlineIntensity;
+            scanlineCount = visualConfig.scanlineCount;
+            scanlineScrollSpeed = visualConfig.scanlineScrollSpeed;
+
+            trackingBarIntensity = visualConfig.trackingBarIntensity;
+            trackingBarSpeed = visualConfig.trackingBarSpeed;
+            trackingBarThickness = visualConfig.trackingBarThickness;
+            horizontalGlitchStrength = visualConfig.horizontalGlitchStrength;
+
+            rgbShiftAmount = visualConfig.rgbShiftAmount;
+            tapeNoiseIntensity = visualConfig.tapeNoiseIntensity;
+            screenCurvature = visualConfig.screenCurvature;
+            cornerVignette = visualConfig.cornerVignette;
+            verticalJitter = visualConfig.verticalJitter;
+            cctvTint = visualConfig.cctvTint;
+            cctvTintIntensity = visualConfig.cctvTintIntensity;
+
+            EnsureMaterial();
+            UpdateMaterialProperties();
+        }
+
+        public void SaveToConfig()
+        {
+            EnsureConfig();
+            if (visualConfig == null) return;
+
+            visualConfig.enableVHSEffect = enableVHSEffect;
+            visualConfig.masterBlend = masterBlend;
+            visualConfig.overscanScale = overscanScale;
+
+            visualConfig.scanlineIntensity = scanlineIntensity;
+            visualConfig.scanlineCount = scanlineCount;
+            visualConfig.scanlineScrollSpeed = scanlineScrollSpeed;
+
+            visualConfig.trackingBarIntensity = trackingBarIntensity;
+            visualConfig.trackingBarSpeed = trackingBarSpeed;
+            visualConfig.trackingBarThickness = trackingBarThickness;
+            visualConfig.horizontalGlitchStrength = horizontalGlitchStrength;
+
+            visualConfig.rgbShiftAmount = rgbShiftAmount;
+            visualConfig.tapeNoiseIntensity = tapeNoiseIntensity;
+            visualConfig.screenCurvature = screenCurvature;
+            visualConfig.cornerVignette = cornerVignette;
+            visualConfig.verticalJitter = verticalJitter;
+            visualConfig.cctvTint = cctvTint;
+            visualConfig.cctvTintIntensity = cctvTintIntensity;
+
+            visualConfig.MarkDirty();
+        }
+
         private void Awake()
         {
             if (Application.isPlaying)
             {
                 if (Instance == null) Instance = this;
             }
-            EnsureMaterial();
-            UpdateMaterialProperties();
+            EnsureConfig();
+            LoadFromConfig();
         }
 
         private void OnEnable()
         {
             if (Instance == null) Instance = this;
-            EnsureMaterial();
-            UpdateMaterialProperties();
+            EnsureConfig();
+            LoadFromConfig();
         }
 
         private void OnValidate()
         {
-            EnsureMaterial();
+            EnsureConfig();
+            SaveToConfig();
             UpdateMaterialProperties();
         }
 
@@ -136,6 +219,7 @@ namespace OrbitalPanopticon.Core
             float effectiveJitter = Mathf.Clamp(verticalJitter + _burstGlitchBoost * 0.015f, 0f, 0.05f);
 
             vhsMaterial.SetFloat(PropMasterBlend, effectiveBlend);
+            vhsMaterial.SetFloat(PropOverscanScale, overscanScale);
             vhsMaterial.SetFloat(PropScanlineIntensity, scanlineIntensity);
             vhsMaterial.SetFloat(PropScanlineCount, scanlineCount);
             vhsMaterial.SetFloat(PropScanlineScrollSpeed, scanlineScrollSpeed);
@@ -196,9 +280,9 @@ namespace OrbitalPanopticon.Core
         }
 
         // Live Setters
-        public void SetTrackingBarIntensity(float val) { trackingBarIntensity = val; UpdateMaterialProperties(); }
-        public void SetScanlineIntensity(float val) { scanlineIntensity = val; UpdateMaterialProperties(); }
-        public void SetRGBShift(float val) { rgbShiftAmount = val; UpdateMaterialProperties(); }
-        public void SetCurvature(float val) { screenCurvature = val; UpdateMaterialProperties(); }
+        public void SetTrackingBarIntensity(float val) { trackingBarIntensity = val; SaveToConfig(); UpdateMaterialProperties(); }
+        public void SetScanlineIntensity(float val) { scanlineIntensity = val; SaveToConfig(); UpdateMaterialProperties(); }
+        public void SetRGBShift(float val) { rgbShiftAmount = val; SaveToConfig(); UpdateMaterialProperties(); }
+        public void SetCurvature(float val) { screenCurvature = val; SaveToConfig(); UpdateMaterialProperties(); }
     }
 }

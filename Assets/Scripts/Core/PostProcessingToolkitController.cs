@@ -11,7 +11,8 @@ namespace OrbitalPanopticon.Core
     {
         public static PostProcessingToolkitController Instance { get; private set; }
 
-        [Header("Volume Target")]
+        [Header("Configuration & Volume Target")]
+        [SerializeField] public VisualEnvironmentConfigSO visualConfig;
         [SerializeField] private Volume postProcessVolume;
 
         [Header("1. Tonemapping (ACES)")]
@@ -30,8 +31,10 @@ namespace OrbitalPanopticon.Core
         [Header("4. Chromatic Aberration")]
         [Range(0f, 1f)] [SerializeField] private float chromaticAberrationIntensity = 0.08f;
 
-        [Header("5. Lens Distortion")]
-        [Range(-1f, 1f)] [SerializeField] private float lensDistortionIntensity = -0.12f;
+        [Header("5. Lens Distortion (Fullscreen Overscan)")]
+        [Range(-1f, 1f)] [SerializeField] private float lensDistortionIntensity = -0.32f;
+        [Range(0.5f, 2f)] [SerializeField] private float lensDistortionScale = 1.15f;
+        [SerializeField] private bool autoCompensateDistortionScale = true;
 
         [Header("6. Color Adjustments")]
         [Range(-100f, 100f)] [SerializeField] private float contrast = 12f;
@@ -60,9 +63,96 @@ namespace OrbitalPanopticon.Core
         // Runtime Pulse Offsets
         private float _pulseBloomBoost = 0f;
         private float _pulseChromaticBoost = 0f;
+        private float _pulseLensDistortionBoost = 0f;
+        private float _pulseMotionBlurBoost = 0f;
         private Coroutine _pulseRoutine;
 
         public Volume PostProcessVolume => postProcessVolume;
+
+        public VisualEnvironmentConfigSO VisualConfig => visualConfig;
+
+        public void EnsureConfig()
+        {
+            if (visualConfig == null)
+            {
+#if UNITY_EDITOR
+                visualConfig = UnityEditor.AssetDatabase.LoadAssetAtPath<VisualEnvironmentConfigSO>("Assets/_Project/ScriptableObjects/VisualEnvironmentConfig.asset");
+#else
+                visualConfig = Resources.Load<VisualEnvironmentConfigSO>("VisualEnvironmentConfig");
+#endif
+            }
+        }
+
+        public void LoadFromConfig()
+        {
+            EnsureConfig();
+            if (visualConfig == null) return;
+
+            tonemappingMode = visualConfig.tonemappingMode;
+
+            bloomIntensity = visualConfig.bloomIntensity;
+            bloomThreshold = visualConfig.bloomThreshold;
+            bloomScatter = visualConfig.bloomScatter;
+            bloomHighQualityFiltering = visualConfig.bloomHighQualityFiltering;
+
+            vignetteIntensity = visualConfig.vignetteIntensity;
+            vignetteSmoothness = visualConfig.vignetteSmoothness;
+
+            chromaticAberrationIntensity = visualConfig.chromaticAberrationIntensity;
+
+            lensDistortionIntensity = visualConfig.lensDistortionIntensity;
+            lensDistortionScale = visualConfig.lensDistortionScale;
+            autoCompensateDistortionScale = visualConfig.autoCompensateDistortionScale;
+
+            contrast = visualConfig.contrast;
+            postExposure = visualConfig.postExposure;
+            saturation = visualConfig.saturation;
+            colorFilter = visualConfig.colorFilter;
+
+            enableFilmGrain = visualConfig.enableFilmGrain;
+            filmGrainIntensity = visualConfig.filmGrainIntensity;
+            enableMotionBlur = visualConfig.enableMotionBlur;
+            motionBlurIntensity = visualConfig.motionBlurIntensity;
+            enableDepthOfField = visualConfig.enableDepthOfField;
+
+            EnsureVolumeAndOverrides();
+            ApplySettingsToVolume();
+        }
+
+        public void SaveToConfig()
+        {
+            EnsureConfig();
+            if (visualConfig == null) return;
+
+            visualConfig.tonemappingMode = tonemappingMode;
+
+            visualConfig.bloomIntensity = bloomIntensity;
+            visualConfig.bloomThreshold = bloomThreshold;
+            visualConfig.bloomScatter = bloomScatter;
+            visualConfig.bloomHighQualityFiltering = bloomHighQualityFiltering;
+
+            visualConfig.vignetteIntensity = vignetteIntensity;
+            visualConfig.vignetteSmoothness = vignetteSmoothness;
+
+            visualConfig.chromaticAberrationIntensity = chromaticAberrationIntensity;
+
+            visualConfig.lensDistortionIntensity = lensDistortionIntensity;
+            visualConfig.lensDistortionScale = lensDistortionScale;
+            visualConfig.autoCompensateDistortionScale = autoCompensateDistortionScale;
+
+            visualConfig.contrast = contrast;
+            visualConfig.postExposure = postExposure;
+            visualConfig.saturation = saturation;
+            visualConfig.colorFilter = colorFilter;
+
+            visualConfig.enableFilmGrain = enableFilmGrain;
+            visualConfig.filmGrainIntensity = filmGrainIntensity;
+            visualConfig.enableMotionBlur = enableMotionBlur;
+            visualConfig.motionBlurIntensity = motionBlurIntensity;
+            visualConfig.enableDepthOfField = enableDepthOfField;
+
+            visualConfig.MarkDirty();
+        }
 
         private void Awake()
         {
@@ -73,19 +163,21 @@ namespace OrbitalPanopticon.Core
                     Instance = this;
                 }
             }
-            EnsureVolumeAndOverrides();
-            ApplySettingsToVolume();
+            EnsureConfig();
+            LoadFromConfig();
         }
 
         private void OnEnable()
         {
             if (Instance == null) Instance = this;
-            EnsureVolumeAndOverrides();
-            ApplySettingsToVolume();
+            EnsureConfig();
+            LoadFromConfig();
         }
 
         private void OnValidate()
         {
+            EnsureConfig();
+            SaveToConfig();
             EnsureVolumeAndOverrides();
             ApplySettingsToVolume();
         }
@@ -93,7 +185,7 @@ namespace OrbitalPanopticon.Core
         private void Update()
         {
             // Keep volume updated in editor and runtime
-            if (!Application.isPlaying || _pulseBloomBoost > 0f || _pulseChromaticBoost > 0f)
+            if (!Application.isPlaying || _pulseBloomBoost > 0f || _pulseChromaticBoost > 0f || Mathf.Abs(_pulseLensDistortionBoost) > 0.001f || _pulseMotionBlurBoost > 0f)
             {
                 ApplySettingsToVolume();
             }
@@ -164,8 +256,15 @@ namespace OrbitalPanopticon.Core
 
             if (_lensDistortion != null)
             {
+                float totalIntensity = Mathf.Clamp(lensDistortionIntensity + _pulseLensDistortionBoost, -1f, 1f);
                 _lensDistortion.intensity.overrideState = true;
-                _lensDistortion.intensity.value = lensDistortionIntensity;
+                _lensDistortion.intensity.value = totalIntensity;
+
+                _lensDistortion.scale.overrideState = true;
+                float effectiveScale = autoCompensateDistortionScale
+                    ? Mathf.Max(1.0f, 1.0f + Mathf.Abs(totalIntensity) * 0.45f)
+                    : lensDistortionScale;
+                _lensDistortion.scale.value = effectiveScale;
             }
 
             if (_colorAdjustments != null)
@@ -192,9 +291,9 @@ namespace OrbitalPanopticon.Core
 
             if (_motionBlur != null)
             {
-                _motionBlur.active = enableMotionBlur;
+                _motionBlur.active = enableMotionBlur || (_pulseMotionBlurBoost > 0.001f);
                 _motionBlur.intensity.overrideState = true;
-                _motionBlur.intensity.value = motionBlurIntensity;
+                _motionBlur.intensity.value = Mathf.Clamp01(motionBlurIntensity + _pulseMotionBlurBoost);
             }
 
             if (_depthOfField != null)
@@ -204,10 +303,15 @@ namespace OrbitalPanopticon.Core
         }
 
         /// <summary>
-        /// Triggers a dynamic high-impact pulse (Bloom flash + Chromatic distortion)
-        /// for dramatic gameplay feedback during punt launches, containment lock breaks, or stage shifts.
+        /// Triggers a dynamic high-impact pulse (Bloom flash + Chromatic distortion + optional Lens Distortion / Motion Blur)
+        /// for dramatic gameplay feedback during punt launches, containment lock breaks, directional dashes, or stage shifts.
         /// </summary>
         public void TriggerImpactPulse(float bloomBoost = 1.5f, float chromaticBoost = 0.35f, float duration = 0.4f)
+        {
+            TriggerImpactPulse(bloomBoost, chromaticBoost, 0f, duration, 0f);
+        }
+
+        public void TriggerImpactPulse(float bloomBoost, float chromaticBoost, float lensDistortionBoost, float duration, float motionBlurBoost = 0.5f)
         {
             if (!Application.isPlaying || !isActiveAndEnabled) return;
 
@@ -215,10 +319,10 @@ namespace OrbitalPanopticon.Core
             {
                 StopCoroutine(_pulseRoutine);
             }
-            _pulseRoutine = StartCoroutine(ImpactPulseRoutine(bloomBoost, chromaticBoost, duration));
+            _pulseRoutine = StartCoroutine(ImpactPulseRoutine(bloomBoost, chromaticBoost, lensDistortionBoost, duration, motionBlurBoost));
         }
 
-        private IEnumerator ImpactPulseRoutine(float bloomBoost, float chromaticBoost, float duration)
+        private IEnumerator ImpactPulseRoutine(float bloomBoost, float chromaticBoost, float lensDistortionBoost, float duration, float motionBlurBoost)
         {
             float elapsed = 0f;
             duration = Mathf.Max(0.05f, duration);
@@ -232,6 +336,8 @@ namespace OrbitalPanopticon.Core
                 float decay = Mathf.Pow(1.0f - t, 2.2f);
                 _pulseBloomBoost = bloomBoost * decay;
                 _pulseChromaticBoost = chromaticBoost * decay;
+                _pulseLensDistortionBoost = lensDistortionBoost * decay;
+                _pulseMotionBlurBoost = motionBlurBoost * decay;
 
                 ApplySettingsToVolume();
                 yield return null;
@@ -239,14 +345,17 @@ namespace OrbitalPanopticon.Core
 
             _pulseBloomBoost = 0f;
             _pulseChromaticBoost = 0f;
+            _pulseLensDistortionBoost = 0f;
+            _pulseMotionBlurBoost = 0f;
             ApplySettingsToVolume();
             _pulseRoutine = null;
         }
 
         // Live Setters for External Controllers
-        public void SetBloomIntensity(float val) { bloomIntensity = val; ApplySettingsToVolume(); }
-        public void SetChromaticAberration(float val) { chromaticAberrationIntensity = val; ApplySettingsToVolume(); }
-        public void SetVignetteIntensity(float val) { vignetteIntensity = val; ApplySettingsToVolume(); }
-        public void SetLensDistortion(float val) { lensDistortionIntensity = val; ApplySettingsToVolume(); }
+        public void SetBloomIntensity(float val) { bloomIntensity = val; SaveToConfig(); ApplySettingsToVolume(); }
+        public void SetChromaticAberration(float val) { chromaticAberrationIntensity = val; SaveToConfig(); ApplySettingsToVolume(); }
+        public void SetVignetteIntensity(float val) { vignetteIntensity = val; SaveToConfig(); ApplySettingsToVolume(); }
+        public void SetLensDistortion(float val) { lensDistortionIntensity = val; SaveToConfig(); ApplySettingsToVolume(); }
+        public void SetLensDistortionScale(float val) { lensDistortionScale = val; SaveToConfig(); ApplySettingsToVolume(); }
     }
 }

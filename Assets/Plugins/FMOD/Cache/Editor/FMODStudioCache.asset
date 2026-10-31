@@ -78,7 +78,7 @@ MonoBehaviour:
   StringsBanks:
   - {fileID: 384512280698726887}
   cacheVersion: 131848
-  cacheTime: 639290483190959237
+  cacheTime: 639290493486293137
   SerializableEventsDict:
   - key: event:/Blackhole/Singularity_Hum
     index: 0
@@ -99,7 +99,7 @@ MonoBehaviour:
   Path: Assets/FMOD/Desktop/Master.strings.bank
   Name: Master.strings
   StudioPath: bank:/Master.strings
-  lastModified: 639290483190959237
+  lastModified: 639290493486293137
   FileSizes:
   - Name: Desktop
     Value: 858
@@ -121,7 +121,7 @@ MonoBehaviour:
   Path: Assets/FMOD/Desktop/Master.bank
   Name: Master
   StudioPath: bank:/Master
-  lastModified: 639290483190934220
+  lastModified: 639290493486283175
   FileSizes:
   - Name: Desktop
     Value: 1076736
