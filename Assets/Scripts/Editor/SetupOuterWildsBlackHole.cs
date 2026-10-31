@@ -129,25 +129,45 @@ namespace OrbitalPanopticon.Editor
                 Transform visualRoot = bhSystem.transform.Find("VisualRoot");
                 if (visualRoot == null) visualRoot = bhSystem.transform;
 
-                // Configure Lensing Sphere
-                Transform sphereT = visualRoot.Find("BlackHoleSphere");
-                if (sphereT == null && visualRoot.childCount > 0)
+                // Remove any legacy EventHorizonOpaqueCore mesh (Issue #1 fix)
+                Transform ehCore = visualRoot.Find("EventHorizonOpaqueCore");
+                if (ehCore != null)
                 {
-                    for (int i = 0; i < visualRoot.childCount; i++)
-                    {
-                        var child = visualRoot.GetChild(i);
-                        if (child.name.IndexOf("Sphere", System.StringComparison.OrdinalIgnoreCase) >= 0)
-                        {
-                            sphereT = child;
-                            break;
-                        }
-                    }
+                    Object.DestroyImmediate(ehCore.gameObject);
                 }
 
-                if (sphereT != null)
+                // Remove legacy 3D sphere so Black Hole renders on camera-facing billboard quad
+                Transform oldSphere = visualRoot.Find("BlackHoleSphere");
+                if (oldSphere != null)
                 {
-                    sphereT.localScale = Vector3.one * 2.8f;
-                    var mr = sphereT.GetComponent<MeshRenderer>();
+                    Object.DestroyImmediate(oldSphere.gameObject);
+                }
+
+                // Configure Camera-Facing Billboard Quad (BlackHoleLensQuad)
+                Transform quadT = visualRoot.Find("BlackHoleLensQuad");
+                if (quadT == null)
+                {
+                    GameObject quadGo = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                    quadGo.name = "BlackHoleLensQuad";
+                    var col = quadGo.GetComponent<Collider>();
+                    if (col != null) Object.DestroyImmediate(col);
+
+                    quadT = quadGo.transform;
+                    quadT.SetParent(visualRoot, false);
+                }
+
+                if (quadT != null)
+                {
+                    quadT.localPosition = Vector3.zero;
+                    quadT.localRotation = Quaternion.identity;
+                    quadT.localScale = Vector3.one * 2.8f;
+
+                    if (quadT.GetComponent<BlackHoleBillboard>() == null)
+                    {
+                        quadT.gameObject.AddComponent<BlackHoleBillboard>();
+                    }
+
+                    var mr = quadT.GetComponent<MeshRenderer>();
                     if (mr != null && lensingMat != null)
                     {
                         mr.sharedMaterial = lensingMat;
@@ -155,7 +175,7 @@ namespace OrbitalPanopticon.Editor
                         mr.receiveShadows = false;
                         EditorUtility.SetDirty(mr);
                     }
-                    EditorUtility.SetDirty(sphereT);
+                    EditorUtility.SetDirty(quadT);
                 }
 
                 // Configure AccretionDiskVisual

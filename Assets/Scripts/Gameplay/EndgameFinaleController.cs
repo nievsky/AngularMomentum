@@ -492,7 +492,7 @@ namespace OrbitalPanopticon.Gameplay
 
             if (SceneTransitionManager.Instance != null)
             {
-                SceneTransitionManager.Instance.TransitionToScene("CreditsScene");
+                SceneTransitionManager.Instance.TransitionFromBlackScreenToScene("CreditsScene");
             }
             else
             {

@@ -120,10 +120,14 @@ namespace OrbitalPanopticon.Gameplay
                 if (ad != null) accretionDiskVisual = ad.gameObject;
             }
 
-            if (eventHorizonOpaqueCore == null && visualRoot != null)
+            if (visualRoot != null)
             {
                 var eh = visualRoot.Find("EventHorizonOpaqueCore");
-                if (eh != null) eventHorizonOpaqueCore = eh;
+                if (eh != null) eh.gameObject.SetActive(false);
+            }
+            if (eventHorizonOpaqueCore != null)
+            {
+                eventHorizonOpaqueCore.gameObject.SetActive(false);
             }
 
             if (eventHorizonCollider == null)
@@ -320,52 +324,8 @@ namespace OrbitalPanopticon.Gameplay
             config.eventHorizonRadius = targetHorizon;
             config.accretionThresholdRadius = targetAccretion;
 
-            if (eventHorizonOpaqueCore != null)
-            {
-                float parentScale = (visualRoot != null) ? visualRoot.localScale.x : 1f;
-                float coreLocalScale = (targetHorizon * 2.0f) / Mathf.Max(0.001f, parentScale);
-                eventHorizonOpaqueCore.localScale = Vector3.one * coreLocalScale;
-            }
-
             if (eventHorizonCollider != null) eventHorizonCollider.radius = targetHorizon;
             if (gravityWellCollider != null) gravityWellCollider.radius = targetAccretion;
-        }
-
-        public void EnsureEventHorizonCore()
-        {
-            if (visualRoot == null) visualRoot = transform.Find("VisualRoot");
-            if (visualRoot == null) visualRoot = transform;
-
-            if (eventHorizonOpaqueCore == null)
-            {
-                var existing = visualRoot.Find("EventHorizonOpaqueCore");
-                if (existing != null)
-                {
-                    eventHorizonOpaqueCore = existing;
-                }
-            }
-
-            if (eventHorizonOpaqueCore == null)
-            {
-                GameObject coreGo = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                coreGo.name = "EventHorizonOpaqueCore";
-                coreGo.transform.SetParent(visualRoot, false);
-                coreGo.transform.localPosition = Vector3.zero;
-                coreGo.transform.localRotation = Quaternion.identity;
-
-                var col = coreGo.GetComponent<Collider>();
-                if (col != null)
-                {
-#if UNITY_EDITOR
-                    if (!Application.isPlaying) DestroyImmediate(col);
-                    else Destroy(col);
-#else
-                    Destroy(col);
-#endif
-                }
-
-                eventHorizonOpaqueCore = coreGo.transform;
-            }
         }
     }
 }

@@ -71,6 +71,7 @@ MonoBehaviour:
   cameraSpotRadiusAtTarget: 2.5
   overseerOrbitSpeed: 2
   overseerTrackingSpeed: 1.5
+  overseerIdleInterval: 10
   baseQuotaTarget: 500
   quotaGrowthMultiplier: 1.75
   heatDecayDelay: 4.5

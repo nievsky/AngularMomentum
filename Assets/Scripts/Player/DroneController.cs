@@ -294,7 +294,8 @@ namespace OrbitalPanopticon.Player
 
         private void Update()
         {
-            if (OrbitalPanopticon.Core.UpgradeTreeManager.IsTreeOpen)
+            bool isMenuPaused = Time.timeScale == 0f || OrbitalPanopticon.Core.UpgradeTreeManager.IsTreeOpen || OrbitalPanopticon.Core.PauseMenuController.IsGamePaused || OrbitalPanopticon.Core.TutorialSlideshowUI.IsTutorialOpen;
+            if (isMenuPaused)
             {
                 _moveInput = Vector2.zero;
                 _verticalInput = 0f;
@@ -333,7 +334,8 @@ namespace OrbitalPanopticon.Player
 
         private void FixedUpdate()
         {
-            if (OrbitalPanopticon.Core.UpgradeTreeManager.IsTreeOpen) return;
+            bool isMenuPaused = Time.timeScale == 0f || OrbitalPanopticon.Core.UpgradeTreeManager.IsTreeOpen || OrbitalPanopticon.Core.PauseMenuController.IsGamePaused || OrbitalPanopticon.Core.TutorialSlideshowUI.IsTutorialOpen;
+            if (isMenuPaused) return;
 
             UpdateDampingAndBrakes();
             ApplyMovementPhysics();
@@ -347,7 +349,8 @@ namespace OrbitalPanopticon.Player
 
         private void HandleMouseLook()
         {
-            if (!isControlEnabled || OrbitalPanopticon.Core.UpgradeTreeManager.IsTreeOpen || (OrbitalPanopticon.Core.PauseMenuController.Instance != null && OrbitalPanopticon.Core.PauseMenuController.Instance.IsGamePaused)) return;
+            bool isMenuPaused = Time.timeScale == 0f || OrbitalPanopticon.Core.UpgradeTreeManager.IsTreeOpen || OrbitalPanopticon.Core.PauseMenuController.IsGamePaused || OrbitalPanopticon.Core.TutorialSlideshowUI.IsTutorialOpen;
+            if (!isControlEnabled || isMenuPaused) return;
 
             var mouse = Mouse.current;
             if (mouse == null) return;
@@ -383,7 +386,8 @@ namespace OrbitalPanopticon.Player
             _verticalInput = 0f;
             isBraking = false;
 
-            if (!isControlEnabled || isMovementLocked || OrbitalPanopticon.Core.UpgradeTreeManager.IsTreeOpen || (OrbitalPanopticon.Core.PauseMenuController.Instance != null && OrbitalPanopticon.Core.PauseMenuController.Instance.IsGamePaused)) return;
+            bool isMenuPaused = Time.timeScale == 0f || OrbitalPanopticon.Core.UpgradeTreeManager.IsTreeOpen || OrbitalPanopticon.Core.PauseMenuController.IsGamePaused || OrbitalPanopticon.Core.TutorialSlideshowUI.IsTutorialOpen;
+            if (!isControlEnabled || isMovementLocked || isMenuPaused) return;
 
             var keyboard = Keyboard.current;
             if (keyboard == null) return;

@@ -2531,21 +2531,14 @@ MonoBehaviour:
   quotaManager: {fileID: 1796598641}
   arenaBoundaryManager: {fileID: 2010030592}
   droneController: {fileID: 6009639490949983741}
-  surveillanceFramePanel: {fileID: 2017965631}
-  recStatusText: {fileID: 639766813}
-  sectorInfoText: {fileID: 1812757816}
-  telemetryRightText: {fileID: 1812959004}
-  controlHintsText: {fileID: 45729825}
-  quotaText: {fileID: 1966303262}
-  quotaFillImage: {fileID: 220733363}
-  heatMultiplierText: {fileID: 343124911}
+  scrapCoinsBadge: {fileID: 0}
   scrapCoinsText: {fileID: 60423352}
   bottomHUDPanel: {fileID: 1634037655}
   blackHoleBarFill: {fileID: 387643536}
   blackHoleBarText: {fileID: 156894419}
-  playerEnergyBarFill: {fileID: 2027868925}
-  playerEnergyBarText: {fileID: 720299020}
-  topBossTrackerText: {fileID: 1476174626}
+  stageHeaderText: {fileID: 0}
+  cameraViewfinderOverlay: {fileID: 0}
+  recDotImage: {fileID: 0}
   crosshairImage: {fileID: 920404230}
   crosshairTickImages:
   - {fileID: 920404230}
@@ -2560,26 +2553,22 @@ MonoBehaviour:
   startOverlayPanel: {fileID: 96788142}
   startOverlayCanvasGroup: {fileID: 96788144}
   startPromptText: {fileID: 630129311}
-  quotaCelebrationPanel: {fileID: 1259337744}
-  quotaCelebrationCanvasGroup: {fileID: 1259337746}
-  quotaCelebrationText: {fileID: 2124371290}
-  criticalMassWarningPanel: {fileID: 1882824420}
-  criticalMassWarningText: {fileID: 2034926978}
   warningPanel: {fileID: 1874384604}
   warningCountdownText: {fileID: 497232104}
   warningBorderImage: {fileID: 2034589937}
   warningBorderPulsingColor: {r: 1, g: 0.15, b: 0.1, a: 0.75}
+  beamAlertPanel: {fileID: 0}
+  beamAlertText: {fileID: 0}
+  beamAlertCanvasGroup: {fileID: 0}
   signalLostOverlay: {fileID: 1702076951}
   signalLostReasonText: {fileID: 1848584769}
   observedNoticePanel: {fileID: 1592477156}
   observedNoticeText: {fileID: 1463525381}
   observedNoticeBorder: {fileID: 957484147}
   observedGoldColor: {r: 1, g: 0.85, b: 0.1, a: 1}
-  heat1xColor: {r: 1, g: 1, b: 1, a: 1}
-  heat2xColor: {r: 1, g: 0.9, b: 0.2, a: 1}
-  heat4xColor: {r: 1, g: 0.5, b: 0.1, a: 1}
-  heat8xColor: {r: 1, g: 0.2, b: 0.2, a: 1}
-  heat16xColor: {r: 1, g: 0.1, b: 0.9, a: 1}
+  quotaCelebrationPanel: {fileID: 1259337744}
+  quotaCelebrationCanvasGroup: {fileID: 1259337746}
+  quotaCelebrationText: {fileID: 2124371290}
 --- !u!114 &343821890
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2691,10 +2680,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.UpgradeTreeUI
   panelRoot: {fileID: 736202908}
+  viewportRect: {fileID: 0}
+  mapContainer: {fileID: 0}
   nodesContainer: {fileID: 0}
   linesContainer: {fileID: 0}
   currencyText: {fileID: 0}
   headerText: {fileID: 0}
+  resetCameraButton: {fileID: 0}
+  viewportController: {fileID: 0}
   standardOutlineColor: {r: 0.2, g: 0.9, b: 1, a: 1}
   wowOutlineColor: {r: 1, g: 0.2, b: 0.2, a: 1}
   maxedOutlineColor: {r: 0.2, g: 1, b: 0.4, a: 1}
@@ -3467,6 +3460,8 @@ MonoBehaviour:
   beamEndWidth: 0.15
   isLockBroken: 0
   isConsumedOrCollapsing: 0
+  idleSoundInterval: 10
+  idleSoundJitter: 2.5
 --- !u!1 &472368157
 GameObject:
   m_ObjectHideFlags: 0
@@ -4769,6 +4764,7 @@ MonoBehaviour:
   centerPoint: {fileID: 622030045}
   eventHorizonTrigger: {fileID: 983058185}
   gravityWellTrigger: {fileID: 643332157}
+  singularityImplosionPrefab: {fileID: 0}
 --- !u!54 &622030047
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -4825,6 +4821,7 @@ MonoBehaviour:
   blackHoleGravity: {fileID: 0}
   visualRoot: {fileID: 0}
   accretionDiskVisual: {fileID: 0}
+  eventHorizonOpaqueCore: {fileID: 0}
   eventHorizonCollider: {fileID: 0}
   gravityWellCollider: {fileID: 0}
   containmentEyes:
@@ -7848,8 +7845,8 @@ Transform:
   m_LocalScale: {x: 6, y: 6, z: 6}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1113013242}
   - {fileID: 726021170}
+  - {fileID: 1854684242}
   m_Father: {fileID: 622030045}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1100490470
@@ -7928,96 +7925,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1100490470}
   m_CullTransparentMesh: 1
---- !u!1 &1113013241
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1113013242}
-  - component: {fileID: 1113013244}
-  - component: {fileID: 1113013243}
-  m_Layer: 0
-  m_Name: BlackHoleSphere
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &1113013242
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1113013241}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 2.8, y: 2.8, z: 2.8}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1089424731}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!23 &1113013243
-MeshRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1113013241}
-  m_Enabled: 1
-  m_CastShadows: 0
-  m_ReceiveShadows: 0
-  m_DynamicOccludee: 1
-  m_StaticShadowCaster: 0
-  m_MotionVectors: 1
-  m_LightProbeUsage: 1
-  m_ReflectionProbeUsage: 1
-  m_RayTracingMode: 2
-  m_RayTraceProcedural: 0
-  m_RayTracingAccelStructBuildFlagsOverride: 0
-  m_RayTracingAccelStructBuildFlags: 1
-  m_SmallMeshCulling: 1
-  m_ForceMeshLod: -1
-  m_MeshLodSelectionBias: 0
-  m_RenderingLayerMask: 1
-  m_RendererPriority: 0
-  m_Materials:
-  - {fileID: 2100000, guid: 97d7314eec864aa4a8b0e6c0ff51a512, type: 2}
-  m_StaticBatchInfo:
-    firstSubMesh: 0
-    subMeshCount: 0
-  m_StaticBatchRoot: {fileID: 0}
-  m_ProbeAnchor: {fileID: 0}
-  m_LightProbeVolumeOverride: {fileID: 0}
-  m_ScaleInLightmap: 1
-  m_ReceiveGI: 1
-  m_PreserveUVs: 1
-  m_IgnoreNormalsForChartDetection: 0
-  m_ImportantGI: 0
-  m_StitchLightmapSeams: 1
-  m_SelectedEditorRenderState: 3
-  m_MinimumChartSize: 4
-  m_AutoUVMaxDistance: 0.5
-  m_AutoUVMaxAngle: 89
-  m_LightmapParameters: {fileID: 0}
-  m_GlobalIlluminationMeshLod: 0
-  m_SortingLayerID: 0
-  m_SortingLayer: 0
-  m_SortingOrder: 0
-  m_MaskInteraction: 0
-  m_AdditionalVertexStreams: {fileID: 0}
---- !u!33 &1113013244
-MeshFilter:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1113013241}
-  m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!1 &1119891607
 GameObject:
   m_ObjectHideFlags: 0
@@ -9827,6 +9734,8 @@ MonoBehaviour:
   beamEndWidth: 0.15
   isLockBroken: 0
   isConsumedOrCollapsing: 0
+  idleSoundInterval: 10
+  idleSoundJitter: 2.5
 --- !u!1 &1439420289
 GameObject:
   m_ObjectHideFlags: 0
@@ -12063,6 +11972,8 @@ MonoBehaviour:
   beamEndWidth: 0.15
   isLockBroken: 0
   isConsumedOrCollapsing: 0
+  idleSoundInterval: 10
+  idleSoundJitter: 2.5
 --- !u!1 &1752571124
 GameObject:
   m_ObjectHideFlags: 0
@@ -12466,6 +12377,7 @@ MonoBehaviour:
   nodes:
   - nodeId: hub
     titleRU: "\u041D\u0430\u0432\u044B\u043A\u0438"
+    titleEN: 
     branch: 0
     currentLevel: 1
     maxLevel: 1
@@ -12475,8 +12387,10 @@ MonoBehaviour:
     uiPosition: {x: 0, y: 0}
     descriptionRU: "\u0426\u0435\u043D\u0442\u0440\u0430\u043B\u044C\u043D\u044B\u0439
       \u0443\u0437\u0435\u043B \u0434\u0435\u0440\u0435\u0432\u0430"
+    descriptionEN: 
   - nodeId: player_speed_1
     titleRU: "\u0421\u043A\u043E\u0440\u043E\u0441\u0442\u044C 1"
+    titleEN: 
     branch: 1
     currentLevel: 0
     maxLevel: 1
@@ -12486,8 +12400,10 @@ MonoBehaviour:
     isWowPerk: 0
     uiPosition: {x: -150, y: 130}
     descriptionRU: "+22% \u0442\u044F\u0433\u0430 \u0438 \u0441\u043A\u043E\u0440\u043E\u0441\u0442\u044C"
+    descriptionEN: 
   - nodeId: player_speed_2
     titleRU: "\u0421\u043A\u043E\u0440\u043E\u0441\u0442\u044C 2"
+    titleEN: 
     branch: 1
     currentLevel: 0
     maxLevel: 1
@@ -12497,8 +12413,10 @@ MonoBehaviour:
     isWowPerk: 0
     uiPosition: {x: -280, y: 160}
     descriptionRU: "+22% \u0442\u044F\u0433\u0430 \u0438 \u0441\u043A\u043E\u0440\u043E\u0441\u0442\u044C"
+    descriptionEN: 
   - nodeId: player_speed_3
     titleRU: "\u0421\u043A\u043E\u0440\u043E\u0441\u0442\u044C 3"
+    titleEN: 
     branch: 1
     currentLevel: 0
     maxLevel: 1
@@ -12508,8 +12426,10 @@ MonoBehaviour:
     isWowPerk: 0
     uiPosition: {x: -410, y: 180}
     descriptionRU: "+22% \u0442\u044F\u0433\u0430 \u0438 \u0441\u043A\u043E\u0440\u043E\u0441\u0442\u044C"
+    descriptionEN: 
   - nodeId: player_handling_1
     titleRU: "\u041C\u0430\u043D\u0435\u0432\u0440 1"
+    titleEN: 
     branch: 1
     currentLevel: 0
     maxLevel: 1
@@ -12519,8 +12439,10 @@ MonoBehaviour:
     isWowPerk: 0
     uiPosition: {x: -160, y: 25}
     descriptionRU: "+20% \u043C\u0430\u043D\u0435\u0432\u0440, -18% \u043E\u0442\u043A\u0430\u0442"
+    descriptionEN: 
   - nodeId: player_handling_2
     titleRU: "\u041C\u0430\u043D\u0435\u0432\u0440 2"
+    titleEN: 
     branch: 1
     currentLevel: 0
     maxLevel: 1
@@ -12530,8 +12452,10 @@ MonoBehaviour:
     isWowPerk: 0
     uiPosition: {x: -290, y: 25}
     descriptionRU: "+20% \u043C\u0430\u043D\u0435\u0432\u0440, -18% \u043E\u0442\u043A\u0430\u0442"
+    descriptionEN: 
   - nodeId: player_handling_3
     titleRU: "\u041C\u0430\u043D\u0435\u0432\u0440 3"
+    titleEN: 
     branch: 1
     currentLevel: 0
     maxLevel: 1
@@ -12541,8 +12465,10 @@ MonoBehaviour:
     isWowPerk: 0
     uiPosition: {x: -420, y: 25}
     descriptionRU: "+20% \u043C\u0430\u043D\u0435\u0432\u0440, -18% \u043E\u0442\u043A\u0430\u0442"
+    descriptionEN: 
   - nodeId: player_cargo_1
     titleRU: "\u041E\u0431\u044A\u0435\u043C 1"
+    titleEN: 
     branch: 1
     currentLevel: 0
     maxLevel: 1
@@ -12553,8 +12479,10 @@ MonoBehaviour:
     uiPosition: {x: -150, y: -80}
     descriptionRU: "\u0412\u043C\u0435\u0441\u0442\u0438\u043C\u043E\u0441\u0442\u044C:
       2 \u043E\u0431\u044A\u0435\u043A\u0442\u0430"
+    descriptionEN: 
   - nodeId: player_cargo_2
     titleRU: "\u041E\u0431\u044A\u0435\u043C 2"
+    titleEN: 
     branch: 1
     currentLevel: 0
     maxLevel: 1
@@ -12565,8 +12493,10 @@ MonoBehaviour:
     uiPosition: {x: -280, y: -110}
     descriptionRU: "\u0412\u043C\u0435\u0441\u0442\u0438\u043C\u043E\u0441\u0442\u044C:
       4 \u043E\u0431\u044A\u0435\u043A\u0442\u0430"
+    descriptionEN: 
   - nodeId: player_cargo_3
     titleRU: "\u041E\u0431\u044A\u0435\u043C 3"
+    titleEN: 
     branch: 1
     currentLevel: 0
     maxLevel: 1
@@ -12577,8 +12507,10 @@ MonoBehaviour:
     uiPosition: {x: -410, y: -135}
     descriptionRU: "\u0412\u043C\u0435\u0441\u0442\u0438\u043C\u043E\u0441\u0442\u044C:
       7 \u043E\u0431\u044A\u0435\u043A\u0442\u043E\u0432"
+    descriptionEN: 
   - nodeId: player_wow
     titleRU: "\u0412\u0410\u0423: \u0418\u0433\u0440\u043E\u043A"
+    titleEN: 
     branch: 1
     currentLevel: 0
     maxLevel: 1
@@ -12591,8 +12523,10 @@ MonoBehaviour:
     uiPosition: {x: -545, y: 25}
     descriptionRU: "x2 \u0438\u043C\u043F\u0443\u043B\u044C\u0441 \u0443\u0434\u0430\u0440\u0430
       \u0438 \u0441\u0432\u0435\u0440\u0445-\u0440\u044B\u0432\u043E\u043A"
+    descriptionEN: 
   - nodeId: hole_heat_fill
     titleRU: "\u041A\u041F\u0414 \u0432\u043E\u0440\u043E\u043D\u043A\u0438"
+    titleEN: 
     branch: 2
     currentLevel: 0
     maxLevel: 5
@@ -12603,8 +12537,10 @@ MonoBehaviour:
     uiPosition: {x: 0, y: 150}
     descriptionRU: "+15% \u041A\u041F\u0414 \u044D\u043D\u0435\u0440\u0433\u0438\u0438,
       +10% \u043C\u0430\u043A\u0441. \u043C\u0430\u0441\u0441\u0430"
+    descriptionEN: 
   - nodeId: hole_wow
     titleRU: "\u0412\u0410\u0423: \u0414\u044B\u0440\u0430"
+    titleEN: 
     branch: 2
     currentLevel: 0
     maxLevel: 1
@@ -12615,8 +12551,10 @@ MonoBehaviour:
     uiPosition: {x: 0, y: 280}
     descriptionRU: "x2 \u043C\u043D\u043E\u0436\u0438\u0442\u0435\u043B\u044C \u0432
       \u0432\u043E\u0440\u043E\u043D\u043A\u0435"
+    descriptionEN: 
   - nodeId: scrap_spawn_freq
     titleRU: "\u0427\u0430\u0441\u0442\u043E\u0442\u0430 \u043C\u0443\u0441\u043E\u0440\u0430"
+    titleEN: 
     branch: 3
     currentLevel: 0
     maxLevel: 3
@@ -12627,8 +12565,10 @@ MonoBehaviour:
     uiPosition: {x: 170, y: 85}
     descriptionRU: "-20% \u0438\u043D\u0442\u0435\u0440\u0432\u0430\u043B, +15 \u043C\u0430\u043A\u0441.
       \u043C\u0443\u0441\u043E\u0440\u0430"
+    descriptionEN: 
   - nodeId: scrap_tier_plus
     titleRU: "\u0422\u0438\u0440 \u043C\u0443\u0441\u043E\u0440\u0430 +1"
+    titleEN: 
     branch: 3
     currentLevel: 0
     maxLevel: 2
@@ -12639,8 +12579,10 @@ MonoBehaviour:
     uiPosition: {x: 310, y: 85}
     descriptionRU: "\u0420\u0430\u0437\u0431\u043B\u043E\u043A\u0438\u0440\u0443\u0435\u0442
       \u0422\u0438\u0440 2 \u0438 \u0422\u0438\u0440 3 \u043C\u0443\u0441\u043E\u0440"
+    descriptionEN: 
   - nodeId: scrap_wow
     titleRU: "\u0410\u043D\u043E\u043C\u0430\u043B\u0438\u044F \u04224"
+    titleEN: 
     branch: 3
     currentLevel: 0
     maxLevel: 1
@@ -12652,9 +12594,11 @@ MonoBehaviour:
     descriptionRU: "\u041A\u043E\u0441\u043C\u0438\u0447\u0435\u0441\u043A\u0430\u044F
       \u0430\u043D\u043E\u043C\u0430\u043B\u0438\u044F: \u0446\u0435\u043D\u043D\u044B\u0439
       \u043C\u0443\u0441\u043E\u0440"
+    descriptionEN: 
   - nodeId: valuable_scrap_chance
     titleRU: "\u0428\u0430\u043D\u0441 \u0446\u0435\u043D\u043D\u043E\u0433\u043E
       \u043C\u0443\u0441\u043E\u0440\u0430"
+    titleEN: 
     branch: 4
     currentLevel: 0
     maxLevel: 3
@@ -12665,8 +12609,10 @@ MonoBehaviour:
     uiPosition: {x: 170, y: -65}
     descriptionRU: "\u0428\u0430\u043D\u0441 \u0446\u0435\u043D\u043D\u043E\u0433\u043E
       \u043C\u0443\u0441\u043E\u0440\u0430: 15% -> 25% -> 35% -> 50%"
+    descriptionEN: 
   - nodeId: valuable_scrap_mult
     titleRU: "\u041E\u0431\u043E\u0433\u0430\u0449\u0435\u043D\u0438\u0435 \u043C\u0430\u0442\u0435\u0440\u0438\u0438"
+    titleEN: 
     branch: 4
     currentLevel: 0
     maxLevel: 3
@@ -12677,9 +12623,11 @@ MonoBehaviour:
     uiPosition: {x: 310, y: -65}
     descriptionRU: "\u041C\u043D\u043E\u0436\u0438\u0442\u0435\u043B\u044C \u0446\u0435\u043D\u043D\u043E\u0433\u043E
       \u043C\u0443\u0441\u043E\u0440\u0430: x3 -> x5 -> x8 -> x12"
+    descriptionEN: 
   - nodeId: quantum_decay_wow
     titleRU: "\u0412\u0410\u0423: \u041A\u0432\u0430\u043D\u0442\u043E\u0432\u044B\u0439
       \u0440\u0430\u0441\u043F\u0430\u0434"
+    titleEN: 
     branch: 4
     currentLevel: 0
     maxLevel: 1
@@ -12692,8 +12640,10 @@ MonoBehaviour:
       \u0440\u0430\u0441\u043F\u0430\u0434\n\u0423\u0434\u0432\u0430\u0438\u0432\u0430\u0435\u0442
       \u043C\u0430\u0441\u0441\u0443 \u0438 \u043C\u043E\u043D\u0435\u0442\u044B
       \u0441\u043E \u0432\u0441\u0435\u0433\u043E \u043C\u0443\u0441\u043E\u0440\u0430"
+    descriptionEN: 
   - nodeId: robot_trawl
     titleRU: "\u041C\u043E\u0449\u043D\u043E\u0441\u0442\u044C \u0442\u0440\u0430\u043B\u0430"
+    titleEN: 
     branch: 5
     currentLevel: 0
     maxLevel: 3
@@ -12704,8 +12654,10 @@ MonoBehaviour:
     uiPosition: {x: -60, y: -145}
     descriptionRU: "+25% \u0441\u0438\u043B\u0430 \u0437\u0430\u0445\u0432\u0430\u0442\u0430
       \u043C\u0430\u0433\u043D\u0438\u0442\u0430"
+    descriptionEN: 
   - nodeId: robot_speed
     titleRU: "\u0421\u043A\u043E\u0440\u043E\u0441\u0442\u044C \u0440\u043E\u0431\u043E\u0442\u043E\u0432"
+    titleEN: 
     branch: 5
     currentLevel: 0
     maxLevel: 3
@@ -12716,8 +12668,10 @@ MonoBehaviour:
     uiPosition: {x: -155, y: -265}
     descriptionRU: "+30% \u0441\u043A\u043E\u0440\u043E\u0441\u0442\u044C \u0440\u043E\u0431\u043E\u0442\u043E\u0432
       \u0437\u0430 \u0443\u0440."
+    descriptionEN: 
   - nodeId: robot_magnet_range
     titleRU: "\u0420\u0430\u0434\u0438\u0443\u0441 \u0437\u0430\u0445\u0432\u0430\u0442\u0430"
+    titleEN: 
     branch: 5
     currentLevel: 0
     maxLevel: 3
@@ -12728,8 +12682,10 @@ MonoBehaviour:
     uiPosition: {x: 35, y: -265}
     descriptionRU: "\u041C\u0430\u0433\u043D\u0438\u0442 \u0437\u0430\u0445\u0432\u0430\u0442\u044B\u0432\u0430\u0435\u0442
       \u0434\u0430\u043B\u044C\u0448\u0435 \u0438 \u0448\u0438\u0440\u0435"
+    descriptionEN: 
   - nodeId: robot_wow
     titleRU: "\u041A\u0430\u043C\u0438\u043A\u0430\u0434\u0437\u0435"
+    titleEN: 
     branch: 5
     currentLevel: 0
     maxLevel: 1
@@ -12741,6 +12697,7 @@ MonoBehaviour:
     uiPosition: {x: -60, y: -385}
     descriptionRU: "\u041F\u0440\u043E\u0442\u043E\u043A\u043E\u043B \u041A\u0430\u043C\u0438\u043A\u0430\u0434\u0437\u0435
       \u0434\u043B\u044F \u0440\u043E\u0431\u043E\u0442\u043E\u0432"
+    descriptionEN: 
 --- !u!114 &1796598645
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13574,6 +13531,109 @@ Transform:
   - {fileID: 1399439883}
   m_Father: {fileID: 958602151}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1854684241
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1854684242}
+  - component: {fileID: 1854684245}
+  - component: {fileID: 1854684244}
+  - component: {fileID: 1854684243}
+  m_Layer: 0
+  m_Name: BlackHoleLensQuad
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1854684242
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1854684241}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 2.8, y: 2.8, z: 2.8}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1089424731}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1854684243
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1854684241}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c944e087e35c1bb4cb625551fb0877d5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Gameplay.BlackHoleBillboard
+--- !u!23 &1854684244
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1854684241}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 97d7314eec864aa4a8b0e6c0ff51a512, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 1
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!33 &1854684245
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1854684241}
+  m_Mesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!1 &1868240368
 GameObject:
   m_ObjectHideFlags: 0
@@ -15093,6 +15153,8 @@ MonoBehaviour:
   beamEndWidth: 0.15
   isLockBroken: 0
   isConsumedOrCollapsing: 0
+  idleSoundInterval: 10
+  idleSoundJitter: 2.5
 --- !u!1 &2047886561
 GameObject:
   m_ObjectHideFlags: 0
@@ -15755,11 +15817,19 @@ MonoBehaviour:
   mainCamera: {fileID: 578688019}
   holdPoint: {fileID: 8542551437902376475}
   roboArmVisual: {fileID: 4518471656547199494}
+  roboArmAnimatorHook: {fileID: 0}
   blackHoleCenter: {fileID: 0}
   magnetBeamLine: {fileID: 0}
+  magnetBeamSecondaryLine: {fileID: 0}
   magnetBeamColor: {r: 0.2, g: 0.9, b: 1, a: 0.85}
+  magnetBeamSecondaryColor: {r: 3.5, g: 0.4, b: 5, a: 1}
   shockwaveColor: {r: 1, g: 0.8, b: 0.1, a: 1}
   puntShockwaveRing: {fileID: 580527346}
+  puntMuzzleLight: {fileID: 0}
+  pullVortexParticles: {fileID: 0}
+  puntBlastParticles: {fileID: 0}
+  vacuumNozzleSwirlParticles: {fileID: 0}
+  muzzleNozzlePoint: {fileID: 0}
   armIndicatorLight: {fileID: 967425293}
   observedArmGlowColor: {r: 1, g: 0.85, b: 0.1, a: 1}
 --- !u!33 &433703963865256275
@@ -16487,6 +16557,8 @@ MonoBehaviour:
   isBraking: 0
   currentPitch: 0
   currentYaw: 0
+  spaceDustParticles: {fileID: 0}
+  shiftDashBurstParticles: {fileID: 0}
 --- !u!33 &6476104463714775750
 MeshFilter:
   m_ObjectHideFlags: 0

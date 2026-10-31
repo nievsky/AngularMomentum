@@ -465,11 +465,6 @@ namespace OrbitalPanopticon.Gameplay
             // Evaluate Hits (Strict 3-Hit system, no HP bar)
             if (drone.CurrentBeamHits < 3)
             {
-                string warningMsg = $"ВНИМАНИЕ: ПОВРЕЖДЕНИЕ ОТ ЛУЧА СДЕРЖИВАНИЯ! [{drone.CurrentBeamHits}/3]";
-                if (UIManager.Instance != null)
-                {
-                    UIManager.Instance.ShowCenterWarningAlert(warningMsg, 2.0f);
-                }
                 Debug.LogWarning($"<color=#FF5500>[CONTAINMENT BEAM HAZARD] Drone struck by beam! Hits: {drone.CurrentBeamHits}/3</color>");
             }
             else
@@ -659,19 +654,39 @@ namespace OrbitalPanopticon.Gameplay
                 yield return null;
             }
 
-            // Phase 2: Complete dark offline state
+            // Phase 2: Menacing glowing RED broken eye state ([HDR] new Color(5.0f, 0.08f, 0.08f, 1.0f))
+            Color brokenRedEmission = new Color(5.0f, 0.08f, 0.08f, 1.0f);
+            Color brokenRedBase = new Color(1.0f, 0.15f, 0.15f, 1.0f);
+
             if (pupilLight != null)
             {
-                pupilLight.intensity = 0f;
-                pupilLight.enabled = false;
+                pupilLight.enabled = true;
+                pupilLight.color = Color.red;
+                pupilLight.intensity = 18f;
             }
 
-            if (_renderers != null && _propBlock != null)
+            if (_renderers != null)
             {
-                _propBlock.SetColor("_EmissionColor", Color.black);
                 for (int i = 0; i < _renderers.Length; i++)
                 {
-                    if (_renderers[i] != null) _renderers[i].SetPropertyBlock(_propBlock);
+                    if (_renderers[i] == null) continue;
+
+                    if (_renderers[i].material != null)
+                    {
+                        _renderers[i].material.EnableKeyword("_EMISSION");
+                        _renderers[i].material.SetColor("_EmissionColor", brokenRedEmission);
+                        if (_renderers[i].material.HasProperty("_BaseColor"))
+                        {
+                            _renderers[i].material.SetColor("_BaseColor", brokenRedBase);
+                        }
+                    }
+
+                    if (_propBlock != null)
+                    {
+                        _propBlock.SetColor("_EmissionColor", brokenRedEmission);
+                        _propBlock.SetColor("_BaseColor", brokenRedBase);
+                        _renderers[i].SetPropertyBlock(_propBlock);
+                    }
                 }
             }
 

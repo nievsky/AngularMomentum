@@ -112,17 +112,20 @@ The game is structured into a clean 3-scene flow configured in `EditorBuildSetti
 
 ### 3.1 Scene Transition Manager (`SceneTransitionManager.cs`)
 * **Global Singleton**: Instantiated via `[RuntimeInitializeOnLoadMethod(BeforeSceneLoad)]`, marked with `DontDestroyOnLoad`.
-* **Top-Sorting Overlay**: Dedicated `Transition_Canvas` with `sortingOrder = 9999` and full-screen `BlackDissolveOverlay` Image.
-* **Procedural Black Screen Dissolve Shader (`S_ScreenDissolve.shader`)**:
-  * Renders a solid `#000000` screen masked by procedural multi-frequency noise with glowing edge highlights.
+* **Top-Sorting Overlay & URP Bloom Integration**: Dedicated `Transition_Canvas` configured as `RenderMode.ScreenSpaceCamera` bound to `Camera.main` at `planeDistance = 0.35f` (`sortingOrder = 9999`) with fallback to `ScreenSpaceOverlay`. This ensures URP post-processing (Bloom, ACES tonemapping) directly catches the HDR fiery dissolve edge.
+* **Fiery Orange HDR Dissolve Shader (`S_ScreenDissolve.shader`)**:
+  * Multi-layer burning edge gradient: scorching white-yellow core (`[HDR] _EdgeCoreColor = (8.0, 4.5, 1.0, 1.0)`), fiery orange-red flame (`[HDR] _EdgeOuterColor = (4.5, 0.9, 0.05, 1.0)`), and expanding heat halo (`_SoftGlowWidth = 0.16f`, `_DissolveEdgeWidth = 0.09f`).
   * Driven by `_DissolveProgress` (`0.0` = completely clear/invisible, `1.0` = completely solid black).
+  * Automatically pulses post-processing bloom (`bloomBoost: 2.2f`) via `PostProcessingToolkitController.Instance.TriggerImpactPulse()` on transitions.
 * **Game Launch Boot Dissolve-In**:
   * On initial boot, starts at `_DissolveProgress = 1.0f` (solid black overlay) and waits **2 settling frames** behind the curtain for cameras, skybox, and post-processing to initialize.
   * Then runs `InitialDissolveInRoutine()` animating `_DissolveProgress` `1.0 -> 0.0` over `0.85s` (`Time.unscaledDeltaTime`) with audio cue, seamlessly revealing `MainMenuScene`.
-* **Three-Step Async Scene Transition (`TransitionRoutine`)**:
-  1. **Step 1 (Fade In Black Screen / Dissolve Out Current Scene)**: Animates `_DissolveProgress` `0.0 -> 1.0` over `0.85s` (using `Time.unscaledDeltaTime`) while playing `dissolveTransitionOneShot`.
+* **Standard Two-Way Scene Transition (`TransitionRoutine`)**:
+  1. **Step 1 (Fade In Black Screen / Dissolve Out Current Scene)**: Animates `_DissolveProgress` `0.0 -> 1.0` over `0.85s` (`Time.unscaledDeltaTime`) while playing `dissolveTransitionOneShot`.
   2. **Step 2 (Background Async Load & Frame Settle)**: Screen is pitch black; loads scene via `SceneManager.LoadSceneAsync(sceneName)` until `op.isDone`, then waits **2 extra frames** (`yield return null; yield return null;`) behind the curtain so the new scene's camera, skybox, and post-processing initialize without frame drops or visual glitches (`Time.timeScale = 1f`).
-  3. **Step 3 (Fade Out Black Screen / Dissolve In New Scene)**: Animates `_DissolveProgress` `1.0 -> 0.0` over `0.95s` (using `Time.unscaledDeltaTime`) while playing `dissolveTransitionOneShot` and smoothly revealing the active scene.
+  3. **Step 3 (Fade Out Black Screen / Dissolve In New Scene)**: Animates `_DissolveProgress` `1.0 -> 0.0` over `0.95s` (`Time.unscaledDeltaTime`) while playing `dissolveTransitionOneShot` and smoothly revealing the active scene.
+* **Specialized Finale Transition (`TransitionFromBlackScreenToScene`)**:
+  * Used after the CRT camera shutdown in `GameplayScene`: skips Step 1 (avoids redundant fade-in on an already black screen), loads `CreditsScene` asynchronously, and executes ONLY the fiery dissolve fade-out over `1.2s`.
 
 ### 3.2 Main Menu Scene (`MainMenuScene.unity`)
 * **Live 3D Simulation Background**: Space skybox, `BlackHoleSystem` at `(0,0,0)`, and pre-warmed `ScrapSpawner` (40 debris items orbiting and spiraling inward).
@@ -721,7 +724,7 @@ Orbital Panopticon features an overhauled AAA-indie VFX pipeline combining Visua
 - **Step 3: Dramatic Silence Hold**:
   - Holds in total pitch-black silence for **`1.8s`** (`WaitForSecondsRealtime(1.8f)`).
 - **Step 4: Transition to Credits Crawl**:
-  - Calls `SceneTransitionManager.Instance.TransitionToScene("CreditsScene")`, which smoothly dissolves out from the black screen into the Star Wars style Credits crawl.
+  - Calls `SceneTransitionManager.Instance.TransitionFromBlackScreenToScene("CreditsScene")`, which skips redundant fade-in on the black screen and executes only the fiery dissolve fade-out into the Star Wars style Credits crawl.
 
 ### 5.16 Automated 3D Asset, PBR Material & Animation Pipeline (`AssetAutoIntegrationPipeline`)
 
@@ -748,6 +751,35 @@ Located at [`Assets/_Project/Scripts/Editor/AssetAutoIntegrationPipeline.cs`](fi
   - **Helper Drone Bot**: Automatically instantiates `robot_low.fbx` under `HelperDroneBot.prefab`'s `VisualRoot`, disables primitive placeholder meshes, strips visual colliders, and normalizes scale to `~1.8` units.
   - **Overseer Containment Eye**: Replaces placeholder pupil spheres across all 4 `OverseerContainmentEye` instances in `GameplayScene.unity` with the high-poly eyeball model and generated material.
   - **Scrap Prefabs (`Tier1..Tier4`)**: Replaces visual geometry in `Scrap_Tier1_Bolt.prefab` through `Scrap_Tier4_Anomaly.prefab`, while preserving the root rigidbody and colliders, and updating the cached `mainRenderer` on `ScrapItem` for dynamic dissolve and valuable lava glow highlights.
+
+### 5.15 Rebranding to "Angular Momentum" & Multi-Slide Tutorial Window
+
+#### 1. Global Rebranding & Subtitle Clutter Elimination
+- **Title Updates**: Replaced `"ORBITAL PANOPTICON"` with **`"ANGULAR MOMENTUM"`** across `MainMenuScene.unity`, `GameplayScene.unity`, `CreditsScene.unity`, and [`LocalizationManager.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/LocalizationManager.cs).
+- **Crawl & Narrative Updates**: In [`StarWarsCrawlController.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/UI/StarWarsCrawlController.cs), credits line `"Panopticon Systems Architecture"` updated to `"Angular Momentum Systems Architecture"`.
+- **Clutter Elimination**: Subtitle labels displaying legacy strings like `"SURVEILLANCE SECTOR #042"` or `"CORPORATE SURVEILLANCE SECTOR 7-G // DRONE #001"` have been deactivated and cleared from `MainMenuScene` and `GameplayScene`.
+
+#### 2. Multi-Slide Tutorial Modal Window ([`TutorialSlideshowUI.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/TutorialSlideshowUI.cs))
+- **Decommission of Single-Click Start Banner**: Replaced the legacy `Panel_OperatorStart` (`[ CLICK LMB TO CONNECT TO DRONE #042 ]`) in `GameplayScene.unity` with `TutorialWindowPanel`.
+- **Simulation Pause & Cursor Rules**:
+  - Automatically displayed on `GameplayScene` start with `IsTutorialOpen = true`.
+  - Sets `Time.timeScale = 0f` (pausing game physics and simulation) and unlocks cursor (`Cursor.lockState = CursorLockMode.None`, `Cursor.visible = true`).
+  - Fullscreen dark backdrop (`Color(0.02, 0.04, 0.08, 0.88)`, `raycastTarget = true`) intercepts clicks to guarantee background mouse clicks cannot dismiss the window.
+- **Clean Responsive Layout**:
+  - **Top Header**: Title `"ANGULAR MOMENTUM"` in pixel sci-fi typography.
+  - **Visual Frame**: `560 x 300 px` container with cyber border, wired to `Sprite[] slideIllustrations` array in Inspector with a stylish placeholder container when unassigned.
+  - **Localized Slide Text Area**: Supports real-time RU/EN switching via `LocalizationManager`:
+    - *Slide 1/4 (Flight & Momentum)*: WASD thrusters, Space/Ctrl ascend/descend, Shift directional impulse dash.
+    - *Slide 2/4 (Gravity Gun & Singularity)*: Hold RMB to vacuum debris, LMB to launch into Black Hole; valuable magma debris bonus.
+    - *Slide 3/4 (Overseer Eyes & Stages)*: 4 containment beams holding Black Hole; 3 beam hits destroy drone.
+    - *Slide 4/4 (Upgrade Tree & Automation)*: Press TAB to pause, upgrade specs, and purchase autonomous helper bots.
+  - **Bottom Navigation Bar**:
+    - `[ < НАЗАД ]` (`PreviousSlide()`, hidden on Slide 1).
+    - Center page counter (`"1 / 4"` .. `"4 / 4"`).
+    - `[ ДАЛЕЕ > ]` (`NextSlide()`, visible on Slides 1–3).
+    - `[ НАЧАТЬ ИГРУ ]` (`StartGameFromTutorial()`, visible on Slide 4 with green/gold accent styling).
+- **Game Start Transition**:
+  - Closes modal with unscaled DOTween fade (`0.35s`), restores `Time.timeScale = 1f`, locks cursor (`Cursor.lockState = CursorLockMode.Locked`), and automatically triggers [`UIManager.Instance.ConnectOperator()`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/UIManager.cs) to initialize drone flight.
 
 ---
 
