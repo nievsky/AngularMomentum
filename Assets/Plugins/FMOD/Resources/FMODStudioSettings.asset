@@ -676,7 +676,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnity::FMODUnity.PlatformWebGL
   identifier: 46fbfdf3fc43db0458918377fd40293e
   parentIdentifier: default
-  active: 0
+  active: 1
   Properties:
     LiveUpdate:
       Value: 0
@@ -700,8 +700,8 @@ MonoBehaviour:
       Value: 0
       HasValue: 0
     BuildDirectory:
-      Value: 
-      HasValue: 0
+      Value: WEB
+      HasValue: 1
     SpeakerMode:
       Value: 0
       HasValue: 0

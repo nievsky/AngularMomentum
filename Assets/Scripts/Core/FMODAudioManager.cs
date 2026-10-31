@@ -91,6 +91,18 @@ namespace OrbitalPanopticon.Core
 
         private void Start()
         {
+            StartCoroutine(WaitForBanksAndInitialize());
+        }
+
+        private System.Collections.IEnumerator WaitForBanksAndInitialize()
+        {
+            while (!RuntimeManager.HaveMasterBanksLoaded)
+            {
+                yield return null;
+            }
+
+            yield return null;
+
             ApplySavedVolumes();
             InitializeLoops();
         }
@@ -98,6 +110,11 @@ namespace OrbitalPanopticon.Core
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
             ResolveReferences();
+
+            if (!RuntimeManager.HaveMasterBanksLoaded)
+            {
+                return;
+            }
 
             bool isGameplay = scene.name.Contains("Gameplay") || scene.name.Contains("Outdoor");
             if (!isGameplay)
@@ -233,6 +250,18 @@ namespace OrbitalPanopticon.Core
 
         private void Update()
         {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            // Web Audio Autoplay Policy: Resume mixer on user interaction with the game canvas
+            if ((UnityEngine.InputSystem.Pointer.current != null && UnityEngine.InputSystem.Pointer.current.press.wasPressedThisFrame) ||
+                (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.anyKey.wasPressedThisFrame))
+            {
+                if (RuntimeManager.IsInitialized)
+                {
+                    RuntimeManager.CoreSystem.mixerResume();
+                }
+            }
+#endif
+
             if (audioConfig == null) return;
 
             // Re-resolve dynamic references if needed

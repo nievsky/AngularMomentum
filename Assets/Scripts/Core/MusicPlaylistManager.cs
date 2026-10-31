@@ -76,6 +76,22 @@ namespace OrbitalPanopticon.Core
         {
             if (!_isInitialized)
             {
+                StartCoroutine(WaitForBanksAndStartMusic());
+            }
+        }
+
+        private IEnumerator WaitForBanksAndStartMusic()
+        {
+            while (!RuntimeManager.HaveMasterBanksLoaded)
+            {
+                yield return null;
+            }
+
+            // Small delay to ensure FMOD Studio System has registered all event definitions
+            yield return null;
+
+            if (!_isInitialized)
+            {
                 _isInitialized = true;
                 string activeSceneName = SceneManager.GetActiveScene().name;
                 PlaylistType sceneType = GetPlaylistTypeForScene(activeSceneName);
@@ -151,6 +167,11 @@ namespace OrbitalPanopticon.Core
         {
             ResolveConfig();
             PlaylistType targetType = GetPlaylistTypeForScene(scene.name);
+
+            if (!RuntimeManager.HaveMasterBanksLoaded)
+            {
+                return;
+            }
 
             // Custom scene transition logic: seamless Stage parameter toggle vs fresh start
             if (!_isInitialized)
