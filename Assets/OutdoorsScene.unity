@@ -12467,7 +12467,7 @@ MonoBehaviour:
     descriptionRU: "+20% \u043C\u0430\u043D\u0435\u0432\u0440, -18% \u043E\u0442\u043A\u0430\u0442"
     descriptionEN: 
   - nodeId: player_cargo_1
-    titleRU: "\u041E\u0431\u044A\u0435\u043C 1"
+    titleRU: "\u041c\u0443\u043b\u044c\u0442\u0438\u0437\u0430\u0445\u0432\u0430\u0442 1"
     titleEN: 
     branch: 1
     currentLevel: 0
@@ -12481,7 +12481,7 @@ MonoBehaviour:
       2 \u043E\u0431\u044A\u0435\u043A\u0442\u0430"
     descriptionEN: 
   - nodeId: player_cargo_2
-    titleRU: "\u041E\u0431\u044A\u0435\u043C 2"
+    titleRU: "\u041c\u0443\u043b\u044c\u0442\u0438\u0437\u0430\u0445\u0432\u0430\u0442 2"
     titleEN: 
     branch: 1
     currentLevel: 0
@@ -12495,7 +12495,7 @@ MonoBehaviour:
       4 \u043E\u0431\u044A\u0435\u043A\u0442\u0430"
     descriptionEN: 
   - nodeId: player_cargo_3
-    titleRU: "\u041E\u0431\u044A\u0435\u043C 3"
+    titleRU: "\u041c\u0443\u043b\u044c\u0442\u0438\u0437\u0430\u0445\u0432\u0430\u0442 3"
     titleEN: 
     branch: 1
     currentLevel: 0

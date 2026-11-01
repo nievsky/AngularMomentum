@@ -91,8 +91,46 @@ namespace OrbitalPanopticon.Core
             {
                 PopulateDefaultNodes();
             }
+            else
+            {
+                SyncMissingNodeDescriptions();
+            }
 
             BuildNodeMap();
+        }
+
+        private void SyncMissingNodeDescriptions()
+        {
+            if (nodes == null || nodes.Count == 0) return;
+
+            var defaultList = new List<UpgradeNodeData>();
+            var prevList = nodes;
+            nodes = defaultList;
+            PopulateDefaultNodes();
+            nodes = prevList;
+
+            var defaultMap = new Dictionary<string, UpgradeNodeData>();
+            for (int i = 0; i < defaultList.Count; i++)
+            {
+                if (defaultList[i] != null && !string.IsNullOrEmpty(defaultList[i].nodeId))
+                {
+                    defaultMap[defaultList[i].nodeId] = defaultList[i];
+                }
+            }
+
+            for (int i = 0; i < nodes.Count; i++)
+            {
+                var n = nodes[i];
+                if (n == null || string.IsNullOrEmpty(n.nodeId)) continue;
+                if (defaultMap.TryGetValue(n.nodeId, out var def))
+                {
+                    if (string.IsNullOrEmpty(n.titleEN)) n.titleEN = def.titleEN;
+                    if (string.IsNullOrEmpty(n.titleRU) || n.titleRU.StartsWith("Объем")) n.titleRU = def.titleRU;
+                    if (n.nodeId.StartsWith("player_cargo")) { n.titleRU = def.titleRU; n.titleEN = def.titleEN; }
+                    if (string.IsNullOrEmpty(n.descriptionRU)) n.descriptionRU = def.descriptionRU;
+                    if (string.IsNullOrEmpty(n.descriptionEN)) n.descriptionEN = def.descriptionEN;
+                }
+            }
         }
 
         private bool HasEnergyBranch()
@@ -464,8 +502,8 @@ namespace OrbitalPanopticon.Core
             nodes.Add(new UpgradeNodeData
             {
                 nodeId = "player_cargo_1",
-                titleRU = "Объем 1",
-                titleEN = "Cargo 1",
+                titleRU = "Мультизахват 1",
+                titleEN = "Multi-Grip 1",
                 branch = UpgradeBranch.Player,
                 currentLevel = 0,
                 maxLevel = 1,
@@ -479,8 +517,8 @@ namespace OrbitalPanopticon.Core
             nodes.Add(new UpgradeNodeData
             {
                 nodeId = "player_cargo_2",
-                titleRU = "Объем 2",
-                titleEN = "Cargo 2",
+                titleRU = "Мультизахват 2",
+                titleEN = "Multi-Grip 2",
                 branch = UpgradeBranch.Player,
                 currentLevel = 0,
                 maxLevel = 1,
@@ -494,8 +532,8 @@ namespace OrbitalPanopticon.Core
             nodes.Add(new UpgradeNodeData
             {
                 nodeId = "player_cargo_3",
-                titleRU = "Объем 3",
-                titleEN = "Cargo 3",
+                titleRU = "Мультизахват 3",
+                titleEN = "Multi-Grip 3",
                 branch = UpgradeBranch.Player,
                 currentLevel = 0,
                 maxLevel = 1,
