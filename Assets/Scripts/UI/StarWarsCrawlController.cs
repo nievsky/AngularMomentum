@@ -21,8 +21,8 @@ namespace OrbitalPanopticon.UI
 
         [Header("Scroll Tuning")]
         [SerializeField] private float crawlSpeed = 28f;
-        [SerializeField] private float fastSpeedMultiplier = 3.5f;
-        [SerializeField] private float initialYOffset = -280f;
+        [SerializeField] private float fastSpeedMultiplier = 4.0f;
+        [SerializeField] private float initialYOffset = 720f;
         [SerializeField] private float endYThreshold = 3400f;
 
         public CreditsContentConfigSO CreditsConfig { get => creditsConfig; set => creditsConfig = value; }
@@ -30,6 +30,39 @@ namespace OrbitalPanopticon.UI
         public float CrawlSpeed { get => crawlSpeed; set => crawlSpeed = value; }
         public float InitialYOffset { get => initialYOffset; set => initialYOffset = value; }
         public float EndYThreshold { get => endYThreshold; set => endYThreshold = value; }
+
+        [Header("Credits Robot Follower")]
+        [Tooltip("Prefab of the robot to spawn following the credits text (Assets/_Project/Art/Models/HelperBot/robot_low.prefab)")]
+        [SerializeField] private GameObject robotPrefab;
+        [Tooltip("Pre-spawned or instantiated robot follower root")]
+        [SerializeField] private Transform robotFollowerRoot;
+        [Tooltip("Visual transform of the robot that rotates smoothly")]
+        [SerializeField] private Transform robotVisualTransform;
+        [Tooltip("Distance in canvas units below the bottom of the credits text")]
+        [SerializeField] private float robotTrailingDistance = 404f;
+        [Tooltip("Smooth spin speed in degrees per second around the axis")]
+        [SerializeField] private float robotSpinSpeed = 40f;
+        [Tooltip("Local spin axis for smooth rotation")]
+        [SerializeField] private Vector3 robotSpinAxis = new Vector3(0f, 1f, 0f);
+        [Tooltip("Cinematic tilt angle so the robot's top, visor, and thrusters are nicely visible")]
+        [SerializeField] private Vector3 robotTiltAngle = new Vector3(22f, 0f, 0f);
+        [Tooltip("Base model rotation offset so the robot faces front towards the camera")]
+        [SerializeField] private Vector3 robotBaseRotation = new Vector3(0f, 0f, 180f);
+        [Tooltip("Scale of the robot model in canvas units")]
+        [SerializeField] private Vector3 robotScale = new Vector3(8000f, 8000f, 8000f);
+        [Tooltip("Canvas Z offset to keep robot in front of the text")]
+        [SerializeField] private float robotZOffset = -60f;
+        [Tooltip("Light intensity for dedicated credits illumination")]
+        [SerializeField] private float illuminationLightIntensity = 1.2f;
+        [Tooltip("Extra upward travel in canvas units after passing text before returning to menu")]
+        [SerializeField] private float robotExitPadding = 3500f;
+        [SerializeField] private bool autoExtendEndThreshold = true;
+
+        public GameObject RobotPrefab { get => robotPrefab; set => robotPrefab = value; }
+        public Transform RobotFollowerRoot { get => robotFollowerRoot; set => robotFollowerRoot = value; }
+        public Transform RobotVisualTransform { get => robotVisualTransform; set => robotVisualTransform = value; }
+        public float RobotTrailingDistance { get => robotTrailingDistance; set => robotTrailingDistance = value; }
+        public float RobotSpinSpeed { get => robotSpinSpeed; set => robotSpinSpeed = value; }
 
         private bool _isReturning = false;
 
@@ -68,6 +101,7 @@ namespace OrbitalPanopticon.UI
             }
 
             ApplyLocalization();
+            SetupCreditsRobot();
         }
 
         private void ApplyLocalization()
@@ -193,6 +227,254 @@ namespace OrbitalPanopticon.UI
                 {
                     ReturnToMainMenu();
                 }
+            }
+
+            // Smooth continuous robot rotation around its axis
+            if (robotVisualTransform != null)
+            {
+                float rotMult = isFast ? fastMult : 1f;
+                robotVisualTransform.Rotate(robotSpinAxis, robotSpinSpeed * rotMult * Time.deltaTime, Space.Self);
+            }
+        }
+
+        public void SetupCreditsRobot()
+        {
+            if (creditsTextContainer == null) return;
+
+            if (creditsTextComponent == null)
+            {
+                creditsTextComponent = creditsTextContainer.GetComponentInChildren<TextMeshProUGUI>();
+            }
+
+            // Always calculate actual rendered height and bottom of credits text
+            float textBottomY = -2400f;
+            if (creditsTextComponent != null)
+            {
+                creditsTextComponent.ForceMeshUpdate();
+
+                // 1. Exact measurement from rendered TMP line info
+                var textInfo = creditsTextComponent.textInfo;
+                if (textInfo != null && textInfo.lineCount > 0)
+                {
+                    float lowestDescender = float.MaxValue;
+                    for (int i = 0; i < textInfo.lineCount; i++)
+                    {
+                        var line = textInfo.lineInfo[i];
+                        if (line.characterCount > 0 && line.descender < lowestDescender)
+                        {
+                            lowestDescender = line.descender;
+                        }
+                    }
+
+                    if (lowestDescender < float.MaxValue)
+                    {
+                        Vector3 worldPt = creditsTextComponent.transform.TransformPoint(new Vector3(0f, lowestDescender, 0f));
+                        Vector3 containerPt = creditsTextContainer.InverseTransformPoint(worldPt);
+                        textBottomY = containerPt.y;
+                    }
+                }
+
+                // 2. Safety envelope from preferredHeight
+                float preferred = creditsTextComponent.preferredHeight;
+                if (preferred > 100f)
+                {
+                    if (-preferred < textBottomY)
+                    {
+                        textBottomY = -preferred;
+                    }
+                }
+            }
+
+            // Ensure textBottomY is strictly negative and below the container
+            textBottomY = Mathf.Min(textBottomY, -creditsTextContainer.rect.height);
+
+            // 1. Locate or create follower root
+            if (robotFollowerRoot == null)
+            {
+                var existing = creditsTextContainer.Find("CreditsRobotFollower");
+                if (existing != null) robotFollowerRoot = existing;
+            }
+
+            if (robotFollowerRoot == null)
+            {
+                GameObject followerObj = new GameObject("CreditsRobotFollower");
+                followerObj.transform.SetParent(creditsTextContainer, false);
+                robotFollowerRoot = followerObj.transform;
+            }
+
+            // Position follower directly trailing below the bottom of the credits text
+            float followerY = textBottomY - robotTrailingDistance;
+            robotFollowerRoot.localPosition = new Vector3(0f, followerY, robotZOffset);
+            robotFollowerRoot.localRotation = Quaternion.Euler(robotTiltAngle);
+            robotFollowerRoot.localScale = Vector3.one;
+
+            // 2. Setup visual pivot for smooth spinning
+            if (robotVisualTransform == null)
+            {
+                var existingPivot = robotFollowerRoot.Find("VisualPivot");
+                if (existingPivot != null)
+                {
+                    robotVisualTransform = existingPivot;
+                }
+                else
+                {
+                    GameObject pivotObj = new GameObject("VisualPivot");
+                    pivotObj.transform.SetParent(robotFollowerRoot, false);
+                    pivotObj.transform.localPosition = Vector3.zero;
+                    pivotObj.transform.localRotation = Quaternion.identity;
+                    pivotObj.transform.localScale = Vector3.one;
+                    robotVisualTransform = pivotObj.transform;
+                }
+            }
+
+            // 3. Ensure a working 3D model exists under VisualPivot
+            var existingRends = robotVisualTransform.GetComponentsInChildren<MeshRenderer>(true);
+            bool hasValidModel = existingRends != null && existingRends.Length > 0;
+
+            if (!hasValidModel)
+            {
+                // Clear any empty / broken objects
+                for (int i = robotVisualTransform.childCount - 1; i >= 0; i--)
+                {
+                    DestroyImmediate(robotVisualTransform.GetChild(i).gameObject);
+                }
+
+                GameObject prefabToSpawn = null;
+                // If robotPrefab is a valid GameObject, try it
+                if (robotPrefab != null)
+                {
+                    try
+                    {
+                        if (robotPrefab is GameObject) prefabToSpawn = robotPrefab;
+                    }
+                    catch
+                    {
+                        prefabToSpawn = null;
+                    }
+                }
+
+                // Prefer prefabs (Resources or AssetDatabase) to guarantee clean instantiation
+                if (prefabToSpawn == null)
+                {
+                    prefabToSpawn = Resources.Load<GameObject>("robot_low");
+                }
+
+#if UNITY_EDITOR
+                if (prefabToSpawn == null)
+                {
+                    prefabToSpawn = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Art/Models/HelperBot/robot_low.prefab");
+                }
+                if (prefabToSpawn == null)
+                {
+                    prefabToSpawn = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Art/Models/HelperBot/robot_low.fbx");
+                }
+#endif
+
+                if (prefabToSpawn != null)
+                {
+                    try
+                    {
+                        GameObject model = Instantiate(prefabToSpawn, robotVisualTransform);
+                        model.name = "Model_robot_low";
+                        model.transform.localPosition = Vector3.zero;
+                        model.transform.localRotation = Quaternion.Euler(robotBaseRotation);
+                        model.transform.localScale = robotScale;
+
+                        foreach (var col in model.GetComponentsInChildren<Collider>(true))
+                        {
+                            DestroyImmediate(col);
+                        }
+
+                        ApplyRobotMaterials(model);
+                        Debug.Log($"<color=#00FFAA>[StarWarsCrawlController] Robot successfully instantiated! Trailing pos: {robotFollowerRoot.localPosition}, Scale: {robotScale}</color>");
+                    }
+                    catch (System.Exception ex)
+                    {
+                        Debug.LogError($"[StarWarsCrawlController] Error instantiating robot: {ex}");
+                    }
+                }
+                else
+                {
+                    Debug.LogError("[StarWarsCrawlController] Could not find robot model asset!");
+                }
+            }
+            else
+            {
+                // Force correct position and scale on existing model
+                foreach (Transform child in robotVisualTransform)
+                {
+                    child.localPosition = Vector3.zero;
+                    child.localRotation = Quaternion.Euler(robotBaseRotation);
+                    child.localScale = robotScale;
+                }
+                ApplyRobotMaterials(robotVisualTransform.gameObject);
+                Debug.Log($"<color=#00FFAA>[StarWarsCrawlController] Robot model verified and updated at pos: {robotFollowerRoot.localPosition}</color>");
+            }
+
+            // 4. Ensure scene lighting exists
+            EnsureSceneLighting();
+
+            // 5. Extend endYThreshold so the robot fully travels offscreen before returning to main menu
+            if (autoExtendEndThreshold)
+            {
+                float totalDistanceNeeded = Mathf.Abs(followerY) + robotExitPadding;
+                if (endYThreshold < totalDistanceNeeded)
+                {
+                    endYThreshold = totalDistanceNeeded;
+                }
+            }
+            Debug.Log($"<color=#00FFAA>[StarWarsCrawlController] Configured crawl: textBottomY={textBottomY:F1}, followerY={robotFollowerRoot.localPosition.y:F1}, trailingDist={(textBottomY - robotFollowerRoot.localPosition.y):F1}, endYThreshold={endYThreshold:F1}, scale={robotScale}</color>");
+        }
+
+        private void ApplyRobotMaterials(GameObject obj)
+        {
+            var rends = obj.GetComponentsInChildren<Renderer>(true);
+            Material baseMat = null;
+#if UNITY_EDITOR
+            baseMat = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Art/Models/HelperBot/M_robot.mat");
+            if (baseMat == null)
+            {
+                baseMat = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Materials/Generated/M_HelperBot.mat");
+            }
+#endif
+            if (baseMat == null)
+            {
+                baseMat = Resources.Load<Material>("M_robot");
+            }
+
+            foreach (var r in rends)
+            {
+                if (baseMat != null)
+                {
+                    r.sharedMaterial = baseMat;
+                }
+
+                if (r.sharedMaterial != null)
+                {
+                    r.sharedMaterial.EnableKeyword("_EMISSION");
+                    if (r.sharedMaterial.HasProperty("_EmissionColor"))
+                    {
+                        Color ec = r.sharedMaterial.GetColor("_EmissionColor");
+                        if (ec.maxColorComponent < 0.2f)
+                        {
+                            r.sharedMaterial.SetColor("_EmissionColor", new Color(2.5f, 2.5f, 2.5f, 1f));
+                        }
+                    }
+                }
+            }
+        }
+
+        private void EnsureSceneLighting()
+        {
+            Light existingLight = FindAnyObjectByType<Light>();
+            if (existingLight == null)
+            {
+                GameObject lightObj = new GameObject("CreditsDirectionalLight");
+                Light lightComp = lightObj.AddComponent<Light>();
+                lightComp.type = LightType.Directional;
+                lightComp.color = new Color(0.96f, 0.98f, 1.0f);
+                lightComp.intensity = illuminationLightIntensity;
+                lightObj.transform.rotation = Quaternion.Euler(38f, -25f, 0f);
             }
         }
 
