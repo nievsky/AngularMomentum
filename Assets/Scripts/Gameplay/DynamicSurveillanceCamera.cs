@@ -118,6 +118,9 @@ namespace OrbitalPanopticon.Gameplay
             mat = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/M_CameraBeamYellow.mat");
             if (mat != null) return mat;
 #endif
+            Material resMat = Resources.Load<Material>("M_CameraBeamYellow");
+            if (resMat != null) return resMat;
+
             Shader shader = Shader.Find("Sprites/Default");
             if (shader == null) shader = Shader.Find("Universal Render Pipeline/Unlit");
             if (shader == null) shader = Shader.Find("Unlit/Transparent");
@@ -343,12 +346,16 @@ namespace OrbitalPanopticon.Gameplay
                 _secondaryBeamLine.useWorldSpace = true;
                 _secondaryBeamLine.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 
-                Material lineMat = new Material(Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Sprites/Default"));
-                lineMat.name = "M_PanopticonSecondaryLaser";
-                Color magenta = new Color(1f, 0.1f, 0.9f, 0.85f);
-                lineMat.SetColor("_BaseColor", magenta);
-                if (lineMat.HasProperty("_Color")) lineMat.SetColor("_Color", magenta);
-                _secondaryBeamLine.sharedMaterial = lineMat;
+                Shader lineShader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Sprites/Default");
+                if (lineShader != null)
+                {
+                    Material lineMat = new Material(lineShader);
+                    lineMat.name = "M_PanopticonSecondaryLaser";
+                    Color magenta = new Color(1f, 0.1f, 0.9f, 0.85f);
+                    lineMat.SetColor("_BaseColor", magenta);
+                    if (lineMat.HasProperty("_Color")) lineMat.SetColor("_Color", magenta);
+                    _secondaryBeamLine.sharedMaterial = lineMat;
+                }
                 _secondaryBeamLine.enabled = false;
             }
         }

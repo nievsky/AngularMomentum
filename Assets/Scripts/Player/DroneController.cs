@@ -244,12 +244,16 @@ namespace OrbitalPanopticon.Player
                 _dashTrail.endWidth = 0.05f;
                 _dashTrail.emitting = false;
 
-                Material trailMat = new Material(Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Sprites/Default"));
-                trailMat.name = "M_OverdriveDashTrail";
-                Color c = new Color(1f, 0.2f, 0.8f, 0.85f);
-                trailMat.SetColor("_BaseColor", c);
-                if (trailMat.HasProperty("_Color")) trailMat.SetColor("_Color", c);
-                _dashTrail.sharedMaterial = trailMat;
+                Shader s = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Sprites/Default");
+                if (s != null)
+                {
+                    Material trailMat = new Material(s);
+                    trailMat.name = "M_OverdriveDashTrail";
+                    Color c = new Color(1f, 0.2f, 0.8f, 0.85f);
+                    trailMat.SetColor("_BaseColor", c);
+                    if (trailMat.HasProperty("_Color")) trailMat.SetColor("_Color", c);
+                    _dashTrail.sharedMaterial = trailMat;
+                }
 
                 Gradient grad = new Gradient();
                 grad.SetKeys(

@@ -13,34 +13,34 @@ MonoBehaviour:
   m_Name: VisualEnvironmentConfig
   m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.VisualEnvironmentConfigSO
   spaceZenithColor: {r: 0.012, g: 0.018, b: 0.042, a: 1}
-  spaceHorizonColor: {r: 0.004, g: 0.007, b: 0.016, a: 1}
-  spaceNadirColor: {r: 0.001, g: 0.002, b: 0.006, a: 1}
+  spaceHorizonColor: {r: 0.23720846, g: 0.07409222, b: 0.3490566, a: 1}
+  spaceNadirColor: {r: 0.11461764, g: 0.055802785, b: 0.3584906, a: 1}
   gradientExponent: 1.35
-  starDensity: 110
-  starSize: 0.016
-  starBrightness: 2.2
+  starDensity: 300
+  starSize: 0.06
+  starBrightness: 2.44
   starColorVariation: 0.85
   starTwinkleSpeed: 2.2
   starTwinkleAmount: 0.55
   milkyWayRotationAngles: {x: 32, y: 45, z: 18}
-  milkyWayWidth: 0.32
-  milkyWayFalloff: 2.2
+  milkyWayWidth: 0.8
+  milkyWayFalloff: 1.01
   milkyWayCoreHDRColor: {r: 0.65, g: 0.52, b: 0.95, a: 1}
   milkyWayOuterColor: {r: 0.12, g: 0.18, b: 0.38, a: 1}
-  dustLaneDarkness: 0.18
-  milkyWayStarBoost: 3.5
-  milkyWayNoiseScale: 2.8
+  dustLaneDarkness: 0.477
+  milkyWayStarBoost: 2.42
+  milkyWayNoiseScale: 8.05
   nebulaIntensity: 0.95
   nebulaScale: 2
   nebulaColorA: {r: 0.08, g: 0.48, b: 0.85, a: 1}
   nebulaColorB: {r: 0.75, g: 0.15, b: 0.65, a: 1}
-  nebulaOffset: {x: 1.5, y: 2.3, z: 3.7}
+  nebulaOffset: {x: 3.96, y: 10.27, z: 5.6}
   enableVHSEffect: 1
-  masterBlend: 0.65
+  masterBlend: 0.25
   overscanScale: 0.9
   scanlineIntensity: 0.28
-  scanlineCount: 640
-  scanlineScrollSpeed: 0.8
+  scanlineCount: 100
+  scanlineScrollSpeed: -0.1
   trackingBarIntensity: 0.45
   trackingBarSpeed: 0.18
   trackingBarThickness: 0.08

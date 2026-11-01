@@ -18,25 +18,25 @@ MonoBehaviour:
     customScaleMultiplier: 0.3
   - modelOrPrefab: {fileID: 919132149155446097, guid: a5ffc76ef81749845bed4757cfcd7358, type: 3}
     scrapTier: 1
-    customScaleMultiplier: 0.5
+    customScaleMultiplier: 2
   - modelOrPrefab: {fileID: 919132149155446097, guid: 9ada71946d38fc14dbde0f92dfa1cf14, type: 3}
     scrapTier: 1
-    customScaleMultiplier: 0.5
+    customScaleMultiplier: 1
   - modelOrPrefab: {fileID: 919132149155446097, guid: 4a98fc743d72c594b95aeca2f7adf29e, type: 3}
     scrapTier: 2
-    customScaleMultiplier: 1
+    customScaleMultiplier: 2
   - modelOrPrefab: {fileID: 919132149155446097, guid: edf41d8c6be2df24c942f16061b34023, type: 3}
     scrapTier: 1
-    customScaleMultiplier: 0.5
+    customScaleMultiplier: 2
   - modelOrPrefab: {fileID: 919132149155446097, guid: 2d18eae19cd9ad44eb16619a05177627, type: 3}
     scrapTier: 2
-    customScaleMultiplier: 1
+    customScaleMultiplier: 2
   - modelOrPrefab: {fileID: 919132149155446097, guid: 420ef84f481013944bd8fe1b8b9c1c36, type: 3}
     scrapTier: 1
-    customScaleMultiplier: 0.5
+    customScaleMultiplier: 2
   - modelOrPrefab: {fileID: 919132149155446097, guid: c74fb5f47b763c347b7b827ada4c96d3, type: 3}
     scrapTier: 1
-    customScaleMultiplier: 0.5
+    customScaleMultiplier: 3
   - modelOrPrefab: {fileID: 3800404211905261668, guid: 52a336ae543b99841a7f5a6a8f452de4, type: 3}
     scrapTier: 2
     customScaleMultiplier: 1.5
@@ -52,6 +52,9 @@ MonoBehaviour:
   - modelOrPrefab: {fileID: 435633683778885296, guid: 88a86e43247ba9f4e95a30c2f3480ea3, type: 3}
     scrapTier: 3
     customScaleMultiplier: 0.3
+  - modelOrPrefab: {fileID: 6099847550332604059, guid: 4a5c9640e63afcd40b26c1a5891ed39b, type: 3}
+    scrapTier: 4
+    customScaleMultiplier: 1.2
   defaultFallbackTier1: {fileID: 1332304283896392702, guid: 70d9e569d7a1f6a4bb3100f039438064, type: 3}
   defaultFallbackTier2: {fileID: 8209700772035700066, guid: a90c9a861e15828409c362691e77ca22, type: 3}
   defaultFallbackTier3: {fileID: 4085560199756304201, guid: 682d7e6588696fb4faf64c3baeed91a7, type: 3}

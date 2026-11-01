@@ -206,6 +206,10 @@ namespace OrbitalPanopticon.Core
 #if UNITY_EDITOR
                 vhsMaterial = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Materials/M_VHSMonitorEffect.mat");
 #endif
+                if (vhsMaterial == null)
+                {
+                    vhsMaterial = Resources.Load<Material>("M_VHSMonitorEffect");
+                }
             }
         }
 

@@ -22,6 +22,14 @@ namespace OrbitalPanopticon.Core
                         _instance = UnityEditor.AssetDatabase.LoadAssetAtPath<GameBalanceConfig>(path);
                     }
 #endif
+                    if (_instance == null)
+                    {
+                        _instance = Resources.Load<GameBalanceConfig>("GameBalanceConfig");
+                    }
+                    if (_instance == null)
+                    {
+                        _instance = ScriptableObject.CreateInstance<GameBalanceConfig>();
+                    }
                 }
                 return _instance;
             }

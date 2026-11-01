@@ -283,6 +283,8 @@ namespace OrbitalPanopticon.UI
                 flagSpriteEN = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/_Project/Textures/UI/Flag_EN.png");
             }
 #endif
+            if (flagSpriteRU == null) flagSpriteRU = Resources.Load<Sprite>("Flag_RU");
+            if (flagSpriteEN == null) flagSpriteEN = Resources.Load<Sprite>("Flag_EN");
 
             // RU Flag Button
             Transform ruTr = languageSwitcherPanel.transform.Find("Btn_Flag_RU");

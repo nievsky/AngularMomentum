@@ -322,11 +322,84 @@ namespace OrbitalPanopticon.Gameplay
             if (valuableLavaMaterial != null) scrap.ValuableLavaMaterial = valuableLavaMaterial;
             if (valuableEmbersPrefab != null) scrap.ValuableEmbersPrefab = valuableEmbersPrefab;
 
+            // Auto-illuminate materials if needed for dark space visibility
+            EnsureMaterialsIlluminated(visualRoot);
+
             // SetupValuableScrap(false) caches all original PBR materials on child renderers
             scrap.SetupValuableScrap(false);
             scrap.IgnorePlayerCollision();
 
             return scrap;
+        }
+
+        private static void EnsureMaterialsIlluminated(GameObject visualRoot)
+        {
+            if (visualRoot == null) return;
+            Renderer[] renderers = visualRoot.GetComponentsInChildren<Renderer>(true);
+            Shader scrapShader = null;
+
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                Renderer r = renderers[i];
+                if (r == null || r is ParticleSystemRenderer || r is TrailRenderer || r is LineRenderer) continue;
+
+                Material[] mats = Application.isPlaying ? r.materials : r.sharedMaterials;
+                bool changed = false;
+                for (int m = 0; m < mats.Length; m++)
+                {
+                    Material mat = mats[m];
+                    if (mat == null) continue;
+
+                    if (mat.shader != null && mat.shader.name == "OrbitalPanopticon/DeformingLavaAnomaly")
+                    {
+                        continue;
+                    }
+
+                    if (mat.shader == null || mat.shader.name != "OrbitalPanopticon/ScrapSpaceLit")
+                    {
+                        if (scrapShader == null) scrapShader = Shader.Find("OrbitalPanopticon/ScrapSpaceLit");
+                        if (scrapShader != null)
+                        {
+                            Texture baseMap = mat.HasProperty("_BaseMap") ? mat.GetTexture("_BaseMap") : (mat.HasProperty("_MainTex") ? mat.GetTexture("_MainTex") : null);
+                            Color baseColor = mat.HasProperty("_BaseColor") ? mat.GetColor("_BaseColor") : (mat.HasProperty("_Color") ? mat.GetColor("_Color") : Color.white);
+                            Texture bumpMap = mat.HasProperty("_BumpMap") ? mat.GetTexture("_BumpMap") : null;
+                            Texture specMap = mat.HasProperty("_SpecGlossMap") ? mat.GetTexture("_SpecGlossMap") : (mat.HasProperty("_MetallicGlossMap") ? mat.GetTexture("_MetallicGlossMap") : null);
+
+                            mat.shader = scrapShader;
+                            if (baseMap != null) { mat.SetTexture("_BaseMap", baseMap); mat.SetTexture("_MainTex", baseMap); }
+                            mat.SetColor("_BaseColor", baseColor);
+                            mat.SetColor("_Color", baseColor);
+                            if (bumpMap != null) mat.SetTexture("_BumpMap", bumpMap);
+                            if (specMap != null) mat.SetTexture("_SpecGlossMap", specMap);
+                            mat.SetFloat("_AmbientFloor", 0.38f);
+                            mat.SetColor("_RimColor", new Color(0.7f, 0.88f, 1.0f, 1.0f));
+                            mat.SetFloat("_RimPower", 3.0f);
+                            mat.SetFloat("_RimIntensity", 0.45f);
+                            changed = true;
+                        }
+                    }
+                    else
+                    {
+                        if (mat.HasProperty("_AmbientFloor") && mat.GetFloat("_AmbientFloor") < 0.2f)
+                        {
+                            mat.SetFloat("_AmbientFloor", 0.38f);
+                            changed = true;
+                        }
+                        if (mat.HasProperty("_RimIntensity") && mat.GetFloat("_RimIntensity") < 0.2f)
+                        {
+                            mat.SetFloat("_RimIntensity", 0.45f);
+                            changed = true;
+                        }
+                    }
+                }
+                if (changed)
+                {
+                    if (Application.isPlaying)
+                        r.materials = mats;
+                    else
+                        r.sharedMaterials = mats;
+                }
+            }
         }
     }
 }

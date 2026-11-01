@@ -71,6 +71,10 @@ namespace OrbitalPanopticon.Core
 #if UNITY_EDITOR
                 dialogueConfig = UnityEditor.AssetDatabase.LoadAssetAtPath<NarrativeDialogueConfigSO>("Assets/_Project/ScriptableObjects/NarrativeDialogueConfig.asset");
 #endif
+                if (dialogueConfig == null)
+                {
+                    dialogueConfig = Resources.Load<NarrativeDialogueConfigSO>("NarrativeDialogueConfig");
+                }
             }
 
             EnsureUIHierarchy();

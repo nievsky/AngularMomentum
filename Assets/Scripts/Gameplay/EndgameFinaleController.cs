@@ -20,8 +20,6 @@ namespace OrbitalPanopticon.Gameplay
 
         private BlackHoleGravity _blackHole;
         private Transform _bhVisualRoot;
-        private GameObject _finaleAlertPanel;
-        private TextMeshProUGUI _finaleAlertText;
 
         public bool IsFinaleTriggered => isFinaleTriggered;
 
@@ -99,15 +97,10 @@ namespace OrbitalPanopticon.Gameplay
                 ScrapSimulationManager.Instance.SetSpawningEnabled(false);
             }
 
-            // Display Flashing Alert Banner
-            if (_finaleAlertPanel != null)
+            // Smoothly fade out the bottom Mass/Stage HUD bar for pure cinematic silence without distracting text
+            if (UIManager.Instance != null)
             {
-                _finaleAlertPanel.SetActive(true);
-                if (_finaleAlertText != null)
-                {
-                    _finaleAlertText.text = "CRITICAL MASS REACHED! ALL 4 CONTAINMENT LOCKS SHATTERED — SINGULARITY UNCONSTRAINED!";
-                }
-                StartCoroutine(FlashAlertRoutine());
+                UIManager.Instance.FadeOutBottomMassBar(1.0f);
             }
 
             // 3. Suspense Phase (0.0s – 4.5s):
@@ -440,10 +433,6 @@ namespace OrbitalPanopticon.Gameplay
             {
                 UIManager.Instance.HideAllHUD();
             }
-            if (_finaleAlertPanel != null)
-            {
-                _finaleAlertPanel.SetActive(false);
-            }
 
             // 3. Stop rendering 3D world
             Camera activeCam = Camera.main;
@@ -500,64 +489,22 @@ namespace OrbitalPanopticon.Gameplay
             }
         }
 
-        private IEnumerator FlashAlertRoutine()
-        {
-            if (_finaleAlertText == null) yield break;
-
-            Color c1 = new Color(1f, 0.2f, 0.2f, 1f);
-            Color c2 = new Color(1f, 0.85f, 0.1f, 1f);
-
-            while (isFinaleTriggered && _finaleAlertPanel != null && _finaleAlertPanel.activeSelf)
-            {
-                float t = 0.5f + (0.5f * Mathf.Sin(Time.time * 8f));
-                _finaleAlertText.color = Color.Lerp(c1, c2, t);
-                yield return null;
-            }
-        }
-
         private void BuildFinaleUI()
         {
             GameObject hudCanvas = GameObject.Find("HUD_Canvas");
             if (hudCanvas == null) return;
 
             Transform existingAlert = hudCanvas.transform.Find("Panel_FinaleAlert");
-            if (existingAlert == null)
+            if (existingAlert != null)
             {
-                _finaleAlertPanel = new GameObject("Panel_FinaleAlert", typeof(RectTransform), typeof(Image));
-                _finaleAlertPanel.transform.SetParent(hudCanvas.transform, false);
-
-                RectTransform rt = _finaleAlertPanel.GetComponent<RectTransform>();
-                rt.anchorMin = new Vector2(0.5f, 1f);
-                rt.anchorMax = new Vector2(0.5f, 1f);
-                rt.pivot = new Vector2(0.5f, 1f);
-                rt.anchoredPosition = new Vector2(0f, -95f);
-                rt.sizeDelta = new Vector2(850f, 48f);
-
-                Image bg = _finaleAlertPanel.GetComponent<Image>();
-                bg.color = new Color(0.12f, 0.02f, 0.02f, 0.92f);
-
-                GameObject textGo = new GameObject("Text_Alert", typeof(RectTransform), typeof(TextMeshProUGUI));
-                textGo.transform.SetParent(_finaleAlertPanel.transform, false);
-                RectTransform textRt = textGo.GetComponent<RectTransform>();
-                textRt.anchorMin = Vector2.zero;
-                textRt.anchorMax = Vector2.one;
-                textRt.offsetMin = new Vector2(8f, 4f);
-                textRt.offsetMax = new Vector2(-8f, -4f);
-
-                _finaleAlertText = textGo.GetComponent<TextMeshProUGUI>();
-                _finaleAlertText.alignment = TextAlignmentOptions.Center;
-                _finaleAlertText.fontSize = 17;
-                _finaleAlertText.fontStyle = FontStyles.Bold;
-                _finaleAlertText.text = "CRITICAL MASS REACHED! SINGULARITY OVERFLOW — INITIATING SECTOR COLLAPSE!";
-                _finaleAlertText.color = new Color(1f, 0.3f, 0.2f, 1f);
-
-                _finaleAlertPanel.SetActive(false);
-            }
-            else
-            {
-                _finaleAlertPanel = existingAlert.gameObject;
-                _finaleAlertText = _finaleAlertPanel.GetComponentInChildren<TextMeshProUGUI>();
-                _finaleAlertPanel.SetActive(false);
+#if UNITY_EDITOR
+                if (!Application.isPlaying)
+                    DestroyImmediate(existingAlert.gameObject);
+                else
+                    Destroy(existingAlert.gameObject);
+#else
+                Destroy(existingAlert.gameObject);
+#endif
             }
         }
     }

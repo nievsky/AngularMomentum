@@ -848,6 +848,29 @@ Located at [`Assets/_Project/Scripts/Editor/AssetAutoIntegrationPipeline.cs`](fi
 - Added `enableNarrativeComms = false` toggle in `GameBalanceConfig.cs` and `GameBalanceConfig.asset`.
 - When set to `false`, [`NarrativeCommsUI.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/NarrativeCommsUI.cs) immediately suppresses all Star Fox radio dialogue popups, ensuring a clean, distraction-free cockpit experience.
 
+### 5.18 Dark Space Scrap Self-Illumination, Deforming Lava Blob & Finale UI Polish
+
+#### 1. Space Self-Illumination Shader & Material Upgrades (`S_ScrapSpaceLit.shader`)
+- **Problem**: Custom 3D scrap models appeared pitch black against dark space due to absence of bright directional lights.
+- **Solution (`S_ScrapSpaceLit.shader`)**:
+  - **Self-Illumination Floor (`_AmbientFloor = 0.38f`)**: Adds unlit minimum ambient base contribution (`baseAlbedo.rgb * _AmbientFloor`), guaranteeing surface details and textures remain vibrant and fully legible in total cosmic shadow.
+  - **Silhouette Fresnel Rim Highlight (`_RimColor = (0.7, 0.88, 1.0, 1.0)`, `_RimIntensity = 0.45f`, `_RimPower = 3.0f`)**: Soft cool-cyan edge glow wrapping the silhouette of each mesh, cleanly popping 3D geometry against the black void.
+  - Upgraded and remapped all 13 existing custom scrap models in `ScrapAssetCatalog.asset` to dedicated materials using `S_ScrapSpaceLit.shader`.
+  - Added runtime fallback in `ScrapAssetCatalogSO.EnsureMaterialsIlluminated` guaranteeing any future added models automatically receive ambient floor illumination.
+
+#### 2. Restored 3D Vertex-Deforming Lava Anomaly (`S_DeformingLavaAnomaly.shader`)
+- **Pulsing Magma Deformation**:
+  - `Assets/_Project/Materials/S_DeformingLavaAnomaly.shader`: Restores organic, aggressive **3D Vertex Displacement along normals** (`positionOS.xyz += normalOS * noise * _DisplacementStrength`) combined with scrolling 3D noise magma veins, procedural 3D Voronoi basalt crust plates, and glowing crack edges.
+  - Applied to material [`M_DeformingLavaAnomaly.mat`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/Materials/M_DeformingLavaAnomaly.mat).
+- **Special Lava Blob Prefab ([`Scrap_Special_LavaBlob.prefab`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/Prefabs/Scrap_Special_LavaBlob.prefab))**:
+  - High-subdivision smooth icosphere mesh (`Msh_SubdividedSphere.asset`, 642 vertices / 1280 triangles) paired with `M_DeformingLavaAnomaly.mat` and floating ember ribbon particles (`VFX_ValuableLavaEmbers.prefab`).
+  - Registered in [`ScrapAssetCatalog.asset`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/ScriptableObjects/ScrapAssetCatalog.asset) as a Tier 4 Anomaly (`scale = 1.2f`).
+  - Protected by `ScrapItem.IsDeformingLavaAnomaly()` so `SetupValuableScrap` never overwrites its unique deforming material when spawned or pooled!
+
+#### 3. Decommission of Finale Warning Text & Smooth HUD Fadeout
+- In `EndgameFinaleController.cs`, completely removed flashing warning banner `Panel_FinaleAlert` (`"CRITICAL MASS REACHED! SINGULARITY OVERFLOW..."`).
+- Calls `UIManager.Instance.FadeOutBottomMassBar(1.0f)` immediately upon the 4th Containment Lock breaking, smoothly transitioning the bottom mass/stage bar away so the player experiences the 4 Eyes suction and singularity collapse in pure cinematic suspense.
+
 ---
 
 ## 6. Sound Designer Guide: FMOD Studio 2.03.08
@@ -898,3 +921,49 @@ All FMOD event references and parameter names are configured in:
 | **`DroneSpeed`** | `0.0` – `1.0` | `playerRigidbody.linearVelocity.magnitude / maxThrusterSpeed` | `0.0` = stationary, `1.0` = maximum speed. Drives thruster pitch and engine volume. |
 | **`ActiveContainmentBeams`** | `4.0` – `0.0` | `BlackHoleStageManager.Instance.ActiveContainmentLocksCount` | Modulates the intensity and sub-harmonics of `containmentBeamHumLoop` as locks break. |
 | **`ComboLevel`** | `0.0`+ | `QuotaAndScoreManager.Instance.CompletedQuotasCount` | Quota milestone level for dynamic musical intensity scaling. |
+
+---
+
+## 7. Windows Standalone Build Hardening & Direct3D11 Specification
+
+To guarantee instant startup stability and eliminate crash vectors in standalone `.exe` distributions:
+
+### 7.1 Forced Direct3D11 Graphics API
+- Direct3D12 and Vulkan are explicitly removed from `StandaloneWindows64` graphics APIs in `ProjectSettings.asset` (`PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.StandaloneWindows64, false)`).
+- Direct3D11 is enforced as the sole graphics device type, preventing driver-level crashes during URP screen-space blit passes, procedural quad rendering, and FMOD overlay hooks.
+- `ManagedStrippingLevel` is set to `Minimal` to preserve reflection, serialization, and runtime ScriptableObject schema.
+
+### 7.2 Pre-Registered Always-Included Shaders
+All 14 project shaders are registered in `ProjectSettings/GraphicsSettings.asset` under `m_AlwaysIncludedShaders` to ensure they are baked into the standalone build executable:
+1. `UI/ScreenDissolve` (`S_ScreenDissolve.shader`)
+2. `OrbitalPanopticon/OuterWildsBlackHole`
+3. `OrbitalPanopticon/AccretionDisk`
+4. `OrbitalPanopticon/ValuableLavaLoot`
+5. `OrbitalPanopticon/DeformingLavaAnomaly`
+6. `OrbitalPanopticon/ScrapSpaceLit`
+7. `OrbitalPanopticon/RedSweepingLaser`
+8. `OrbitalPanopticon/VHSMonitorEffect`
+9. `OrbitalPanopticon/ProceduralSpaceSkybox`
+10. `OrbitalPanopticon/ParticleAdditiveGlow`
+11. `OrbitalPanopticon/LavaEmber`
+12. `OrbitalPanopticon/EventHorizonOpaqueCore`
+13. `Universal Render Pipeline/Lit`
+14. `Universal Render Pipeline/Unlit`
+
+### 7.3 Resources-Backed Runtime Asset Delivery
+Because `AssetDatabase.LoadAssetAtPath` is editor-only, essential runtime ScriptableObjects, materials, and flag textures are mirrored to `Assets/Resources/`:
+- `FMODAudioConfig.asset`, `GameBalanceConfig.asset`, `VisualEnvironmentConfig.asset`, `NarrativeDialogueConfig.asset`, `ScrapAssetCatalog.asset`, `GlobalFontConfig.asset`
+- `M_ScreenDissolve.mat`, `M_VHSMonitorEffect.mat`, `M_ProceduralSpaceSkybox.mat`, `M_RedSweepingLaser.mat`, `M_DeformingLavaAnomaly.mat`, `M_CameraBeamYellow.mat`, `M_ValuableScrapGlow.mat`
+- `Flag_RU.png`, `Flag_EN.png`
+All runtime singletons implement a strict three-tier lookup: Serialized Reference $\rightarrow$ `Resources.Load<T>()` $\rightarrow$ Dynamic In-Memory Instantiation.
+
+### 7.4 FMOD 2.03.08 Bank Loading Protection
+- `FMODAudioManager` and `MusicPlaylistManager` execute asynchronous coroutines (`WaitForBanksAndInitializeLoops()` and `WaitForBanksAndStartPlaylist()`) that wait for `FMODUnity.RuntimeManager.HaveAllBanksLoaded` (with 3.0s fallback timeout) before initiating event instances or loop playback.
+- All event creations and one-shot triggers are encapsulated within `CreateInstanceSafe(EventReference)` and `try / catch` blocks to gracefully handle missing bank assets or uninitialized sound drivers without process crashes.
+
+### 7.5 Singleton Hierarchy & Scene Build Order
+- All `DontDestroyOnLoad` singletons (`SceneTransitionManager`, `FMODAudioManager`, `LocalizationManager`, `GlobalFontApplier`) invoke `transform.SetParent(null)` before marking `DontDestroyOnLoad(gameObject)`, preventing root-object constraint assertions.
+- `EditorBuildSettings.scenes` maintains a strict three-scene linear flow:
+  - `0: Assets/_Project/Scenes/MainMenuScene.unity` (Enabled)
+  - `1: Assets/_Project/Scenes/GameplayScene.unity` (Enabled)
+  - `2: Assets/_Project/Scenes/CreditsScene.unity` (Enabled)

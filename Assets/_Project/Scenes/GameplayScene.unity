@@ -1077,8 +1077,8 @@ MonoBehaviour:
   visualConfig: {fileID: 11400000, guid: 794122494ef573343bfb4c6983c4f42c, type: 2}
   skyboxMaterial: {fileID: 2100000, guid: 93c78314498e4814891f24d1a3aafa09, type: 2}
   spaceZenithColor: {r: 0.012, g: 0.018, b: 0.042, a: 1}
-  spaceHorizonColor: {r: 0.004, g: 0.007, b: 0.016, a: 1}
-  spaceNadirColor: {r: 0.001, g: 0.002, b: 0.006, a: 1}
+  spaceHorizonColor: {r: 0.23720846, g: 0.07409222, b: 0.3490566, a: 1}
+  spaceNadirColor: {r: 0.11461764, g: 0.055802785, b: 0.3584906, a: 1}
   gradientExponent: 1.35
   starDensity: 300
   starSize: 0.06
@@ -1088,7 +1088,7 @@ MonoBehaviour:
   starTwinkleAmount: 0.55
   milkyWayRotationAngles: {x: 32, y: 45, z: 18}
   milkyWayWidth: 0.8
-  milkyWayFalloff: 1.19
+  milkyWayFalloff: 1.01
   milkyWayCoreHDRColor: {r: 0.65, g: 0.52, b: 0.95, a: 1}
   milkyWayOuterColor: {r: 0.12, g: 0.18, b: 0.38, a: 1}
   dustLaneDarkness: 0.477

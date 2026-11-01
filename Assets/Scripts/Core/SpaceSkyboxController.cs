@@ -234,6 +234,10 @@ namespace OrbitalPanopticon.Core
 #if UNITY_EDITOR
                 skyboxMaterial = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Materials/M_ProceduralSpaceSkybox.mat");
 #endif
+                if (skyboxMaterial == null)
+                {
+                    skyboxMaterial = Resources.Load<Material>("M_ProceduralSpaceSkybox");
+                }
             }
 
             if (skyboxMaterial != null && RenderSettings.skybox != skyboxMaterial)

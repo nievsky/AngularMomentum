@@ -197,6 +197,10 @@ namespace OrbitalPanopticon.Core
             {
                 postProcessVolume = GetComponent<Volume>();
             }
+            if (postProcessVolume == null)
+            {
+                postProcessVolume = FindAnyObjectByType<Volume>();
+            }
             if (postProcessVolume == null) return;
 
             VolumeProfile profile = postProcessVolume.sharedProfile;

@@ -401,6 +401,33 @@ namespace OrbitalPanopticon.Core
             }
         }
 
+        /// <summary>
+        /// Smoothly fades out and deactivates the bottom mass/stage HUD bar for cinematic finale sequences.
+        /// </summary>
+        public void FadeOutBottomMassBar(float duration = 1.0f)
+        {
+            if (bottomHUDPanel == null) return;
+            CanvasGroup cg = bottomHUDPanel.GetComponent<CanvasGroup>();
+            if (cg == null) cg = bottomHUDPanel.AddComponent<CanvasGroup>();
+
+            cg.DOKill();
+            cg.DOFade(0f, duration).SetUpdate(true).OnComplete(() =>
+            {
+                if (bottomHUDPanel != null) bottomHUDPanel.SetActive(false);
+            });
+        }
+
+        /// <summary>
+        /// Immediately hides the bottom mass/stage HUD bar.
+        /// </summary>
+        public void HideBottomMassBar()
+        {
+            if (bottomHUDPanel != null)
+            {
+                bottomHUDPanel.SetActive(false);
+            }
+        }
+
         private static void SafeDestroy(GameObject go)
         {
             if (go == null) return;
@@ -421,7 +448,7 @@ namespace OrbitalPanopticon.Core
             if (canvas == null) return;
 
             // 1. Permanently remove all legacy clutter elements
-            string[] legacyNames = { "SurveillanceMonitorFrame", "Text_REC_Status", "Panel_QuotaAndHeat", "Text_BossTracker", "Panel_CriticalMassWarning", "DamageFlashOverlay", "StageWarningBanner", "BoundaryWarningPanel" };
+            string[] legacyNames = { "SurveillanceMonitorFrame", "Text_REC_Status", "Panel_QuotaAndHeat", "Text_BossTracker", "Panel_CriticalMassWarning", "DamageFlashOverlay", "StageWarningBanner", "BoundaryWarningPanel", "Panel_FinaleAlert" };
             foreach (var legName in legacyNames)
             {
                 Transform t = canvas.transform.Find(legName);

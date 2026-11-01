@@ -101,11 +101,17 @@ namespace OrbitalPanopticon.Physics
             ring.transform.position = center;
             Destroy(ring.GetComponent<Collider>());
 
-            Material pulseMat = new Material(Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Sprites/Default"));
+            Material pulseMat = null;
             Color c = new Color(0.2f, 0.85f, 1f, 0.5f);
-            pulseMat.SetColor("_BaseColor", c);
-            if (pulseMat.HasProperty("_Color")) pulseMat.SetColor("_Color", c);
-            ring.GetComponent<MeshRenderer>().sharedMaterial = pulseMat;
+            Shader pulseShader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Sprites/Default");
+            if (pulseShader != null)
+            {
+                pulseMat = new Material(pulseShader);
+                pulseMat.SetColor("_BaseColor", c);
+                if (pulseMat.HasProperty("_Color")) pulseMat.SetColor("_Color", c);
+                var mr = ring.GetComponent<MeshRenderer>();
+                if (mr != null) mr.sharedMaterial = pulseMat;
+            }
 
             float elapsed = 0f;
             const float duration = 0.65f;
@@ -117,9 +123,12 @@ namespace OrbitalPanopticon.Physics
                 float radius = Mathf.Lerp(4f, 42f, t);
                 ring.transform.localScale = new Vector3(radius, 0.1f, radius);
 
-                c.a = Mathf.Lerp(0.6f, 0f, t);
-                pulseMat.SetColor("_BaseColor", c);
-                if (pulseMat.HasProperty("_Color")) pulseMat.SetColor("_Color", c);
+                if (pulseMat != null)
+                {
+                    c.a = Mathf.Lerp(0.6f, 0f, t);
+                    pulseMat.SetColor("_BaseColor", c);
+                    if (pulseMat.HasProperty("_Color")) pulseMat.SetColor("_Color", c);
+                }
 
                 yield return null;
             }

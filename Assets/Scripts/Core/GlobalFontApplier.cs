@@ -123,6 +123,10 @@ namespace OrbitalPanopticon.Core
                 fontConfig = UnityEditor.AssetDatabase.LoadAssetAtPath<GlobalFontConfigSO>(
                     "Assets/_Project/ScriptableObjects/GlobalFontConfig.asset");
 #endif
+                if (fontConfig == null)
+                {
+                    fontConfig = Resources.Load<GlobalFontConfigSO>("GlobalFontConfig");
+                }
             }
         }
 

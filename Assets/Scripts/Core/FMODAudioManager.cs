@@ -76,6 +76,7 @@ namespace OrbitalPanopticon.Core
                 return;
             }
             Instance = this;
+            transform.SetParent(null);
             DontDestroyOnLoad(gameObject);
 
             if (playlistManager == null) playlistManager = GetComponent<MusicPlaylistManager>();
@@ -92,7 +93,33 @@ namespace OrbitalPanopticon.Core
         private void Start()
         {
             ApplySavedVolumes();
+            StartCoroutine(WaitForBanksAndInitializeLoops());
+        }
+
+        private System.Collections.IEnumerator WaitForBanksAndInitializeLoops()
+        {
+            float timer = 0f;
+            while (!FMODUnity.RuntimeManager.HaveAllBanksLoaded && timer < 3.0f)
+            {
+                timer += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
             InitializeLoops();
+        }
+
+        public static EventInstance CreateInstanceSafe(EventReference eventRef)
+        {
+            if (eventRef.IsNull) return default;
+            try
+            {
+                return RuntimeManager.CreateInstance(eventRef);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[FMODAudioManager] CreateInstanceSafe failed for {eventRef}: {ex.Message}");
+                return default;
+            }
         }
 
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -166,7 +193,7 @@ namespace OrbitalPanopticon.Core
             // 1. Space Ambience Loop (2D persistent background) - only started in gameplay scenes!
             if (!audioConfig.spaceAmbienceLoop.IsNull)
             {
-                _spaceAmbienceInstance = RuntimeManager.CreateInstance(audioConfig.spaceAmbienceLoop);
+                _spaceAmbienceInstance = CreateInstanceSafe(audioConfig.spaceAmbienceLoop);
                 if (isGameplay)
                 {
                     _spaceAmbienceInstance.start();
@@ -176,7 +203,7 @@ namespace OrbitalPanopticon.Core
             // 2. Singularity Hum Loop (3D at Black Hole center) - only started in gameplay scenes!
             if (!audioConfig.singularityHumLoop.IsNull)
             {
-                _singularityHumInstance = RuntimeManager.CreateInstance(audioConfig.singularityHumLoop);
+                _singularityHumInstance = CreateInstanceSafe(audioConfig.singularityHumLoop);
                 if (blackHoleTransform != null)
                 {
                     _singularityHumInstance.set3DAttributes(RuntimeUtils.To3DAttributes(blackHoleTransform.position));
@@ -190,7 +217,7 @@ namespace OrbitalPanopticon.Core
             // 3. Containment Beam Hum Loop (Ambient hum of active Eye beams) - only started in gameplay scenes!
             if (!audioConfig.containmentBeamHumLoop.IsNull)
             {
-                _containmentBeamHumInstance = RuntimeManager.CreateInstance(audioConfig.containmentBeamHumLoop);
+                _containmentBeamHumInstance = CreateInstanceSafe(audioConfig.containmentBeamHumLoop);
                 if (blackHoleTransform != null)
                 {
                     _containmentBeamHumInstance.set3DAttributes(RuntimeUtils.To3DAttributes(blackHoleTransform.position));
@@ -210,7 +237,7 @@ namespace OrbitalPanopticon.Core
             {
                 try
                 {
-                    _thrusterInstance = RuntimeManager.CreateInstance(thrusterRef);
+                    _thrusterInstance = CreateInstanceSafe(thrusterRef);
                 }
                 catch (Exception e)
                 {
@@ -221,13 +248,13 @@ namespace OrbitalPanopticon.Core
             // 5. Gravity Gun Tether Hold Loop (prepared)
             if (!audioConfig.gravityGunHoldLoop.IsNull)
             {
-                _gravityGunHoldInstance = RuntimeManager.CreateInstance(audioConfig.gravityGunHoldLoop);
+                _gravityGunHoldInstance = CreateInstanceSafe(audioConfig.gravityGunHoldLoop);
             }
 
             // 6. Critical Mass Alarm Loop (prepared)
             if (!audioConfig.criticalMassAlarmLoop.IsNull)
             {
-                _criticalMassAlarmInstance = RuntimeManager.CreateInstance(audioConfig.criticalMassAlarmLoop);
+                _criticalMassAlarmInstance = CreateInstanceSafe(audioConfig.criticalMassAlarmLoop);
             }
         }
 
@@ -413,16 +440,24 @@ namespace OrbitalPanopticon.Core
         {
             if (string.IsNullOrEmpty(paramName)) return;
 
-            // Global Studio parameter
-            RuntimeManager.StudioSystem.setParameterByName(paramName, value);
+            try
+            {
+                // Global Studio parameter
+                RuntimeManager.StudioSystem.setParameterByName(paramName, value);
+            }
+            catch { }
 
             // Per-instance fallback
-            if (_spaceAmbienceInstance.isValid()) _spaceAmbienceInstance.setParameterByName(paramName, value);
-            if (_singularityHumInstance.isValid()) _singularityHumInstance.setParameterByName(paramName, value);
-            if (_containmentBeamHumInstance.isValid()) _containmentBeamHumInstance.setParameterByName(paramName, value);
-            if (_thrusterInstance.isValid()) _thrusterInstance.setParameterByName(paramName, value);
-            if (_gravityGunHoldInstance.isValid()) _gravityGunHoldInstance.setParameterByName(paramName, value);
-            if (_criticalMassAlarmInstance.isValid()) _criticalMassAlarmInstance.setParameterByName(paramName, value);
+            try
+            {
+                if (_spaceAmbienceInstance.isValid()) _spaceAmbienceInstance.setParameterByName(paramName, value);
+                if (_singularityHumInstance.isValid()) _singularityHumInstance.setParameterByName(paramName, value);
+                if (_containmentBeamHumInstance.isValid()) _containmentBeamHumInstance.setParameterByName(paramName, value);
+                if (_thrusterInstance.isValid()) _thrusterInstance.setParameterByName(paramName, value);
+                if (_gravityGunHoldInstance.isValid()) _gravityGunHoldInstance.setParameterByName(paramName, value);
+                if (_criticalMassAlarmInstance.isValid()) _criticalMassAlarmInstance.setParameterByName(paramName, value);
+            }
+            catch { }
         }
 
         #region Public Music Playlist API
@@ -530,7 +565,14 @@ namespace OrbitalPanopticon.Core
         public void PlayOneShot(EventReference eventRef, Vector3 position = default)
         {
             if (eventRef.IsNull) return;
-            RuntimeManager.PlayOneShot(eventRef, position);
+            try
+            {
+                RuntimeManager.PlayOneShot(eventRef, position);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[FMODAudioManager] PlayOneShot failed: {ex.Message}");
+            }
         }
 
         public void PlayScrapSpaghettify(Vector3 position)
@@ -760,7 +802,7 @@ namespace OrbitalPanopticon.Core
 
             if (!_singularityHumInstance.isValid())
             {
-                _singularityHumInstance = RuntimeManager.CreateInstance(audioConfig.singularityHumLoop);
+                _singularityHumInstance = CreateInstanceSafe(audioConfig.singularityHumLoop);
             }
 
             _singularityHumInstance.getPlaybackState(out FMOD.Studio.PLAYBACK_STATE state);
@@ -814,7 +856,7 @@ namespace OrbitalPanopticon.Core
 
             if (!_spaceAmbienceInstance.isValid())
             {
-                _spaceAmbienceInstance = RuntimeManager.CreateInstance(audioConfig.spaceAmbienceLoop);
+                _spaceAmbienceInstance = CreateInstanceSafe(audioConfig.spaceAmbienceLoop);
             }
 
             _spaceAmbienceInstance.getPlaybackState(out FMOD.Studio.PLAYBACK_STATE state);

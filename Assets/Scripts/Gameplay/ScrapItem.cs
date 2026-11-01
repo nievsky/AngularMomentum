@@ -313,10 +313,47 @@ namespace OrbitalPanopticon.Gameplay
             }
         }
 
+        private bool IsDeformingLavaAnomaly()
+        {
+            if (_cachedDefaultMaterials != null)
+            {
+                for (int i = 0; i < _cachedDefaultMaterials.Length; i++)
+                {
+                    if (_cachedDefaultMaterials[i] != null && _cachedDefaultMaterials[i].shader != null)
+                    {
+                        if (_cachedDefaultMaterials[i].shader.name == "OrbitalPanopticon/DeformingLavaAnomaly" ||
+                            _cachedDefaultMaterials[i].name.Contains("DeformingLavaAnomaly"))
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
         public void SetupValuableScrap(bool valuable)
         {
             isValuableScrap = valuable;
             CacheOriginalMaterials();
+
+            if (IsDeformingLavaAnomaly())
+            {
+                // Special object already uses Deforming Lava Anomaly; never overwrite its material!
+                EnsureValuableEmbers();
+                if (_valuableEmbersInstance != null)
+                {
+                    _valuableEmbersInstance.gameObject.SetActive(true);
+                    if (valuable) _valuableEmbersInstance.Play();
+                }
+                EnsureValuableRing();
+                if (valuableRingObject != null)
+                {
+                    valuableRingObject.SetActive(valuable);
+                }
+                SetVisualAlpha(_currentAlpha);
+                return;
+            }
 
             if (valuable)
             {

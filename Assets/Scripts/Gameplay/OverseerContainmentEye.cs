@@ -443,8 +443,11 @@ namespace OrbitalPanopticon.Gameplay
                 if (redLaserMaterial == null)
                 {
                     Shader s = Shader.Find("OrbitalPanopticon/RedSweepingLaser") ?? Shader.Find("Universal Render Pipeline/Unlit");
-                    redLaserMaterial = new Material(s);
-                    redLaserMaterial.name = "M_RedSweepingLaser";
+                    if (s != null)
+                    {
+                        redLaserMaterial = new Material(s);
+                        redLaserMaterial.name = "M_RedSweepingLaser";
+                    }
                 }
             }
 

@@ -77,10 +77,22 @@ namespace OrbitalPanopticon.Core
             if (!_isInitialized)
             {
                 _isInitialized = true;
-                string activeSceneName = SceneManager.GetActiveScene().name;
-                PlaylistType sceneType = GetPlaylistTypeForScene(activeSceneName);
-                PlayPlaylist(sceneType, 0, false);
+                StartCoroutine(WaitForBanksAndStartPlaylist());
             }
+        }
+
+        private System.Collections.IEnumerator WaitForBanksAndStartPlaylist()
+        {
+            float timer = 0f;
+            while (!FMODUnity.RuntimeManager.HaveAllBanksLoaded && timer < 3.0f)
+            {
+                timer += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            string activeSceneName = SceneManager.GetActiveScene().name;
+            PlaylistType sceneType = GetPlaylistTypeForScene(activeSceneName);
+            PlayPlaylist(sceneType, 0, false);
         }
 
         private void OnDestroy()
@@ -409,7 +421,15 @@ namespace OrbitalPanopticon.Core
 
                 if (!targetRef.IsNull)
                 {
-                    incomingInstance = RuntimeManager.CreateInstance(targetRef);
+                    try
+                    {
+                        incomingInstance = RuntimeManager.CreateInstance(targetRef);
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogWarning($"[MusicPlaylistManager] Failed to create music instance for {targetRef}: {ex.Message}");
+                        incomingInstance = default;
+                    }
 
                     // Set interactive Stage parameter if this event uses it
                     if (type == PlaylistType.MainMenu || type == PlaylistType.Gameplay)
@@ -620,7 +640,15 @@ namespace OrbitalPanopticon.Core
                     EventReference targetRef = fmodList[0];
                     if (!targetRef.IsNull)
                     {
-                        EventInstance incoming = RuntimeManager.CreateInstance(targetRef);
+                        EventInstance incoming = default;
+                        try
+                        {
+                            incoming = RuntimeManager.CreateInstance(targetRef);
+                        }
+                        catch (Exception ex)
+                        {
+                            Debug.LogWarning($"[MusicPlaylistManager] Failed to create delayed start instance for {targetRef}: {ex.Message}");
+                        }
 
                         string stageParam = (audioConfig != null && !string.IsNullOrEmpty(audioConfig.paramMusicStage))
                             ? audioConfig.paramMusicStage

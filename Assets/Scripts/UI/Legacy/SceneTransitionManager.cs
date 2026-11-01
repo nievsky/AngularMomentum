@@ -54,6 +54,7 @@ public class SceneTransitionManager : MonoBehaviour
         }
 
         Instance = this;
+        transform.SetParent(null);
         DontDestroyOnLoad(gameObject);
 
         BuildTransitionUI();
@@ -133,6 +134,10 @@ public class SceneTransitionManager : MonoBehaviour
 #if UNITY_EDITOR
             dissolveMaterial = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Materials/M_ScreenDissolve.mat");
 #endif
+            if (dissolveMaterial == null)
+            {
+                dissolveMaterial = Resources.Load<Material>("M_ScreenDissolve");
+            }
             if (dissolveMaterial == null)
             {
                 Shader s = Shader.Find("UI/ScreenDissolve");

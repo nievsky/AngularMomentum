@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cad1c1c676ed55c43967dccf8fafb792, type: 3}
+  m_Name: ScrapAssetCatalog
+  m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Gameplay.ScrapAssetCatalogSO
+  customScrapAssets:
+  - modelOrPrefab: {fileID: 1669924941479377223, guid: f9c8e284e3c12c6438ab1671a8ce68f2, type: 3}
+    scrapTier: 1
+    customScaleMultiplier: 0.3
+  - modelOrPrefab: {fileID: 919132149155446097, guid: a5ffc76ef81749845bed4757cfcd7358, type: 3}
+    scrapTier: 1
+    customScaleMultiplier: 2
+  - modelOrPrefab: {fileID: 919132149155446097, guid: 9ada71946d38fc14dbde0f92dfa1cf14, type: 3}
+    scrapTier: 1
+    customScaleMultiplier: 1
+  - modelOrPrefab: {fileID: 919132149155446097, guid: 4a98fc743d72c594b95aeca2f7adf29e, type: 3}
+    scrapTier: 2
+    customScaleMultiplier: 2
+  - modelOrPrefab: {fileID: 919132149155446097, guid: edf41d8c6be2df24c942f16061b34023, type: 3}
+    scrapTier: 1
+    customScaleMultiplier: 2
+  - modelOrPrefab: {fileID: 919132149155446097, guid: 2d18eae19cd9ad44eb16619a05177627, type: 3}
+    scrapTier: 2
+    customScaleMultiplier: 2
+  - modelOrPrefab: {fileID: 919132149155446097, guid: 420ef84f481013944bd8fe1b8b9c1c36, type: 3}
+    scrapTier: 1
+    customScaleMultiplier: 2
+  - modelOrPrefab: {fileID: 919132149155446097, guid: c74fb5f47b763c347b7b827ada4c96d3, type: 3}
+    scrapTier: 1
+    customScaleMultiplier: 3
+  - modelOrPrefab: {fileID: 3800404211905261668, guid: 52a336ae543b99841a7f5a6a8f452de4, type: 3}
+    scrapTier: 2
+    customScaleMultiplier: 1.5
+  - modelOrPrefab: {fileID: 3721516300614763609, guid: 0fb4616180c16e041b0418f59ab99026, type: 3}
+    scrapTier: 2
+    customScaleMultiplier: 3
+  - modelOrPrefab: {fileID: 1970723759975916146, guid: b6ab39f3757b96a4a998f72125a662ce, type: 3}
+    scrapTier: 2
+    customScaleMultiplier: 5
+  - modelOrPrefab: {fileID: 6488217075380584927, guid: fdefa7826bf1a9e4795affacc46c4ba7, type: 3}
+    scrapTier: 2
+    customScaleMultiplier: 4
+  - modelOrPrefab: {fileID: 435633683778885296, guid: 88a86e43247ba9f4e95a30c2f3480ea3, type: 3}
+    scrapTier: 3
+    customScaleMultiplier: 0.3
+  - modelOrPrefab: {fileID: 6099847550332604059, guid: 4a5c9640e63afcd40b26c1a5891ed39b, type: 3}
+    scrapTier: 4
+    customScaleMultiplier: 1.2
+  defaultFallbackTier1: {fileID: 1332304283896392702, guid: 70d9e569d7a1f6a4bb3100f039438064, type: 3}
+  defaultFallbackTier2: {fileID: 8209700772035700066, guid: a90c9a861e15828409c362691e77ca22, type: 3}
+  defaultFallbackTier3: {fileID: 4085560199756304201, guid: 682d7e6588696fb4faf64c3baeed91a7, type: 3}
+  defaultFallbackTier4: {fileID: 5364178797478991655, guid: e0f7624d9733ca14ea0b96eef6099cbe, type: 3}
+  scrapDataTier1: {fileID: 11400000, guid: ae3464068661b2e4fae0c0ee5f245cca, type: 2}
+  scrapDataTier2: {fileID: 11400000, guid: bac0e3a93024fce43be5d7e5429fa3e5, type: 2}
+  scrapDataTier3: {fileID: 11400000, guid: f73b74ac0327f41448a16b7d92874975, type: 2}
+  scrapDataTier4: {fileID: 11400000, guid: 881d4bd1c9f913e4cbd32819207859fc, type: 2}
+  valuableLavaMaterial: {fileID: 2100000, guid: 695ae3f648dd43d4790ee81fa465dcdc, type: 2}
+  valuableEmbersPrefab: {fileID: 2046512276226227920, guid: 16299fc0d65c1a14d983b3e410444a51, type: 3}
