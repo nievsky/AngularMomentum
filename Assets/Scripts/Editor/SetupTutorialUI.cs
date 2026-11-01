@@ -24,7 +24,7 @@ namespace OrbitalPanopticon.Editor
         [MenuItem("Tools/Orbital Panopticon/Setup New Tutorial UI (Mayak & 4 Slides)")]
         public static void Initialize()
         {
-            if (EditorApplication.isPlayingOrWillChangePlaymode) return;
+            if (EditorApplication.isPlayingOrWillChangePlaymode || Application.isPlaying) return;
             Debug.Log("<color=#FFBA00>[SetupTutorialUI] Starting Tutorial UI setup...</color>");
 
             // 1. Ensure Mayak SDF font asset exists

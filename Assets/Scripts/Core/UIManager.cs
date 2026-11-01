@@ -26,13 +26,17 @@ namespace OrbitalPanopticon.Core
 
         [Header("Minimalist Core HUD Elements")]
         [SerializeField] private GameObject scrapCoinsBadge;
+        [SerializeField] private RectTransform coinsContainer;
+        [SerializeField] private Image coinsIcon;
         [SerializeField] private TextMeshProUGUI scrapCoinsText;
         [SerializeField] private GameObject bottomHUDPanel;
         [SerializeField] private Image blackHoleBarFill;
         [SerializeField] private TextMeshProUGUI blackHoleBarText;
         [SerializeField] private TextMeshProUGUI stageHeaderText;
 
-        public GameObject ScrapCoinsBadge => scrapCoinsBadge;
+        public GameObject ScrapCoinsBadge => scrapCoinsBadge != null ? scrapCoinsBadge : (coinsContainer != null ? coinsContainer.gameObject : null);
+        public RectTransform CoinsContainer => coinsContainer != null ? coinsContainer : (scrapCoinsBadge != null ? scrapCoinsBadge.GetComponent<RectTransform>() : null);
+        public Image CoinsIcon => coinsIcon;
         public TextMeshProUGUI ScrapCoinsText => scrapCoinsText;
         public GameObject BottomHUDPanel => bottomHUDPanel;
         public Image BlackHoleBarFill => blackHoleBarFill;
@@ -100,6 +104,9 @@ namespace OrbitalPanopticon.Core
         private bool _isOperatorConnected = false;
         private bool _isHUDHidden = false;
         private int _lastCoins = -1;
+        private float _displayedCoinsValue = -1f;
+        private Tween _coinsRollTween;
+        private Tween _coinsScaleTween;
 
         public bool IsOperatorConnected => _isOperatorConnected;
         public bool IsHUDHidden => _isHUDHidden;
@@ -150,6 +157,7 @@ namespace OrbitalPanopticon.Core
             if (quotaManager != null)
             {
                 quotaManager.OnQuotaCompleted += HandleQuotaCelebration;
+                quotaManager.OnScoreAdded += HandleScoreAdded;
             }
 
             if (arenaBoundaryManager != null)
@@ -207,9 +215,12 @@ namespace OrbitalPanopticon.Core
             }
             _massRollTween?.Kill();
             _stage4TremorTween?.Kill();
+            _coinsRollTween?.Kill();
+            _coinsScaleTween?.Kill();
             if (quotaManager != null)
             {
                 quotaManager.OnQuotaCompleted -= HandleQuotaCelebration;
+                quotaManager.OnScoreAdded -= HandleScoreAdded;
             }
 
             if (arenaBoundaryManager != null)
@@ -343,19 +354,26 @@ namespace OrbitalPanopticon.Core
             int stageIndex = stageMgr != null ? stageMgr.CurrentStageIndex : (stage - 1);
             float targetMass = stageMgr != null ? stageMgr.CurrentStageTargetMass : (config != null && config.stageMassTargets != null && stageIndex < config.stageMassTargets.Length ? config.stageMassTargets[stageIndex] : 500f);
 
-            // 1. Scrap Coins Counter (Top-Right Badge)
+            // 1. Minimalist Scrap Coins Counter (Icon + Raw Number, No Border Box)
             int coins = quotaManager != null ? quotaManager.ScrapCoins : 0;
-            if (_lastCoins != -1 && coins > _lastCoins && scrapCoinsBadge != null)
+            if (_displayedCoinsValue < 0f)
             {
-                scrapCoinsBadge.transform.DOKill();
-                scrapCoinsBadge.transform.localScale = Vector3.one;
-                scrapCoinsBadge.transform.DOPunchScale(Vector3.one * 0.18f, 0.22f, 6, 0.5f).SetUpdate(true);
+                _lastCoins = coins;
+                _displayedCoinsValue = coins;
+                UpdateCoinsTextString();
             }
-            _lastCoins = coins;
-
-            if (scrapCoinsText != null)
+            else if (coins > _lastCoins)
             {
-                scrapCoinsText.text = LocalizationManager.Get("HUD_ScrapCoins", coins);
+                int coinsGain = coins - _lastCoins;
+                _lastCoins = coins;
+                OnCoinsGainedJuice(coinsGain, coins);
+            }
+            else if (coins < _lastCoins)
+            {
+                _lastCoins = coins;
+                _displayedCoinsValue = coins;
+                _coinsRollTween?.Kill();
+                UpdateCoinsTextString();
             }
 
             // 2. Hide HUD Clutter (Stage header and progress bar fill)
@@ -535,16 +553,76 @@ namespace OrbitalPanopticon.Core
             }
         }
 
+        public static Sprite LoadCoinsSprite()
+        {
+#if UNITY_EDITOR
+            Sprite spr = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/_Project/Art/Sprites/coins.png");
+            if (spr != null) return spr;
+            spr = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Sprites/coins.png");
+            if (spr != null) return spr;
+#endif
+            return Resources.Load<Sprite>("coins");
+        }
+
+        private void HandleScoreAdded(float score, int currentCoins)
+        {
+            if (_lastCoins >= 0 && currentCoins > _lastCoins)
+            {
+                int gain = currentCoins - _lastCoins;
+                _lastCoins = currentCoins;
+                OnCoinsGainedJuice(gain, currentCoins);
+            }
+        }
+
+        private void UpdateCoinsTextString()
+        {
+            if (scrapCoinsText == null) return;
+            long displayInt = (long)System.Math.Round(_displayedCoinsValue);
+            if (displayInt < 0) displayInt = 0;
+            scrapCoinsText.text = displayInt.ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        private void OnCoinsGainedJuice(int coinsGain, float targetCoins)
+        {
+            // 1. Smoothly roll displayed coin count from old value to new value using DOTween.To over 0.35s
+            _coinsRollTween?.Kill();
+            _coinsRollTween = DOTween.To(() => _displayedCoinsValue, x =>
+            {
+                _displayedCoinsValue = x;
+                UpdateCoinsTextString();
+            }, targetCoins, 0.35f).SetEase(Ease.OutQuad).SetUpdate(true);
+
+            // 2. Trigger crisp DOTween scale punch on icon and number
+            Transform punchTarget = coinsContainer != null ? (Transform)coinsContainer : (scrapCoinsBadge != null ? scrapCoinsBadge.transform : null);
+            if (punchTarget != null)
+            {
+                punchTarget.DOKill();
+                punchTarget.localScale = Vector3.one;
+                _coinsScaleTween?.Kill();
+                _coinsScaleTween = punchTarget.DOScale(Vector3.one * 1.35f, 0.2f)
+                    .SetLoops(2, LoopType.Yoyo)
+                    .SetUpdate(true)
+                    .OnComplete(() =>
+                    {
+                        if (punchTarget != null)
+                        {
+                            punchTarget.localScale = Vector3.one;
+                        }
+                    });
+            }
+        }
+
         /// <summary>
         /// Triggers a sharp red punch scale tween on the Scrap Coins HUD counter when coins are lost on death.
         /// </summary>
         public void TriggerScrapCoinsLossPunch()
         {
-            if (scrapCoinsBadge != null)
+            Transform punchTarget = coinsContainer != null ? (Transform)coinsContainer : (scrapCoinsBadge != null ? scrapCoinsBadge.transform : null);
+            if (punchTarget != null)
             {
-                scrapCoinsBadge.transform.DOKill();
-                scrapCoinsBadge.transform.localScale = Vector3.one;
-                scrapCoinsBadge.transform.DOPunchScale(Vector3.one * 0.25f, 0.35f, 7, 0.6f).SetUpdate(true);
+                punchTarget.DOKill();
+                punchTarget.localScale = Vector3.one;
+                punchTarget.DOPunchScale(Vector3.one * 0.25f, 0.35f, 7, 0.6f).SetUpdate(true);
             }
 
             if (scrapCoinsText != null)
@@ -591,16 +669,16 @@ namespace OrbitalPanopticon.Core
             }
         }
 
-        private static void SafeDestroy(GameObject go)
+        private static void SafeDestroy(UnityEngine.Object obj)
         {
-            if (go == null) return;
+            if (obj == null) return;
 #if UNITY_EDITOR
             if (!Application.isPlaying)
-                DestroyImmediate(go);
+                DestroyImmediate(obj);
             else
-                Destroy(go);
+                Destroy(obj);
 #else
-            Destroy(go);
+            Destroy(obj);
 #endif
         }
 
@@ -621,51 +699,113 @@ namespace OrbitalPanopticon.Core
                 }
             }
 
-            // 2. Setup or find Scrap Coins Counter Badge (Top-Right)
-            if (scrapCoinsBadge == null)
+            // 2. Setup or find Scrap Coins Counter (Top-Right Icon + Raw Number, No Border Box)
+            if (coinsContainer == null)
             {
                 Transform existingBadge = canvas.transform.Find("Panel_ScrapCoins");
                 if (existingBadge != null)
                 {
+                    coinsContainer = existingBadge.GetComponent<RectTransform>();
                     scrapCoinsBadge = existingBadge.gameObject;
-                    scrapCoinsText = scrapCoinsBadge.GetComponentInChildren<TextMeshProUGUI>();
                 }
             }
 
-            if (scrapCoinsBadge == null)
+            if (coinsContainer == null)
             {
-                GameObject badgeGo = new GameObject("Panel_ScrapCoins", typeof(RectTransform), typeof(Image), typeof(Outline));
-                badgeGo.transform.SetParent(canvas.transform, false);
-
-                RectTransform badgeRt = badgeGo.GetComponent<RectTransform>();
-                badgeRt.anchorMin = new Vector2(1f, 1f);
-                badgeRt.anchorMax = new Vector2(1f, 1f);
-                badgeRt.pivot = new Vector2(1f, 1f);
-                badgeRt.anchoredPosition = new Vector2(-40f, -36f);
-                badgeRt.sizeDelta = new Vector2(250f, 44f);
-
-                Image bg = badgeGo.GetComponent<Image>();
-                bg.color = new Color(0.04f, 0.07f, 0.12f, 0.90f);
-
-                Outline outline = badgeGo.GetComponent<Outline>();
-                outline.effectColor = new Color(0.2f, 0.85f, 1f, 0.8f);
-                outline.effectDistance = new Vector2(1.5f, -1.5f);
-
-                GameObject textGo = new GameObject("Text_Coins", typeof(RectTransform), typeof(TextMeshProUGUI));
-                textGo.transform.SetParent(badgeGo.transform, false);
-                RectTransform textRt = textGo.GetComponent<RectTransform>();
-                textRt.anchorMin = Vector2.zero;
-                textRt.anchorMax = Vector2.one;
-                textRt.sizeDelta = Vector2.zero;
-
-                scrapCoinsText = textGo.GetComponent<TextMeshProUGUI>();
-                scrapCoinsText.alignment = TextAlignmentOptions.Center;
-                scrapCoinsText.fontSize = 15;
-                scrapCoinsText.fontStyle = FontStyles.Bold;
-                scrapCoinsText.color = new Color(1.0f, 0.88f, 0.25f);
-
-                scrapCoinsBadge = badgeGo;
+                GameObject containerGo = new GameObject("Panel_ScrapCoins", typeof(RectTransform));
+                containerGo.transform.SetParent(canvas.transform, false);
+                coinsContainer = containerGo.GetComponent<RectTransform>();
+                scrapCoinsBadge = containerGo;
             }
+
+            // Remove legacy background image and outline to guarantee no border box
+            Image legacyBg = coinsContainer.GetComponent<Image>();
+            if (legacyBg != null) SafeDestroy(legacyBg);
+            Outline legacyOutline = coinsContainer.GetComponent<Outline>();
+            if (legacyOutline != null) SafeDestroy(legacyOutline);
+            CanvasRenderer legacyCr = coinsContainer.GetComponent<CanvasRenderer>();
+            if (legacyCr != null) SafeDestroy(legacyCr);
+
+            coinsContainer.anchorMin = new Vector2(1f, 1f);
+            coinsContainer.anchorMax = new Vector2(1f, 1f);
+            coinsContainer.pivot = new Vector2(1f, 1f);
+            coinsContainer.anchoredPosition = new Vector2(-40f, -36f);
+
+            HorizontalLayoutGroup hlg = coinsContainer.GetComponent<HorizontalLayoutGroup>();
+            if (hlg == null) hlg = coinsContainer.gameObject.AddComponent<HorizontalLayoutGroup>();
+            hlg.spacing = 10f;
+            hlg.childAlignment = TextAnchor.MiddleRight;
+            hlg.childControlWidth = false;
+            hlg.childControlHeight = false;
+            hlg.childForceExpandWidth = false;
+            hlg.childForceExpandHeight = false;
+
+            ContentSizeFitter csf = coinsContainer.GetComponent<ContentSizeFitter>();
+            if (csf == null) csf = coinsContainer.gameObject.AddComponent<ContentSizeFitter>();
+            csf.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+            csf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            // 1) Coins Icon (Image component, 32x32, preserveAspect = true)
+            Transform iconTransform = coinsContainer.Find("Icon_Coins");
+            if (iconTransform == null)
+            {
+                GameObject iconGo = new GameObject("Icon_Coins", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(LayoutElement));
+                iconGo.transform.SetParent(coinsContainer, false);
+                iconGo.transform.SetAsFirstSibling();
+                iconTransform = iconGo.transform;
+            }
+            else
+            {
+                iconTransform.SetAsFirstSibling();
+            }
+
+            coinsIcon = iconTransform.GetComponent<Image>();
+            if (coinsIcon != null)
+            {
+                if (coinsIcon.sprite == null)
+                {
+                    coinsIcon.sprite = LoadCoinsSprite();
+                }
+                coinsIcon.preserveAspect = true;
+                coinsIcon.raycastTarget = false;
+                coinsIcon.color = Color.white;
+            }
+
+            RectTransform iconRt = iconTransform.GetComponent<RectTransform>();
+            if (iconRt != null)
+            {
+                iconRt.sizeDelta = new Vector2(32f, 32f);
+            }
+            LayoutElement iconLe = iconTransform.GetComponent<LayoutElement>();
+            if (iconLe == null) iconLe = iconTransform.gameObject.AddComponent<LayoutElement>();
+            iconLe.preferredWidth = 32f;
+            iconLe.preferredHeight = 32f;
+            iconLe.minWidth = 32f;
+            iconLe.minHeight = 32f;
+
+            // 2) Coins Number (TMP_Text, bold raw number, aligned next to icon)
+            Transform textTransform = coinsContainer.Find("Text_Coins");
+            if (textTransform == null)
+            {
+                GameObject textGo = new GameObject("Text_Coins", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI), typeof(ContentSizeFitter));
+                textGo.transform.SetParent(coinsContainer, false);
+                textTransform = textGo.transform;
+            }
+
+            scrapCoinsText = textTransform.GetComponent<TextMeshProUGUI>();
+            if (scrapCoinsText != null)
+            {
+                scrapCoinsText.alignment = TextAlignmentOptions.MidlineLeft;
+                scrapCoinsText.fontSize = 24f;
+                scrapCoinsText.fontStyle = FontStyles.Bold;
+                scrapCoinsText.color = new Color(1.0f, 0.88f, 0.25f, 1.0f);
+                scrapCoinsText.raycastTarget = false;
+            }
+
+            ContentSizeFitter textCsf = textTransform.GetComponent<ContentSizeFitter>();
+            if (textCsf == null) textCsf = textTransform.gameObject.AddComponent<ContentSizeFitter>();
+            textCsf.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+            textCsf.verticalFit = ContentSizeFitter.FitMode.Unconstrained;
 
             // Remove standalone legacy Text_ScrapCoins if present
             Transform oldCoins = canvas.transform.Find("Text_ScrapCoins");

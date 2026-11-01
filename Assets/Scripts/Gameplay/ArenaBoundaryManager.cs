@@ -13,10 +13,10 @@ namespace OrbitalPanopticon.Gameplay
 
         [Header("Boundary Radii (Fallback Defaults)")]
         [Tooltip("Safe radius of the orbital arena. Beyond this distance, out-of-bounds warning starts.")]
-        [SerializeField] private float arenaSafeRadius = 42f;
+        [SerializeField] private float arenaSafeRadius = 120f;
 
         [Tooltip("Max outer radius of the orbital arena. Hard escape buffer begins here.")]
-        [SerializeField] private float arenaMaxRadius = 48f;
+        [SerializeField] private float arenaMaxRadius = 140f;
 
         [Tooltip("Inner radius representing the lethal event horizon of the black hole.")]
         [SerializeField] private float eventHorizonRadius = 3.5f;
@@ -127,8 +127,8 @@ namespace OrbitalPanopticon.Gameplay
                 return;
             }
 
-            // 2. Far boundary hard escape check (> maxRadius + 10f)
-            if (distance > arenaMaxRadius + 10f)
+            // 2. Far boundary hard escape check (> maxRadius + 15f)
+            if (distance > arenaMaxRadius + 15f)
             {
                 ClearWarning();
                 HandlePlayerDeath(playerDrone.transform.position, "OUT OF RANGE - SIGNAL LOST", true);

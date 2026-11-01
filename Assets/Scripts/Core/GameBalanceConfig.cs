@@ -241,20 +241,26 @@ namespace OrbitalPanopticon.Core
         public float scrapSpawnInterval = 1.0f;
 
         [Tooltip("Inner radius of the scrap spawning spherical shell.")]
-        [Range(10f, 30f)]
-        public float minSpawnRadius = 16f;
+        [Range(10f, 60f)]
+        public float minSpawnRadius = 24f;
 
         [Tooltip("Outer radius of the scrap spawning spherical shell.")]
-        [Range(25f, 60f)]
-        public float maxSpawnRadius = 38f;
+        [Range(25f, 130f)]
+        public float maxSpawnRadius = 100f;
 
-        [Tooltip("Radius where signal degradation warning triggers.")]
-        [Range(30f, 60f)]
-        public float arenaSafeRadius = 42f;
+        [Tooltip("Radius where signal degradation warning triggers (safe zone boundary).")]
+        [Range(30f, 180f)]
+        public float arenaSafeRadius = 120f;
+
+        public float safeZoneRadius
+        {
+            get => arenaSafeRadius;
+            set => arenaSafeRadius = value;
+        }
 
         [Tooltip("Absolute outer radius of the orbital arena dome.")]
-        [Range(35f, 70f)]
-        public float arenaMaxRadius = 48f;
+        [Range(35f, 220f)]
+        public float arenaMaxRadius = 140f;
 
         [Tooltip("Grace period in seconds outside safe radius before emergency telemetry disconnect.")]
         [Range(1f, 10f)]
@@ -383,7 +389,7 @@ namespace OrbitalPanopticon.Core
         public bool showAccretionDisk = false;
 
         [Tooltip("Orbital distance of Overseer Eyes from singularity (pushes them far outside playable sphere boundary).")]
-        public float overseerOrbitRadius = 78.0f;
+        public float overseerOrbitRadius = 155.0f;
 
         [Tooltip("Uniform visual scale for all 4 Overseer Containment Eyes.")]
         public float overseerVisualScale = 14.0f;

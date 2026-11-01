@@ -25,18 +25,18 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _DustLaneDarkness: 0.18
+    - _DustLaneDarkness: 0.477
     - _GradientExponent: 1.35
-    - _MilkyWayFalloff: 2.2
-    - _MilkyWayNoiseScale: 2.8
-    - _MilkyWayStarBoost: 3.5
-    - _MilkyWayWidth: 0.32
+    - _MilkyWayFalloff: 1.01
+    - _MilkyWayNoiseScale: 8.05
+    - _MilkyWayStarBoost: 2.42
+    - _MilkyWayWidth: 0.8
     - _NebulaIntensity: 0.95
     - _NebulaScale: 2
-    - _StarBrightness: 2.2
+    - _StarBrightness: 2.44
     - _StarColorVariation: 0.85
-    - _StarDensity: 110
-    - _StarSize: 0.016
+    - _StarDensity: 300
+    - _StarSize: 0.06
     - _StarTwinkleAmount: 0.55
     - _StarTwinkleSpeed: 2.2
     m_Colors:
@@ -45,9 +45,9 @@ Material:
     - _MilkyWayRotationEuler: {r: 32, g: 45, b: 18, a: 0}
     - _NebulaColorA: {r: 0.08, g: 0.48, b: 0.85, a: 1}
     - _NebulaColorB: {r: 0.75, g: 0.15, b: 0.65, a: 1}
-    - _NebulaOffset: {r: 1.5, g: 2.3, b: 3.7, a: 0}
-    - _SpaceHorizonColor: {r: 0.004, g: 0.007, b: 0.016, a: 1}
-    - _SpaceNadirColor: {r: 0.001, g: 0.002, b: 0.006, a: 1}
+    - _NebulaOffset: {r: 3.96, g: 10.27, b: 5.6, a: 0}
+    - _SpaceHorizonColor: {r: 0.23720846, g: 0.07409222, b: 0.3490566, a: 1}
+    - _SpaceNadirColor: {r: 0.11461764, g: 0.055802785, b: 0.3584906, a: 1}
     - _SpaceZenithColor: {r: 0.012, g: 0.018, b: 0.042, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
