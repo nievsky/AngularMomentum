@@ -118,3 +118,4 @@ our_changes_backup.patch
 .backup_before_pull
 Assets/Plugins/FMOD/Cache/Editor/FMODStudioCache.asset
 Assets/Scripts/Editor/ForceCompileScripts.cs.meta
+Assets/Plugins/FMOD/Cache/Editor/FMODStudioCache.asset

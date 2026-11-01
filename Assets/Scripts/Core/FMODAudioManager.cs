@@ -92,6 +92,18 @@ namespace OrbitalPanopticon.Core
 
         private void Start()
         {
+            StartCoroutine(WaitForBanksAndInitialize());
+        }
+
+        private System.Collections.IEnumerator WaitForBanksAndInitialize()
+        {
+            while (!RuntimeManager.HaveAllBanksLoaded)
+            {
+                yield return null;
+            }
+
+            yield return new WaitForSeconds(0.1f);
+
             ApplySavedVolumes();
             StartCoroutine(WaitForBanksAndInitializeLoops());
         }
@@ -106,6 +118,7 @@ namespace OrbitalPanopticon.Core
             }
 
             InitializeLoops();
+            Debug.Log("<color=#33FF88>[FMODAudioManager] All banks loaded! Initialized loops & volumes.</color>");
         }
 
         public static EventInstance CreateInstanceSafe(EventReference eventRef)
@@ -125,6 +138,11 @@ namespace OrbitalPanopticon.Core
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
             ResolveReferences();
+
+            if (!RuntimeManager.HaveAllBanksLoaded)
+            {
+                return;
+            }
 
             bool isGameplay = scene.name.Contains("Gameplay") || scene.name.Contains("Outdoor");
             if (!isGameplay)
@@ -258,9 +276,28 @@ namespace OrbitalPanopticon.Core
             }
         }
 
+        public void ResumeWebAudio()
+        {
+            if (RuntimeManager.IsInitialized)
+            {
+                RuntimeManager.CoreSystem.mixerSuspend();
+                RuntimeManager.CoreSystem.mixerResume();
+            }
+        }
+
         private void Update()
         {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            // Web Audio Autoplay Policy: Resume mixer on user interaction with the game canvas
+            if ((UnityEngine.InputSystem.Pointer.current != null && UnityEngine.InputSystem.Pointer.current.press.wasPressedThisFrame) ||
+                (UnityEngine.InputSystem.Keyboard.current != null && UnityEngine.InputSystem.Keyboard.current.anyKey.wasPressedThisFrame))
+            {
+                ResumeWebAudio();
+            }
+#endif
+
             if (audioConfig == null) return;
+            if (!RuntimeManager.HaveAllBanksLoaded) return;
 
             // Re-resolve dynamic references if needed
             if (playerDrone == null) playerDrone = DroneController.Instance;
@@ -438,7 +475,7 @@ namespace OrbitalPanopticon.Core
 
         private void SetParameter(string paramName, float value)
         {
-            if (string.IsNullOrEmpty(paramName)) return;
+            if (string.IsNullOrEmpty(paramName) || !RuntimeManager.HaveAllBanksLoaded) return;
 
             try
             {
@@ -511,6 +548,8 @@ namespace OrbitalPanopticon.Core
             PlayerPrefs.SetFloat("Settings_MusicVolume", volume);
             PlayerPrefs.Save();
 
+            if (!RuntimeManager.HaveAllBanksLoaded) return;
+
             try
             {
                 string path = (audioConfig != null && !string.IsNullOrEmpty(audioConfig.vcaMusicPath))
@@ -534,6 +573,8 @@ namespace OrbitalPanopticon.Core
             PlayerPrefs.SetFloat("Settings_SoundsVolume", volume);
             PlayerPrefs.Save();
             AudioListener.volume = volume;
+
+            if (!RuntimeManager.HaveAllBanksLoaded) return;
 
             try
             {
@@ -564,15 +605,8 @@ namespace OrbitalPanopticon.Core
         /// </summary>
         public void PlayOneShot(EventReference eventRef, Vector3 position = default)
         {
-            if (eventRef.IsNull) return;
-            try
-            {
-                RuntimeManager.PlayOneShot(eventRef, position);
-            }
-            catch (Exception ex)
-            {
-                Debug.LogWarning($"[FMODAudioManager] PlayOneShot failed: {ex.Message}");
-            }
+            if (eventRef.IsNull || !RuntimeManager.HaveAllBanksLoaded) return;
+            RuntimeManager.PlayOneShot(eventRef, position);
         }
 
         public void PlayScrapSpaghettify(Vector3 position)
@@ -736,7 +770,13 @@ namespace OrbitalPanopticon.Core
         private const float UiSoundMinInterval = 0.05f; // 50ms cooldown to eliminate flanging / duplicate clicks
 
         private void HandleUiHover() => PlayUiHover();
-        private void HandleUiClick() => PlayUiClick();
+        private void HandleUiClick()
+        {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            ResumeWebAudio();
+#endif
+            PlayUiClick();
+        }
         private void HandleUiStartGame() => PlayUiStartGame();
 
         public void PlayUiHover(Vector3 position = default)
@@ -868,6 +908,13 @@ namespace OrbitalPanopticon.Core
 
         public void PlayCollapseGameOver(Vector3 position = default)
         {
+            // Do not play collapse game over sound or stop background music when in Main Menu scene
+            string activeScene = SceneManager.GetActiveScene().name;
+            if (activeScene.IndexOf("MainMenu", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return;
+            }
+
             if (position == default)
             {
                 if (blackHoleTransform != null)
