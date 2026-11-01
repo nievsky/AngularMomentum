@@ -8,7 +8,6 @@ using OrbitalPanopticon.Core;
 
 namespace OrbitalPanopticon.Editor
 {
-    [InitializeOnLoad]
     public static class SetupTutorialUI
     {
         private const string OtfPath = "Assets/TextMesh Pro/Fonts/Mayak Ultra Extended Medium.otf";
@@ -16,10 +15,7 @@ namespace OrbitalPanopticon.Editor
         private const string ResourcesSdfPath = "Assets/Resources/Mayak SDF.asset";
         private const string ScenePath = "Assets/_Project/Scenes/GameplayScene.unity";
 
-        static SetupTutorialUI()
-        {
-            EditorApplication.delayCall += Initialize;
-        }
+        
 
         [MenuItem("Tools/Orbital Panopticon/Setup New Tutorial UI (Mayak & 4 Slides)")]
         public static void Initialize()
