@@ -42,7 +42,7 @@ MonoBehaviour:
   Path: Assets/FMOD/WEB/Master.bank
   Name: Master
   StudioPath: bank:/Master
-  lastModified: 639291484684718787
+  lastModified: 639291486894645266
   FileSizes:
   - Name: Desktop
     Value: 8432064
@@ -409,7 +409,7 @@ MonoBehaviour:
   Path: Assets/FMOD/WEB/Master.strings.bank
   Name: Master.strings
   StudioPath: bank:/Master.strings
-  lastModified: 639291484684763813
+  lastModified: 639291486894685299
   FileSizes:
   - Name: Desktop
     Value: 2124
@@ -598,7 +598,7 @@ MonoBehaviour:
   StringsBanks:
   - {fileID: -2329073411079257690}
   cacheVersion: 131848
-  cacheTime: 639291484684763813
+  cacheTime: 639291486894685299
   SerializableEventsDict:
   - key: event:/Blackhole/Singularity_Hum
     index: 0
@@ -862,7 +862,7 @@ MonoBehaviour:
   IsOneShot: 1
   Parameters: []
   MinDistance: 1
-  MaxDistance: 290
+  MaxDistance: 350
   Length: 5831
 --- !u!114 &2922544707766357331
 MonoBehaviour:
@@ -938,7 +938,7 @@ MonoBehaviour:
   IsOneShot: 1
   Parameters: []
   MinDistance: 1
-  MaxDistance: 350
+  MaxDistance: 380
   Length: 5490
 --- !u!114 &4123171314202876339
 MonoBehaviour:
@@ -1235,5 +1235,5 @@ MonoBehaviour:
   IsOneShot: 1
   Parameters: []
   MinDistance: 1
-  MaxDistance: 50
+  MaxDistance: 110
   Length: 860
