@@ -147,8 +147,7 @@ namespace OrbitalPanopticon.Core
         {
             if (tmp == null || fontConfig == null) return;
 
-            // Do not override dedicated tutorial typography
-            if (tmp.GetComponentInParent<TutorialSlideshowUI>() != null) return;
+            // Dedicated tutorial typography check removed so all HUD & canvas elements receive valid font & material
 
             if (!_tmpBaseValues.TryGetValue(tmp, out var baseVal) || baseVal.size <= 0f)
             {
@@ -156,10 +155,26 @@ namespace OrbitalPanopticon.Core
                 _tmpBaseValues[tmp] = baseVal;
             }
 
-            // Assign master font
-            if (fontConfig.masterTMPFont != null && tmp.font != fontConfig.masterTMPFont)
+            // Assign master font and enforce valid material & alpha
+            if (fontConfig.masterTMPFont != null)
             {
-                tmp.font = fontConfig.masterTMPFont;
+                if (tmp.font != fontConfig.masterTMPFont)
+                {
+                    tmp.font = fontConfig.masterTMPFont;
+                }
+
+                if (fontConfig.masterTMPFont.material != null)
+                {
+                    tmp.fontSharedMaterial = fontConfig.masterTMPFont.material;
+                }
+            }
+
+            tmp.enabled = true;
+            if (tmp.color.a < 0.05f)
+            {
+                Color c = tmp.color;
+                c.a = 1.0f;
+                tmp.color = c;
             }
 
             // Apply scale multiplier
@@ -241,6 +256,28 @@ namespace OrbitalPanopticon.Core
                 if (applier != null)
                 {
                     applier.ApplyToHierarchy(root);
+                }
+                else
+                {
+                    var cfg = Resources.Load<GlobalFontConfigSO>("GlobalFontConfig");
+#if UNITY_EDITOR
+                    if (cfg == null)
+                    {
+                        cfg = UnityEditor.AssetDatabase.LoadAssetAtPath<GlobalFontConfigSO>("Assets/_Project/ScriptableObjects/GlobalFontConfig.asset");
+                    }
+#endif
+                    if (cfg != null && cfg.masterTMPFont != null)
+                    {
+                        var tmps = root.GetComponentsInChildren<TMP_Text>(true);
+                        foreach (var tmp in tmps)
+                        {
+                            // All HUD & canvas elements receive valid font & material
+                            tmp.font = cfg.masterTMPFont;
+                            if (cfg.masterTMPFont.material != null) tmp.fontSharedMaterial = cfg.masterTMPFont.material;
+                            tmp.enabled = true;
+                            if (tmp.color.a < 0.05f) { Color c = tmp.color; c.a = 1f; tmp.color = c; }
+                        }
+                    }
                 }
             }
         }

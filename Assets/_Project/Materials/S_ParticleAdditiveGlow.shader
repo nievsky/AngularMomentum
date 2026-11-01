@@ -5,6 +5,7 @@ Shader "OrbitalPanopticon/ParticleAdditiveGlow"
         [HDR] _BaseColor ("Color Tint", Color) = (1.0, 1.0, 1.0, 1.0)
         _CoreSharpness ("Core Sharpness", Range(1.0, 10.0)) = 4.0
         _GlowFalloff ("Glow Falloff", Range(0.5, 5.0)) = 2.0
+        [Enum(UnityEngine.Rendering.CompareFunction)] _ZTest ("ZTest", Float) = 4
     }
 
     SubShader
@@ -24,6 +25,7 @@ Shader "OrbitalPanopticon/ParticleAdditiveGlow"
 
             Blend One One // Pure Additive HDR
             ZWrite Off
+            ZTest [_ZTest]
             Cull Off
 
             HLSLPROGRAM

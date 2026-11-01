@@ -810,13 +810,17 @@ namespace OrbitalPanopticon.UI
             Color darkBg = new Color(0.08f, 0.07f, 0.07f, 0.96f); // #141212
             Color textWhite = Color.white;
 
-            TMP_FontAsset mayakFont = Resources.Load<TMP_FontAsset>("Mayak SDF");
+            TMP_FontAsset mayakFont = Resources.Load<TMP_FontAsset>("MasterCyrillicFont_SDF");
 #if UNITY_EDITOR
             if (mayakFont == null)
             {
-                mayakFont = UnityEditor.AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/TextMesh Pro/Fonts/Mayak SDF.asset");
+                mayakFont = UnityEditor.AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/_Project/Fonts/MasterCyrillicFont_SDF.asset");
             }
 #endif
+            if (mayakFont == null)
+            {
+                mayakFont = Resources.Load<TMP_FontAsset>("Mayak SDF");
+            }
 
             void StyleButton(Button btn, bool isPrimary = false)
             {
@@ -832,7 +836,11 @@ namespace OrbitalPanopticon.UI
                 var txt = btn.GetComponentInChildren<TextMeshProUGUI>();
                 if (txt != null)
                 {
-                    if (mayakFont != null) txt.font = mayakFont;
+                    if (mayakFont != null)
+                    {
+                        txt.font = mayakFont;
+                        if (mayakFont.material != null) txt.fontSharedMaterial = mayakFont.material;
+                    }
                     txt.color = isPrimary ? orange : textWhite;
                 }
             }
@@ -846,12 +854,20 @@ namespace OrbitalPanopticon.UI
             if (titleText != null)
             {
                 titleText.color = orange;
-                if (mayakFont != null) titleText.font = mayakFont;
+                if (mayakFont != null)
+                {
+                    titleText.font = mayakFont;
+                    if (mayakFont.material != null) titleText.fontSharedMaterial = mayakFont.material;
+                }
             }
             if (subtitleText != null)
             {
                 subtitleText.color = textWhite;
-                if (mayakFont != null) subtitleText.font = mayakFont;
+                if (mayakFont != null)
+                {
+                    subtitleText.font = mayakFont;
+                    if (mayakFont.material != null) subtitleText.fontSharedMaterial = mayakFont.material;
+                }
             }
 
             if (settingsPanel != null)
@@ -869,7 +885,11 @@ namespace OrbitalPanopticon.UI
                 if (settingsTitleText != null)
                 {
                     settingsTitleText.color = orange;
-                    if (mayakFont != null) settingsTitleText.font = mayakFont;
+                    if (mayakFont != null)
+                    {
+                        settingsTitleText.font = mayakFont;
+                        if (mayakFont.material != null) settingsTitleText.fontSharedMaterial = mayakFont.material;
+                    }
                 }
 
                 void StyleSlider(Slider slider, TextMeshProUGUI label, TextMeshProUGUI valText)
@@ -877,12 +897,20 @@ namespace OrbitalPanopticon.UI
                     if (label != null)
                     {
                         label.color = textWhite;
-                        if (mayakFont != null) label.font = mayakFont;
+                        if (mayakFont != null)
+                        {
+                            label.font = mayakFont;
+                            if (mayakFont.material != null) label.fontSharedMaterial = mayakFont.material;
+                        }
                     }
                     if (valText != null)
                     {
                         valText.color = orange;
-                        if (mayakFont != null) valText.font = mayakFont;
+                        if (mayakFont != null)
+                        {
+                            valText.font = mayakFont;
+                            if (mayakFont.material != null) valText.fontSharedMaterial = mayakFont.material;
+                        }
                     }
                     if (slider != null)
                     {

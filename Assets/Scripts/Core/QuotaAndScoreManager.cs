@@ -243,25 +243,39 @@ namespace OrbitalPanopticon.Core
 
             currentQuotaProgress += finalScore;
 
-            // Direct coins reward from every piece of scrap (doubled by Quantum Decay)
-            int coinsGained = Mathf.Max(1, Mathf.RoundToInt(baseValue * orbitalMultiplier * stageMultiplier * 0.15f));
-            if (config != null && config.quantumDecayUnlocked)
+            // Direct coins reward decoupled from exponential mass multipliers
+            int tier = scrap != null ? scrap.Tier : 1;
+            int currentStage = BlackHoleStageManager.Instance != null ? BlackHoleStageManager.Instance.CurrentStage : 1;
+            bool isValuable = scrap != null && scrap.IsValuableScrap;
+
+            int coinsGained;
+            if (config != null)
             {
-                coinsGained *= 2;
+                coinsGained = config.GetScrapCoinsReward(tier, currentStage, isValuable);
+            }
+            else
+            {
+                coinsGained = Mathf.Max(1, Mathf.RoundToInt(baseValue * 0.15f));
             }
             AddScrapCoins(coinsGained);
 
             OnScoreAdded?.Invoke(finalScore, scrapCoins);
 
+            Vector3 popupPos = body != null ? body.transform.position : Vector3.zero;
+            if (scrap != null && scrap.consumptionPosition != Vector3.zero)
+            {
+                popupPos = scrap.consumptionPosition;
+            }
+
             if (FMODAudioManager.Instance != null)
             {
-                FMODAudioManager.Instance.PlayScorePopup(body != null ? body.transform.position : Vector3.zero);
+                FMODAudioManager.Instance.PlayScorePopup(popupPos);
             }
 
             // World-space floating score popup
             if (ScorePopupManager.Instance != null)
             {
-                ScorePopupManager.Instance.SpawnPopup(body.transform.position, finalScore, isKamikaze, isObserved);
+                ScorePopupManager.Instance.SpawnPopup(popupPos, finalScore, isKamikaze, isObserved);
             }
 
             // 3. Check Quota Completion

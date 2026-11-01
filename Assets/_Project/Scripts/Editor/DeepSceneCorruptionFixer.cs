@@ -133,12 +133,23 @@ namespace OrbitalPanopticon.Editor
         {
             if (targetObj == null) return 0;
 
+            // CRITICAL PROTECTION: Never purge TextMeshPro components or Font assets
+            if (targetObj is TMPro.TMP_Text || targetObj is TMPro.TMP_FontAsset) return 0;
+
             int purged = 0;
             SerializedObject so = new SerializedObject(targetObj);
             SerializedProperty prop = so.GetIterator();
 
             while (prop.Next(true))
             {
+                // CRITICAL PROTECTION: Never purge font, material or shader references
+                if (prop.propertyPath.IndexOf("font", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    prop.propertyPath.IndexOf("material", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    prop.propertyPath.IndexOf("shader", StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    continue;
+                }
+
                 if (prop.propertyType == SerializedPropertyType.ObjectReference && prop.objectReferenceValue != null)
                 {
                     UnityEngine.Object obj = prop.objectReferenceValue;

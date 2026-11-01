@@ -448,7 +448,17 @@ namespace OrbitalPanopticon.Core
             // Load font if needed
             if (tutorialFont == null)
             {
-                tutorialFont = Resources.Load<TMP_FontAsset>("Mayak SDF");
+                tutorialFont = Resources.Load<TMP_FontAsset>("MasterCyrillicFont_SDF");
+#if UNITY_EDITOR
+                if (tutorialFont == null)
+                {
+                    tutorialFont = UnityEditor.AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/_Project/Fonts/MasterCyrillicFont_SDF.asset");
+                }
+#endif
+                if (tutorialFont == null)
+                {
+                    tutorialFont = Resources.Load<TMP_FontAsset>("Mayak SDF");
+                }
 #if UNITY_EDITOR
                 if (tutorialFont == null)
                 {
@@ -592,7 +602,11 @@ namespace OrbitalPanopticon.Core
                 tRt.anchoredPosition = Vector2.zero;
 
                 btnTxt = tGo.GetComponent<TextMeshProUGUI>();
-                if (tutorialFont != null) btnTxt.font = tutorialFont;
+                if (tutorialFont != null)
+                {
+                    btnTxt.font = tutorialFont;
+                    if (tutorialFont.material != null) btnTxt.fontSharedMaterial = tutorialFont.material;
+                }
                 btnTxt.text = label;
                 btnTxt.alignment = TextAlignmentOptions.Center;
                 btnTxt.fontSize = fontSize;
@@ -621,7 +635,11 @@ namespace OrbitalPanopticon.Core
             piRt.sizeDelta = new Vector2(160f, 46f);
 
             pageIndicatorText = piGo.GetComponent<TextMeshProUGUI>();
-            if (tutorialFont != null) pageIndicatorText.font = tutorialFont;
+            if (tutorialFont != null)
+            {
+                pageIndicatorText.font = tutorialFont;
+                if (tutorialFont.material != null) pageIndicatorText.fontSharedMaterial = tutorialFont.material;
+            }
             pageIndicatorText.text = "1 / 4";
             pageIndicatorText.alignment = TextAlignmentOptions.Center;
             pageIndicatorText.fontSize = 20f;

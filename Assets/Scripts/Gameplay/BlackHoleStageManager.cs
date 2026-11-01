@@ -200,14 +200,21 @@ namespace OrbitalPanopticon.Gameplay
             if (body == null) return;
 
             ScrapItem scrap = body.GetComponent<ScrapItem>();
-            float scrapMass = scrap != null ? scrap.Mass : 2f;
-            float stageMultiplier = CurrentStageValueMultiplier;
-            float addedMass = scrapMass * 12f * stageMultiplier;
+            int tier = scrap != null ? scrap.Tier : 1;
+            int stage = CurrentStage;
+            bool isValuable = scrap != null && scrap.IsValuableScrap;
 
             GameBalanceConfig config = GameManager.GameBalanceConfigInstance;
-            if (config != null && config.quantumDecayUnlocked)
+            float addedMass;
+            if (config != null)
             {
-                addedMass *= 2.0f;
+                addedMass = config.GetScrapMassReward(tier, stage, isValuable);
+            }
+            else
+            {
+                float scrapMass = scrap != null ? scrap.Mass : 2f;
+                float stageMultiplier = CurrentStageValueMultiplier;
+                addedMass = scrapMass * 12f * stageMultiplier;
             }
 
             AddMass(addedMass);

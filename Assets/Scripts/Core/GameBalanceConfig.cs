@@ -53,6 +53,14 @@ namespace OrbitalPanopticon.Core
         [Tooltip("Orbit direction: true for clockwise, false for counter-clockwise.")]
         public bool clockwiseOrbit = true;
 
+        [Tooltip("Minimum number of full 360° revolutions around the Black Hole before reaching the Event Horizon!")]
+        [Range(1.0f, 10.0f)]
+        public float targetOrbitsBeforeConsumption = 3.5f;
+
+        [Tooltip("Degrees per second of orbital rotation around the hole, accelerating up to 2.2x (540+ deg/s) as the radius shrinks.")]
+        [Range(90f, 720f)]
+        public float baseOrbitalAngularSpeedDeg = 260f;
+
         [Tooltip("The accretion threshold radius. Outside this radius, floating scrap NEVER falls inward.")]
         [Range(5f, 35f)]
         public float accretionThresholdRadius = 15.0f;
@@ -323,11 +331,64 @@ namespace OrbitalPanopticon.Core
         public float heatDecayDelay = 4.5f;
 
         // =========================================================================
-        // 6. Skill Tree & Progression
+        // 6A. Loot Coin & Mass Rewards Balance
         // =========================================================================
-        [Header("6. Skill Tree & Progression")]
-        [Tooltip("Robot purchase price is ALWAYS fixed and never scales.")]
-        public int fixedHelperRobotPrice = 50;
+        [Header("6A. Loot Coin & Mass Rewards Balance")]
+        [Tooltip("Master slider to tune overall money gain from debris and scrap.")]
+        [Range(0.1f, 5.0f)]
+        public float globalCoinIncomeMultiplier = 1.0f;
+
+        [Tooltip("Base Scrap Coins awarded for Tier 1, Tier 2, Tier 3, Tier 4 scrap.")]
+        public int[] scrapTierBaseCoins = new int[] { 4, 10, 25, 65 };
+
+        [Tooltip("Base Black Hole Mass added for Tier 1, Tier 2, Tier 3, Tier 4 scrap.")]
+        public float[] scrapTierBaseMass = new float[] { 12f, 35f, 90f, 250f };
+
+        [Tooltip("Separate, modest coin multiplier per Stage 1–4 so Stage 4 doesn't flood the player with 15x money.")]
+        public float[] stageCoinMultipliers = new float[] { 1.0f, 1.2f, 1.45f, 1.75f };
+
+        [Tooltip("Coin multiplier for glowing lava valuable scrap.")]
+        public float valuableLootCoinMultiplier = 2.5f;
+
+        [Tooltip("Mass multiplier for glowing lava valuable scrap.")]
+        public float valuableLootMassMultiplier = 3.5f;
+
+        // =========================================================================
+        // 6B. Upgrade Tree Costs Balance
+        // =========================================================================
+        [Header("6B. Upgrade Tree Costs Balance")]
+        [Tooltip("Master multiplier applied to all upgrade prices in the skill tree.")]
+        [Range(0.1f, 5.0f)]
+        public float globalUpgradeCostMultiplier = 1.0f;
+
+        [Header("Branch 1 — Player Costs")]
+        public int[] playerSpeedCosts = new int[] { 25, 80, 220 };
+        public int[] playerManeuverCosts = new int[] { 25, 80, 220 };
+        public int[] playerCapacityCosts = new int[] { 35, 110, 300 };
+        public int playerWowPerkCost = 750;
+
+        [Header("Branch 2 — Black Hole Costs")]
+        public int[] blackHoleHeatCosts = new int[] { 30, 75, 160, 320, 600 };
+        public int blackHoleWowPerkCost = 850;
+
+        [Header("Branch 3 — Scrap Costs")]
+        public int[] scrapSpawnFrequencyCosts = new int[] { 30, 90, 240 };
+        public int[] scrapTierUnlockCosts = new int[] { 50, 180 };
+        public int scrapTier4AnomalyWowCost = 950;
+
+        [Header("Branch 4 — Valuable Scrap Costs")]
+        public int[] valuableScrapChanceCosts = new int[] { 35, 100, 260 };
+        public int[] valuableScrapMultiplierCosts = new int[] { 40, 125, 340 };
+        public int quantumDecayWowCost = 900;
+
+        [Header("Branch 5 — Robots Costs")]
+        public int[] robotPowerCosts = new int[] { 35, 100, 250 };
+        public int[] robotSpeedCosts = new int[] { 35, 100, 250 };
+        public int[] magnetRangeCosts = new int[] { 30, 85, 220 };
+        public int kamikazeProtocolWowCost = 800;
+        public int fixedHelperRobotPrice = 120;
+        [Tooltip("1.0 keeps robot price strictly fixed; setting e.g. 1.15 increases price by 15% per active robot.")]
+        public float helperRobotPriceGrowthMultiplier = 1.0f;
 
         [Tooltip("Heat multiplier build rate (upgrades by +10% per level up to +50% max).")]
         [Range(1.0f, 2.0f)]
@@ -497,14 +558,119 @@ namespace OrbitalPanopticon.Core
         [Tooltip("Optional VFX Graph asset for drone dash thrusters.")]
         public VisualEffectAsset vfxDashThrusterAsset;
 
+        
+        public int GetScrapCoinsReward(int tier, int stage, bool isValuable)
+        {
+            int tIdx = Mathf.Clamp(tier - 1, 0, (scrapTierBaseCoins != null && scrapTierBaseCoins.Length > 0) ? scrapTierBaseCoins.Length - 1 : 0);
+            int sIdx = Mathf.Clamp(stage - 1, 0, (stageCoinMultipliers != null && stageCoinMultipliers.Length > 0) ? stageCoinMultipliers.Length - 1 : 0);
+            float baseCoins = (scrapTierBaseCoins != null && scrapTierBaseCoins.Length > 0) ? scrapTierBaseCoins[tIdx] : 4;
+            float stageMult = (stageCoinMultipliers != null && stageCoinMultipliers.Length > 0) ? stageCoinMultipliers[sIdx] : 1f;
+            float valMult = isValuable ? valuableLootCoinMultiplier : 1.0f;
+            float total = baseCoins * stageMult * valMult * globalCoinIncomeMultiplier;
+            int coins = Mathf.Max(1, Mathf.RoundToInt(total));
+            if (quantumDecayUnlocked) coins *= 2;
+            return coins;
+        }
+
+        public float GetScrapMassReward(int tier, int stage, bool isValuable)
+        {
+            int tIdx = Mathf.Clamp(tier - 1, 0, (scrapTierBaseMass != null && scrapTierBaseMass.Length > 0) ? scrapTierBaseMass.Length - 1 : 0);
+            int sIdx = Mathf.Clamp(stage - 1, 0, (stageValueMultipliers != null && stageValueMultipliers.Length > 0) ? stageValueMultipliers.Length - 1 : 0);
+            float baseMass = (scrapTierBaseMass != null && scrapTierBaseMass.Length > 0) ? scrapTierBaseMass[tIdx] : 12f;
+            float stageMult = (stageValueMultipliers != null && stageValueMultipliers.Length > 0) ? stageValueMultipliers[sIdx] : 1f;
+            float valMult = isValuable ? valuableLootMassMultiplier : 1.0f;
+            float total = baseMass * stageMult * valMult;
+            if (quantumDecayUnlocked) total *= 2.0f;
+            return total;
+        }
+
+        public void ValidateAndPopulateDefaultArrays()
+        {
+            if (targetOrbitsBeforeConsumption <= 0.1f)
+                targetOrbitsBeforeConsumption = 3.5f;
+
+            if (baseOrbitalAngularSpeedDeg <= 10f)
+                baseOrbitalAngularSpeedDeg = 260f;
+
+            if (scrapTierBaseCoins == null || scrapTierBaseCoins.Length == 0)
+                scrapTierBaseCoins = new int[] { 4, 10, 25, 65 };
+
+            if (scrapTierBaseMass == null || scrapTierBaseMass.Length == 0)
+                scrapTierBaseMass = new float[] { 12f, 35f, 90f, 250f };
+
+            if (stageCoinMultipliers == null || stageCoinMultipliers.Length == 0)
+                stageCoinMultipliers = new float[] { 1.0f, 1.2f, 1.45f, 1.75f };
+
+            if (stageMassTargets == null || stageMassTargets.Length == 0)
+                stageMassTargets = new float[] { 500f, 4000f, 25000f, 120000f };
+
+            if (stageBlackHoleScales == null || stageBlackHoleScales.Length == 0)
+                stageBlackHoleScales = new float[] { 6f, 10f, 15f, 22f };
+
+            if (stageValueMultipliers == null || stageValueMultipliers.Length == 0)
+                stageValueMultipliers = new float[] { 1.0f, 2.5f, 6.0f, 15.0f };
+
+            if (stageGravityMultipliers == null || stageGravityMultipliers.Length == 0)
+                stageGravityMultipliers = new float[] { 1.0f, 1.35f, 1.8f, 2.5f };
+
+            if (playerSpeedCosts == null || playerSpeedCosts.Length == 0)
+                playerSpeedCosts = new int[] { 25, 80, 220 };
+
+            if (playerManeuverCosts == null || playerManeuverCosts.Length == 0)
+                playerManeuverCosts = new int[] { 25, 80, 220 };
+
+            if (playerCapacityCosts == null || playerCapacityCosts.Length == 0)
+                playerCapacityCosts = new int[] { 35, 110, 300 };
+
+            if (blackHoleHeatCosts == null || blackHoleHeatCosts.Length == 0)
+                blackHoleHeatCosts = new int[] { 30, 75, 160, 320, 600 };
+
+            if (scrapSpawnFrequencyCosts == null || scrapSpawnFrequencyCosts.Length == 0)
+                scrapSpawnFrequencyCosts = new int[] { 30, 90, 240 };
+
+            if (scrapTierUnlockCosts == null || scrapTierUnlockCosts.Length == 0)
+                scrapTierUnlockCosts = new int[] { 50, 180 };
+
+            if (valuableScrapChanceCosts == null || valuableScrapChanceCosts.Length == 0)
+                valuableScrapChanceCosts = new int[] { 35, 100, 260 };
+
+            if (valuableScrapMultiplierCosts == null || valuableScrapMultiplierCosts.Length == 0)
+                valuableScrapMultiplierCosts = new int[] { 40, 125, 340 };
+
+            if (robotPowerCosts == null || robotPowerCosts.Length == 0)
+                robotPowerCosts = new int[] { 35, 100, 250 };
+
+            if (robotSpeedCosts == null || robotSpeedCosts.Length == 0)
+                robotSpeedCosts = new int[] { 35, 100, 250 };
+
+            if (magnetRangeCosts == null || magnetRangeCosts.Length == 0)
+                magnetRangeCosts = new int[] { 30, 85, 220 };
+
+            if (fixedHelperRobotPrice <= 0) fixedHelperRobotPrice = 120;
+            if (helperRobotPriceGrowthMultiplier <= 0f) helperRobotPriceGrowthMultiplier = 1.0f;
+            if (globalUpgradeCostMultiplier <= 0f) globalUpgradeCostMultiplier = 1.0f;
+            if (globalCoinIncomeMultiplier <= 0f) globalCoinIncomeMultiplier = 1.0f;
+            if (valuableLootCoinMultiplier <= 0f) valuableLootCoinMultiplier = 2.5f;
+            if (valuableLootMassMultiplier <= 0f) valuableLootMassMultiplier = 3.5f;
+
+            if (playerWowPerkCost <= 0) playerWowPerkCost = 750;
+            if (blackHoleWowPerkCost <= 0) blackHoleWowPerkCost = 850;
+            if (scrapTier4AnomalyWowCost <= 0) scrapTier4AnomalyWowCost = 950;
+            if (quantumDecayWowCost <= 0) quantumDecayWowCost = 900;
+            if (kamikazeProtocolWowCost <= 0) kamikazeProtocolWowCost = 800;
+        }
+
         private void OnEnable()
         {
             _instance = this;
+            ValidateAndPopulateDefaultArrays();
         }
 
         private void OnValidate()
         {
             _instance = this;
+            ValidateAndPopulateDefaultArrays();
         }
+
     }
 }

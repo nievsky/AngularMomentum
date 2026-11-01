@@ -11,7 +11,7 @@ namespace OrbitalPanopticon.Editor
     public static class GlobalFontEditorUtility
     {
         public const string ConfigAssetPath = "Assets/_Project/ScriptableObjects/GlobalFontConfig.asset";
-        public const string DefaultTMPFontPath = "Assets/TextMesh Pro/Fonts/Mayak SDF.asset";
+        public const string DefaultTMPFontPath = "Assets/_Project/Fonts/MasterCyrillicFont_SDF.asset";
 
         public static readonly string[] ScenePaths = new string[]
         {
@@ -77,11 +77,10 @@ namespace OrbitalPanopticon.Editor
                 if (!File.Exists(scenePath)) continue;
 
                 var scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
-                ConfigureSceneFontManager(config);
-
-                if (GlobalFontApplier.Instance != null)
+                var applier = ConfigureSceneFontManager(config);
+                if (applier != null)
                 {
-                    GlobalFontApplier.Instance.ApplyGlobalFontToEverything();
+                    applier.ApplyGlobalFontToEverything();
                 }
 
                 EditorSceneManager.MarkSceneDirty(scene);
@@ -100,7 +99,7 @@ namespace OrbitalPanopticon.Editor
             Debug.Log($"<color=#00FFCC>[GlobalFontEditorUtility] Successfully applied font across {updatedScenes} scenes and {updatedPrefabs} prefabs!</color>");
         }
 
-        public static void ConfigureSceneFontManager(GlobalFontConfigSO config)
+        public static GlobalFontApplier ConfigureSceneFontManager(GlobalFontConfigSO config)
         {
             const string managerName = "--- FONT MANAGER ---";
             GameObject managerObj = GameObject.Find(managerName);
@@ -118,6 +117,7 @@ namespace OrbitalPanopticon.Editor
 
             applier.FontConfig = config;
             EditorUtility.SetDirty(managerObj);
+            return applier;
         }
 
         public static int ApplyToPrefabs(GlobalFontConfigSO config)
@@ -150,9 +150,25 @@ namespace OrbitalPanopticon.Editor
 
                     foreach (var tmp in tmpTexts)
                     {
-                        if (config.masterTMPFont != null && tmp.font != config.masterTMPFont)
+                        if (config.masterTMPFont != null)
                         {
-                            tmp.font = config.masterTMPFont;
+                            if (tmp.font != config.masterTMPFont)
+                            {
+                                tmp.font = config.masterTMPFont;
+                                modified = true;
+                            }
+                            if (config.masterTMPFont.material != null && tmp.fontSharedMaterial != config.masterTMPFont.material)
+                            {
+                                tmp.fontSharedMaterial = config.masterTMPFont.material;
+                                modified = true;
+                            }
+                        }
+
+                        if (tmp.color.a < 0.05f)
+                        {
+                            Color c = tmp.color;
+                            c.a = 1.0f;
+                            tmp.color = c;
                             modified = true;
                         }
 

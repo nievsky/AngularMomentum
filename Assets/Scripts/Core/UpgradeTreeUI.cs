@@ -433,8 +433,12 @@ namespace OrbitalPanopticon.Core
                     headerText.fontStyle = FontStyles.Bold;
                     headerText.color = new Color(1f, 0.73f, 0f, 1f);
                     headerText.text = "ДЕРЕВО НАВЫКОВ | SKILL TREE (TAB - Закрыть)";
-                    var mayak = Resources.Load<TMP_FontAsset>("Mayak SDF");
-                    if (mayak != null) headerText.font = mayak;
+                    var mayak = Resources.Load<TMP_FontAsset>("MasterCyrillicFont_SDF") ?? Resources.Load<TMP_FontAsset>("Mayak SDF");
+                    if (mayak != null)
+                    {
+                        headerText.font = mayak;
+                        if (mayak.material != null) headerText.fontSharedMaterial = mayak.material;
+                    }
                 }
             }
 
@@ -461,8 +465,12 @@ namespace OrbitalPanopticon.Core
                     currencyText.alignment = TextAlignmentOptions.Center;
                     currencyText.fontSize = 18;
                     currencyText.color = new Color(1f, 0.73f, 0f, 1f);
-                    var mayak = Resources.Load<TMP_FontAsset>("Mayak SDF");
-                    if (mayak != null) currencyText.font = mayak;
+                    var mayak = Resources.Load<TMP_FontAsset>("MasterCyrillicFont_SDF") ?? Resources.Load<TMP_FontAsset>("Mayak SDF");
+                    if (mayak != null)
+                    {
+                        currencyText.font = mayak;
+                        if (mayak.material != null) currencyText.fontSharedMaterial = mayak.material;
+                    }
                 }
             }
         }
@@ -588,8 +596,14 @@ namespace OrbitalPanopticon.Core
             label.fontSize = node.isWowPerk ? 12 : 11;
             label.textWrappingMode = TextWrappingModes.Normal;
             label.raycastTarget = false;
-            var mayakFont = Resources.Load<TMP_FontAsset>("Mayak SDF");
-            if (mayakFont != null) label.font = mayakFont;
+            var mayakFont = Resources.Load<TMP_FontAsset>("MasterCyrillicFont_SDF") ?? Resources.Load<TMP_FontAsset>("Mayak SDF");
+            if (mayakFont != null)
+            {
+                label.font = mayakFont;
+                if (mayakFont.material != null) label.fontSharedMaterial = mayakFont.material;
+            }
+            label.color = Color.white;
+            label.enabled = true;
 
             _nodeUIElements[node.nodeId] = new NodeUIElement
             {
@@ -654,8 +668,14 @@ namespace OrbitalPanopticon.Core
             label.fontSize = 11;
             label.textWrappingMode = TextWrappingModes.Normal;
             label.raycastTarget = false;
-            var mayakR = Resources.Load<TMP_FontAsset>("Mayak SDF");
-            if (mayakR != null) label.font = mayakR;
+            var mayakR = Resources.Load<TMP_FontAsset>("MasterCyrillicFont_SDF") ?? Resources.Load<TMP_FontAsset>("Mayak SDF");
+            if (mayakR != null)
+            {
+                label.font = mayakR;
+                if (mayakR.material != null) label.fontSharedMaterial = mayakR.material;
+            }
+            label.color = Color.white;
+            label.enabled = true;
 
             _robotButtonElement = new NodeUIElement
             {
@@ -724,8 +744,12 @@ namespace OrbitalPanopticon.Core
             label.color = Color.white;
             label.text = "[СБРОСИТЬ КАМЕРУ]";
             label.raycastTarget = false;
-            var mayakCam = Resources.Load<TMP_FontAsset>("Mayak SDF");
-            if (mayakCam != null) label.font = mayakCam;
+            var mayakCam = Resources.Load<TMP_FontAsset>("MasterCyrillicFont_SDF") ?? Resources.Load<TMP_FontAsset>("Mayak SDF");
+            if (mayakCam != null)
+            {
+                label.font = mayakCam;
+                if (mayakCam.material != null) label.fontSharedMaterial = mayakCam.material;
+            }
         }
 
         private void OnNodeClicked(string nodeId)
@@ -790,6 +814,11 @@ namespace OrbitalPanopticon.Core
 
         public void RefreshUI()
         {
+            if (UpgradeTreeManager.Instance != null)
+            {
+                UpgradeTreeManager.Instance.SyncNodeCostsFromConfig();
+            }
+
             if (headerText != null)
             {
                 headerText.text = LocalizationManager.Get("TREE_Header");
@@ -922,7 +951,7 @@ namespace OrbitalPanopticon.Core
         {
             if (_robotButtonElement == null) return;
             GameBalanceConfig config = GameManager.GameBalanceConfigInstance;
-            int cost = config != null ? config.fixedHelperRobotPrice : 50;
+            int cost = UpgradeTreeManager.Instance != null ? UpgradeTreeManager.Instance.GetCurrentHelperRobotPrice() : (config != null ? config.fixedHelperRobotPrice : 120);
             int robots = config != null ? config.activeHelperRobotsCount : 0;
 
             var quotaManager = Object.FindAnyObjectByType<QuotaAndScoreManager>();
@@ -987,8 +1016,12 @@ namespace OrbitalPanopticon.Core
             _tooltipDescText.alignment = TextAlignmentOptions.Center;
             _tooltipDescText.textWrappingMode = TextWrappingModes.Normal;
             _tooltipDescText.raycastTarget = false;
-            var mayakTt = Resources.Load<TMP_FontAsset>("Mayak SDF");
-            if (mayakTt != null) _tooltipDescText.font = mayakTt;
+            var mayakTt = Resources.Load<TMP_FontAsset>("MasterCyrillicFont_SDF") ?? Resources.Load<TMP_FontAsset>("Mayak SDF");
+            if (mayakTt != null)
+            {
+                _tooltipDescText.font = mayakTt;
+                if (mayakTt.material != null) _tooltipDescText.fontSharedMaterial = mayakTt.material;
+            }
 
             _tooltipRoot.transform.SetAsLastSibling();
         }

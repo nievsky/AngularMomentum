@@ -54,7 +54,6 @@ namespace OrbitalPanopticon.Player
         }
 
         private Vector2 _moveInput;
-        private float _verticalInput;
         private float _dashTimer = 0f;
         private float _lastDashTime = -999f;
         private TrailRenderer _dashTrail;
@@ -99,7 +98,6 @@ namespace OrbitalPanopticon.Player
             if (!enabled)
             {
                 _moveInput = Vector2.zero;
-                _verticalInput = 0f;
                 _dashTimer = 0f;
                 isBraking = false;
             }
@@ -111,7 +109,6 @@ namespace OrbitalPanopticon.Player
             if (locked)
             {
                 _moveInput = Vector2.zero;
-                _verticalInput = 0f;
                 _dashTimer = 0f;
                 isBraking = false;
             }
@@ -313,7 +310,6 @@ namespace OrbitalPanopticon.Player
             if (isMenuPaused)
             {
                 _moveInput = Vector2.zero;
-                _verticalInput = 0f;
                 isBraking = false;
                 return;
             }
@@ -398,7 +394,6 @@ namespace OrbitalPanopticon.Player
         private void ReadInput()
         {
             _moveInput = Vector2.zero;
-            _verticalInput = 0f;
             isBraking = false;
 
             bool isMenuPaused = Time.timeScale == 0f || OrbitalPanopticon.Core.UpgradeTreeManager.IsTreeOpen || OrbitalPanopticon.Core.PauseMenuController.IsGamePaused || OrbitalPanopticon.Core.TutorialSlideshowUI.IsTutorialOpen;
@@ -423,7 +418,7 @@ namespace OrbitalPanopticon.Player
                 isBraking = true;
             }
 
-            // Directional Dash on Left Shift
+            // Directional Relative Dash on Left Shift (True 3D Camera-Aligned)
             GameBalanceConfig config = GameManager.GameBalanceConfigInstance;
             float cooldown = config != null ? config.dashCooldown : 0.9f;
             float impulse = config != null ? config.dashImpulse : 22f;
@@ -432,26 +427,41 @@ namespace OrbitalPanopticon.Player
             bool shiftPressed = (keyboard.leftShiftKey != null && keyboard.leftShiftKey.wasPressedThisFrame) || (keyboard.rightShiftKey != null && keyboard.rightShiftKey.wasPressedThisFrame);
             if (shiftPressed && Time.time - _lastDashTime >= cooldown)
             {
+                // Full 3D Camera Vectors (No y = 0 Flattening): preserves vertical pitch for up/down dash
                 Transform camTransform = mainCamera != null ? mainCamera.transform : transform;
-                Vector3 camForward = Vector3.ProjectOnPlane(camTransform.forward, Vector3.up).normalized;
-                if (camForward.sqrMagnitude < 0.001f) camForward = camTransform.forward;
-                Vector3 camRight = Vector3.ProjectOnPlane(camTransform.right, Vector3.up).normalized;
-                if (camRight.sqrMagnitude < 0.001f) camRight = camTransform.right;
+                Vector3 camForward3D = camTransform.forward.normalized;
+                Vector3 camRight3D = camTransform.right.normalized;
 
-                // Calculate desired direction from active movement keys on horizontal plane
-                Vector3 inputDir = (camForward * _moveInput.y) + (camRight * _moveInput.x);
-                Vector3 dashDir = inputDir.sqrMagnitude > 0.01f ? inputDir.normalized : camForward;
+                // Read raw movement input axes: W = +1, S = -1, D = +1, A = -1
+                float moveZ = _moveInput.y;
+                float moveX = _moveInput.x;
+
+                // Calculate the 3D dash direction:
+                Vector3 dashDir3D;
+                if (Mathf.Approximately(moveZ, 0f) && Mathf.Approximately(moveX, 0f))
+                {
+                    // No WASD held: dash straight along the 3D camera gaze (including up/down pitch)
+                    dashDir3D = camForward3D;
+                }
+                else
+                {
+                    // WASD held: dash in 3D relative to camera look (e.g. looking up + S dashes backward-down)
+                    dashDir3D = (camForward3D * moveZ + camRight3D * moveX).normalized;
+                }
 
                 _lastDashTime = Time.time;
                 _dashTimer = duration;
 
+                // Dash particle burst aligned in the exact 3D direction of travel (thruster emission opposite travel)
                 if (shiftDashBurstParticles != null)
                 {
                     shiftDashBurstParticles.transform.position = transform.position;
-                    shiftDashBurstParticles.transform.rotation = Quaternion.LookRotation(-dashDir, Vector3.up);
+                    Vector3 upwards = Mathf.Abs(Vector3.Dot(-dashDir3D, Vector3.up)) > 0.95f ? Vector3.forward : Vector3.up;
+                    shiftDashBurstParticles.transform.rotation = Quaternion.LookRotation(-dashDir3D, upwards);
                     shiftDashBurstParticles.Play(true);
                 }
 
+                // Camera FOV kick
                 if (mainCamera != null)
                 {
                     if (_dashFovCoroutine != null) StopCoroutine(_dashFovCoroutine);
@@ -460,10 +470,11 @@ namespace OrbitalPanopticon.Player
 
                 // Camera & Weapon Physical Weight Feedback
                 float targetRoll = 0f;
-                if (_moveInput.x > 0.1f) targetRoll = -5.5f;
-                else if (_moveInput.x < -0.1f) targetRoll = 5.5f;
+                if (moveX > 0.1f) targetRoll = -5.5f;
+                else if (moveX < -0.1f) targetRoll = 5.5f;
 
                 float targetPitch = -4.0f;
+                if (moveZ < -0.1f) targetPitch = 3.5f; // Pull back camera pitch when reversing
 
                 _cameraRollTilt = targetRoll;
                 _cameraPitchKick = targetPitch;
@@ -487,19 +498,22 @@ namespace OrbitalPanopticon.Player
                     arm.DOPunchPosition(new Vector3(0f, -0.06f, -0.08f), 0.32f, 7, 0.6f);
                 }
 
+                // Chromatic aberration and lens impact pulse
                 if (PostProcessingToolkitController.Instance != null)
                 {
                     PostProcessingToolkitController.Instance.TriggerImpactPulse(bloomBoost: 1.8f, chromaticBoost: 0.45f, lensDistortionBoost: -0.14f, duration: 0.25f, motionBlurBoost: 0.65f);
                 }
 
+                // Audio feedback
                 if (FMODAudioManager.Instance != null)
                 {
                     FMODAudioManager.Instance.PlayShiftDash(transform.position);
                 }
 
+                // Apply instant 3D velocity change along dashDir3D for snappy arcade responsiveness
                 if (rb != null)
                 {
-                    rb.linearVelocity = dashDir * impulse;
+                    rb.linearVelocity = dashDir3D * impulse;
                 }
 
                 if (config != null && config.playerRelativisticOverdriveUnlocked && _dashTrail != null)
@@ -577,13 +591,15 @@ namespace OrbitalPanopticon.Player
 
             Transform camTransform = mainCamera != null ? mainCamera.transform : transform;
 
-            // Planar Horizontal Movement: Move strictly horizontally/forward on the plane via WASD and strafe
-            Vector3 camForward = Vector3.ProjectOnPlane(camTransform.forward, Vector3.up).normalized;
-            if (camForward.sqrMagnitude < 0.001f) camForward = camTransform.forward;
-            Vector3 camRight = Vector3.ProjectOnPlane(camTransform.right, Vector3.up).normalized;
-            if (camRight.sqrMagnitude < 0.001f) camRight = camTransform.right;
+            // Full 3D Camera-Aligned Movement: W/S flies along 3D camera pitch/gaze, A/D strafes along camera right
+            Vector3 camForward3D = camTransform.forward.normalized;
+            Vector3 camRight3D = camTransform.right.normalized;
 
-            Vector3 desiredDir = (camForward * _moveInput.y) + (camRight * _moveInput.x);
+            Vector3 desiredDir = (camForward3D * _moveInput.y) + (camRight3D * _moveInput.x);
+            if (desiredDir.sqrMagnitude > 1f)
+            {
+                desiredDir.Normalize();
+            }
 
             // Cargo penalty calculation
             float cargoPenaltyMultiplier = 1f / (1f + (currentCargoMass * cargoMassPenaltyFactor));

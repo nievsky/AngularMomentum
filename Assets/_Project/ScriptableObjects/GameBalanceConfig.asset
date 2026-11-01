@@ -16,8 +16,10 @@ MonoBehaviour:
   globalSimulationSpeed: 0.5
   enableNarrativeComms: 0
   clockwiseOrbit: 1
-  accretionThresholdRadius: 30
-  eventHorizonRadius: 6
+  targetOrbitsBeforeConsumption: 3.5
+  baseOrbitalAngularSpeedDeg: 144
+  accretionThresholdRadius: 20.3245
+  eventHorizonRadius: 6.1654
   outerZoneDriftSpeed: 2.2
   outerZoneOrbitSpring: 1.5
   innerMinSwirlSpeed: 16
@@ -36,7 +38,7 @@ MonoBehaviour:
   orbitalGuidanceStrength: 2.5
   inwardSpiralDecay: 0.85
   maxSafeVelocity: 45
-  deathScrapCoinPenalty: 1000
+  deathScrapCoinPenalty: 500
   mouseSensitivity: 1.8
   baseThrusterAcceleration: 7.5
   verticalThrusterAcceleration: 6
@@ -81,7 +83,39 @@ MonoBehaviour:
   baseQuotaTarget: 500
   quotaGrowthMultiplier: 1.75
   heatDecayDelay: 4.5
-  fixedHelperRobotPrice: 10000
+  globalCoinIncomeMultiplier: 1
+  scrapTierBaseCoins: 040000000a0000001900000041000000
+  scrapTierBaseMass:
+  - 12
+  - 35
+  - 90
+  - 250
+  stageCoinMultipliers:
+  - 1
+  - 1.2
+  - 1.45
+  - 1.75
+  valuableLootCoinMultiplier: 2.5
+  valuableLootMassMultiplier: 3.5
+  globalUpgradeCostMultiplier: 1
+  playerSpeedCosts: 1900000050000000dc000000
+  playerManeuverCosts: 19000000fa000000e8030000
+  playerCapacityCosts: 230000005e010000ac0d0000
+  playerWowPerkCost: 750
+  blackHoleHeatCosts: 1e0000004b000000a00000004001000058020000
+  blackHoleWowPerkCost: 850
+  scrapSpawnFrequencyCosts: 1e0000005a000000f0000000
+  scrapTierUnlockCosts: 32000000b4000000
+  scrapTier4AnomalyWowCost: 950
+  valuableScrapChanceCosts: 230000006400000004010000
+  valuableScrapMultiplierCosts: 280000007d00000054010000
+  quantumDecayWowCost: 900
+  robotPowerCosts: 230000005e010000e8030000
+  robotSpeedCosts: 23000000fa000000e8030000
+  magnetRangeCosts: 1e000000fa000000e8030000
+  kamikazeProtocolWowCost: 2500
+  fixedHelperRobotPrice: 2000
+  helperRobotPriceGrowthMultiplier: 1
   heatFillRateMultiplier: 1
   unlockedScrapTier: 1
   cameraGraviFlashUnlocked: 0
@@ -106,8 +140,8 @@ MonoBehaviour:
   stageValueMultipliers:
   - 1
   - 2.5
-  - 6
-  - 15
+  - 4
+  - 8
   stageGravityMultipliers:
   - 1
   - 1.35
@@ -145,7 +179,7 @@ MonoBehaviour:
   - CONTAINMENT LOCK EYE-03
   - CONTAINMENT LOCK EYE-04
   beamKnockbackImpulse: 4.5
-  enableDebugShortcuts: 1
+  enableDebugShortcuts: 0
   vfxPullBeamAsset: {fileID: 0}
   vfxPuntShockwaveAsset: {fileID: 0}
   vfxSpaghettifyVortexAsset: {fileID: 0}

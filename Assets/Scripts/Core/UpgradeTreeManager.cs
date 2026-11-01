@@ -96,6 +96,8 @@ namespace OrbitalPanopticon.Core
                 SyncMissingNodeDescriptions();
             }
 
+            SyncNodeCostsFromConfig();
+            SyncNodeCostsFromConfig();
             BuildNodeMap();
         }
 
@@ -225,10 +227,143 @@ namespace OrbitalPanopticon.Core
             return true;
         }
 
+        public static int GetSafeCost(int[] costArray, int levelIndex, int fallbackCost)
+        {
+            if (costArray == null || costArray.Length == 0) return fallbackCost;
+            int idx = Mathf.Clamp(levelIndex, 0, costArray.Length - 1);
+            return costArray[idx];
+        }
+
+        public int GetCurrentHelperRobotPrice()
+        {
+            GameBalanceConfig config = balanceConfig != null ? balanceConfig : GameManager.GameBalanceConfigInstance;
+            if (config == null) return 120;
+            int basePrice = config.fixedHelperRobotPrice;
+            float growth = config.helperRobotPriceGrowthMultiplier;
+            int count = config.activeHelperRobotsCount;
+            float price = basePrice;
+            if (growth > 1.0001f && count > 0)
+            {
+                price = basePrice * Mathf.Pow(growth, count);
+            }
+            float mult = Mathf.Max(0.01f, config.globalUpgradeCostMultiplier);
+            return Mathf.Max(1, Mathf.RoundToInt(price * mult));
+        }
+
+        public void SyncNodeCostsFromConfig()
+        {
+            GameBalanceConfig cfg = balanceConfig != null ? balanceConfig : GameManager.GameBalanceConfigInstance;
+            if (cfg == null || nodes == null) return;
+
+            float mult = Mathf.Max(0.01f, cfg.globalUpgradeCostMultiplier);
+
+            int ScaleCost(int raw) => Mathf.RoundToInt(raw * mult);
+            int[] ScaleCosts(int[] raw)
+            {
+                if (raw == null) return new int[0];
+                int[] scaled = new int[raw.Length];
+                for (int i = 0; i < raw.Length; i++) scaled[i] = ScaleCost(raw[i]);
+                return scaled;
+            }
+
+            for (int i = 0; i < nodes.Count; i++)
+            {
+                var node = nodes[i];
+                if (node == null || string.IsNullOrEmpty(node.nodeId)) continue;
+                switch (node.nodeId)
+                {
+                    // Branch 1 - Player
+                    case "player_speed_1":
+                        node.levelCosts = new int[] { ScaleCost(GetSafeCost(cfg.playerSpeedCosts, 0, 25)) };
+                        break;
+                    case "player_speed_2":
+                        node.levelCosts = new int[] { ScaleCost(GetSafeCost(cfg.playerSpeedCosts, 1, 80)) };
+                        break;
+                    case "player_speed_3":
+                        node.levelCosts = new int[] { ScaleCost(GetSafeCost(cfg.playerSpeedCosts, 2, 220)) };
+                        break;
+
+                    case "player_handling_1":
+                        node.levelCosts = new int[] { ScaleCost(GetSafeCost(cfg.playerManeuverCosts, 0, 25)) };
+                        break;
+                    case "player_handling_2":
+                        node.levelCosts = new int[] { ScaleCost(GetSafeCost(cfg.playerManeuverCosts, 1, 80)) };
+                        break;
+                    case "player_handling_3":
+                        node.levelCosts = new int[] { ScaleCost(GetSafeCost(cfg.playerManeuverCosts, 2, 220)) };
+                        break;
+
+                    case "player_cargo_1":
+                        node.levelCosts = new int[] { ScaleCost(GetSafeCost(cfg.playerCapacityCosts, 0, 35)) };
+                        break;
+                    case "player_cargo_2":
+                        node.levelCosts = new int[] { ScaleCost(GetSafeCost(cfg.playerCapacityCosts, 1, 110)) };
+                        break;
+                    case "player_cargo_3":
+                        node.levelCosts = new int[] { ScaleCost(GetSafeCost(cfg.playerCapacityCosts, 2, 300)) };
+                        break;
+
+                    case "player_wow":
+                        node.levelCosts = new int[] { ScaleCost(cfg.playerWowPerkCost) };
+                        break;
+
+                    // Branch 2 - Black Hole
+                    case "hole_heat_fill":
+                        node.levelCosts = ScaleCosts(cfg.blackHoleHeatCosts);
+                        break;
+                    case "hole_wow":
+                        node.levelCosts = new int[] { ScaleCost(cfg.blackHoleWowPerkCost) };
+                        break;
+
+                    // Branch 3 - Scrap
+                    case "scrap_spawn_freq":
+                        node.levelCosts = ScaleCosts(cfg.scrapSpawnFrequencyCosts);
+                        break;
+                    case "scrap_tier_plus":
+                        node.levelCosts = ScaleCosts(cfg.scrapTierUnlockCosts);
+                        break;
+                    case "scrap_wow":
+                        node.levelCosts = new int[] { ScaleCost(cfg.scrapTier4AnomalyWowCost) };
+                        break;
+
+                    // Branch 4 - Valuable Scrap
+                    case "valuable_scrap_chance":
+                    case "energy_siphon_speed":
+                    case "camera_add":
+                        node.levelCosts = ScaleCosts(cfg.valuableScrapChanceCosts);
+                        break;
+                    case "valuable_scrap_mult":
+                    case "energy_battery_cap":
+                    case "camera_flash":
+                        node.levelCosts = ScaleCosts(cfg.valuableScrapMultiplierCosts);
+                        break;
+                    case "quantum_decay_wow":
+                    case "energy_wow":
+                    case "camera_wow":
+                        node.levelCosts = new int[] { ScaleCost(cfg.quantumDecayWowCost) };
+                        break;
+
+                    // Branch 5 - Robots
+                    case "robot_trawl":
+                        node.levelCosts = ScaleCosts(cfg.robotPowerCosts);
+                        break;
+                    case "robot_speed":
+                        node.levelCosts = ScaleCosts(cfg.robotSpeedCosts);
+                        break;
+                    case "robot_magnet_range":
+                        node.levelCosts = ScaleCosts(cfg.magnetRangeCosts);
+                        break;
+                    case "robot_wow":
+                        node.levelCosts = new int[] { ScaleCost(cfg.kamikazeProtocolWowCost) };
+                        break;
+                }
+            }
+        }
+
         public bool PurchaseHelperRobot()
         {
             GameBalanceConfig config = GameManager.GameBalanceConfigInstance;
-            int cost = config != null ? config.fixedHelperRobotPrice : 50;
+            int cost = GetCurrentHelperRobotPrice();
 
             var quotaManager = UnityEngine.Object.FindAnyObjectByType<QuotaAndScoreManager>();
             if (quotaManager != null)
@@ -428,7 +563,7 @@ namespace OrbitalPanopticon.Core
                 branch = UpgradeBranch.Player,
                 currentLevel = 0,
                 maxLevel = 1,
-                levelCosts = new int[] { 60 },
+                levelCosts = new int[] { 80 },
                 prerequisiteNodeIds = new string[] { "player_speed_1" },
                 isWowPerk = false,
                 uiPosition = new Vector2(-280f, 160f),
@@ -443,7 +578,7 @@ namespace OrbitalPanopticon.Core
                 branch = UpgradeBranch.Player,
                 currentLevel = 0,
                 maxLevel = 1,
-                levelCosts = new int[] { 120 },
+                levelCosts = new int[] { 220 },
                 prerequisiteNodeIds = new string[] { "player_speed_2" },
                 isWowPerk = false,
                 uiPosition = new Vector2(-410f, 180f),
@@ -475,7 +610,7 @@ namespace OrbitalPanopticon.Core
                 branch = UpgradeBranch.Player,
                 currentLevel = 0,
                 maxLevel = 1,
-                levelCosts = new int[] { 60 },
+                levelCosts = new int[] { 80 },
                 prerequisiteNodeIds = new string[] { "player_handling_1" },
                 isWowPerk = false,
                 uiPosition = new Vector2(-290f, 25f),
@@ -490,7 +625,7 @@ namespace OrbitalPanopticon.Core
                 branch = UpgradeBranch.Player,
                 currentLevel = 0,
                 maxLevel = 1,
-                levelCosts = new int[] { 120 },
+                levelCosts = new int[] { 220 },
                 prerequisiteNodeIds = new string[] { "player_handling_2" },
                 isWowPerk = false,
                 uiPosition = new Vector2(-420f, 25f),
@@ -507,7 +642,7 @@ namespace OrbitalPanopticon.Core
                 branch = UpgradeBranch.Player,
                 currentLevel = 0,
                 maxLevel = 1,
-                levelCosts = new int[] { 20 },
+                levelCosts = new int[] { 35 },
                 prerequisiteNodeIds = new string[] { "hub" },
                 isWowPerk = false,
                 uiPosition = new Vector2(-150f, -80f),
@@ -522,7 +657,7 @@ namespace OrbitalPanopticon.Core
                 branch = UpgradeBranch.Player,
                 currentLevel = 0,
                 maxLevel = 1,
-                levelCosts = new int[] { 55 },
+                levelCosts = new int[] { 110 },
                 prerequisiteNodeIds = new string[] { "player_cargo_1" },
                 isWowPerk = false,
                 uiPosition = new Vector2(-280f, -110f),
@@ -537,7 +672,7 @@ namespace OrbitalPanopticon.Core
                 branch = UpgradeBranch.Player,
                 currentLevel = 0,
                 maxLevel = 1,
-                levelCosts = new int[] { 110 },
+                levelCosts = new int[] { 300 },
                 prerequisiteNodeIds = new string[] { "player_cargo_2" },
                 isWowPerk = false,
                 uiPosition = new Vector2(-410f, -135f),
@@ -554,7 +689,7 @@ namespace OrbitalPanopticon.Core
                 branch = UpgradeBranch.Player,
                 currentLevel = 0,
                 maxLevel = 1,
-                levelCosts = new int[] { 250 },
+                levelCosts = new int[] { 750 },
                 prerequisiteNodeIds = new string[] { "player_speed_3", "player_handling_3", "player_cargo_3" },
                 isWowPerk = true,
                 uiPosition = new Vector2(-545f, 25f),
@@ -571,7 +706,7 @@ namespace OrbitalPanopticon.Core
                 branch = UpgradeBranch.BlackHole,
                 currentLevel = 0,
                 maxLevel = 5,
-                levelCosts = new int[] { 25, 45, 75, 120, 180 },
+                levelCosts = new int[] { 30, 75, 160, 320, 600 },
                 prerequisiteNodeIds = new string[] { "hub" },
                 isWowPerk = false,
                 uiPosition = new Vector2(0f, 150f),
@@ -586,7 +721,7 @@ namespace OrbitalPanopticon.Core
                 branch = UpgradeBranch.BlackHole,
                 currentLevel = 0,
                 maxLevel = 1,
-                levelCosts = new int[] { 250 },
+                levelCosts = new int[] { 850 },
                 prerequisiteNodeIds = new string[] { "hole_heat_fill" },
                 isWowPerk = true,
                 uiPosition = new Vector2(0f, 280f),
@@ -603,7 +738,7 @@ namespace OrbitalPanopticon.Core
                 branch = UpgradeBranch.Scrap,
                 currentLevel = 0,
                 maxLevel = 3,
-                levelCosts = new int[] { 25, 50, 100 },
+                levelCosts = new int[] { 30, 90, 240 },
                 prerequisiteNodeIds = new string[] { "hub" },
                 isWowPerk = false,
                 uiPosition = new Vector2(170f, 85f),
@@ -618,7 +753,7 @@ namespace OrbitalPanopticon.Core
                 branch = UpgradeBranch.Scrap,
                 currentLevel = 0,
                 maxLevel = 2,
-                levelCosts = new int[] { 35, 80 },
+                levelCosts = new int[] { 50, 180 },
                 prerequisiteNodeIds = new string[] { "scrap_spawn_freq" },
                 isWowPerk = false,
                 uiPosition = new Vector2(310f, 85f),
@@ -633,7 +768,7 @@ namespace OrbitalPanopticon.Core
                 branch = UpgradeBranch.Scrap,
                 currentLevel = 0,
                 maxLevel = 1,
-                levelCosts = new int[] { 250 },
+                levelCosts = new int[] { 950 },
                 prerequisiteNodeIds = new string[] { "scrap_tier_plus" },
                 isWowPerk = true,
                 uiPosition = new Vector2(460f, 85f),
@@ -650,7 +785,7 @@ namespace OrbitalPanopticon.Core
                 branch = UpgradeBranch.Energy,
                 currentLevel = 0,
                 maxLevel = 3,
-                levelCosts = new int[] { 30, 65, 130 },
+                levelCosts = new int[] { 35, 100, 260 },
                 prerequisiteNodeIds = new string[] { "hub" },
                 isWowPerk = false,
                 uiPosition = new Vector2(170f, -65f),
@@ -665,7 +800,7 @@ namespace OrbitalPanopticon.Core
                 branch = UpgradeBranch.Energy,
                 currentLevel = 0,
                 maxLevel = 3,
-                levelCosts = new int[] { 45, 95, 190 },
+                levelCosts = new int[] { 40, 125, 340 },
                 prerequisiteNodeIds = new string[] { "valuable_scrap_chance" },
                 isWowPerk = false,
                 uiPosition = new Vector2(310f, -65f),
@@ -680,7 +815,7 @@ namespace OrbitalPanopticon.Core
                 branch = UpgradeBranch.Energy,
                 currentLevel = 0,
                 maxLevel = 1,
-                levelCosts = new int[] { 250 },
+                levelCosts = new int[] { 900 },
                 prerequisiteNodeIds = new string[] { "valuable_scrap_mult" },
                 isWowPerk = true,
                 uiPosition = new Vector2(460f, -65f),
@@ -697,7 +832,7 @@ namespace OrbitalPanopticon.Core
                 branch = UpgradeBranch.Robots,
                 currentLevel = 0,
                 maxLevel = 3,
-                levelCosts = new int[] { 25, 55, 110 },
+                levelCosts = new int[] { 35, 100, 250 },
                 prerequisiteNodeIds = new string[] { "hub" },
                 isWowPerk = false,
                 uiPosition = new Vector2(-60f, -145f),
@@ -712,7 +847,7 @@ namespace OrbitalPanopticon.Core
                 branch = UpgradeBranch.Robots,
                 currentLevel = 0,
                 maxLevel = 3,
-                levelCosts = new int[] { 30, 65, 120 },
+                levelCosts = new int[] { 35, 100, 250 },
                 prerequisiteNodeIds = new string[] { "robot_trawl" },
                 isWowPerk = false,
                 uiPosition = new Vector2(-155f, -265f),
@@ -727,7 +862,7 @@ namespace OrbitalPanopticon.Core
                 branch = UpgradeBranch.Robots,
                 currentLevel = 0,
                 maxLevel = 3,
-                levelCosts = new int[] { 35, 70, 130 },
+                levelCosts = new int[] { 30, 85, 220 },
                 prerequisiteNodeIds = new string[] { "robot_trawl" },
                 isWowPerk = false,
                 uiPosition = new Vector2(35f, -265f),
@@ -742,7 +877,7 @@ namespace OrbitalPanopticon.Core
                 branch = UpgradeBranch.Robots,
                 currentLevel = 0,
                 maxLevel = 1,
-                levelCosts = new int[] { 250 },
+                levelCosts = new int[] { 800 },
                 prerequisiteNodeIds = new string[] { "robot_speed", "robot_magnet_range" },
                 isWowPerk = true,
                 uiPosition = new Vector2(-60f, -385f),
@@ -750,6 +885,8 @@ namespace OrbitalPanopticon.Core
                 descriptionEN = "Kamikaze overload protocol for helper bots"
             });
 
+            SyncNodeCostsFromConfig();
+            SyncNodeCostsFromConfig();
             BuildNodeMap();
         }
     }

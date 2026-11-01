@@ -28,6 +28,12 @@ namespace OrbitalPanopticon.Physics
             set => singularityImplosionPrefab = value;
         }
 
+        public Transform CenterPoint => centerPoint != null ? centerPoint : transform;
+        public Vector3 BlackHoleCenter => CenterPoint.position;
+        public Vector3 blackHoleCenter => BlackHoleCenter;
+        public GameBalanceConfig Config => balanceConfig != null ? balanceConfig : (GameManager.GameBalanceConfigInstance ?? GameBalanceConfig.Instance);
+        public GameBalanceConfig config => Config;
+
         // Events
         public event Action<GravityBody> OnObjectConsumed;
 
@@ -139,7 +145,7 @@ namespace OrbitalPanopticon.Physics
             if (ring != null) Destroy(ring);
         }
 
-        private void ApplyBlackHoleForces()
+        public void ApplyBlackHoleForces()
         {
             GameBalanceConfig config = GameManager.GameBalanceConfigInstance;
             if (config == null) return;
@@ -231,8 +237,8 @@ namespace OrbitalPanopticon.Physics
                         continue;
                     }
 
-                    // Check if object is outside the Accretion Threshold
-                    if (dist3D > config.accretionThresholdRadius)
+                    // Check if object is outside the Accretion Threshold (and hasn't entered vortex)
+                    if (dist3D > config.accretionThresholdRadius && (scrap == null || !scrap.hasEnteredVortex))
                     {
                         // Launched scrap outside threshold: flies purely on ballistic velocity with gentle natural drag
                         if (scrap != null && scrap.CurrentState == ScrapState.Launched)
@@ -291,8 +297,8 @@ namespace OrbitalPanopticon.Physics
                         {
                             scrap.hasEnteredVortex = true;
                             scrap.timeInVortex = 0f;
-                            scrap.currentSpiralRadius = Mathf.Min(dist3D, config.accretionThresholdRadius);
 
+                            // Calculate customOrbitAxis
                             Vector3 lateralVel = Vector3.ProjectOnPlane(rb.linearVelocity, dirToCenter3D);
                             Vector3 defaultCw = Vector3.Cross(dirToCenter3D, Vector3.up);
                             if (defaultCw.sqrMagnitude < 0.01f)
@@ -310,10 +316,25 @@ namespace OrbitalPanopticon.Physics
                             {
                                 scrap.customOrbitAxis = Vector3.up;
                             }
+
+                            // Convert direct radial entry velocity into orbital swirl:
+                            float entrySpeed = Mathf.Max(rb.linearVelocity.magnitude, 14f);
+                            Vector3 initialTangent3D = Vector3.Cross(dirToCenter3D, scrap.customOrbitAxis).normalized;
+                            if (Vector3.Dot(initialTangent3D, entryTangent) < 0f)
+                            {
+                                scrap.customOrbitAxis = -scrap.customOrbitAxis;
+                                initialTangent3D = -initialTangent3D;
+                            }
+
+                            // Set initial spiral radius clamped outside event horizon
+                            scrap.currentSpiralRadius = Mathf.Clamp(dist3D, config.eventHorizonRadius + 1f, config.accretionThresholdRadius);
+
+                            // Redirect inward momentum directly into tangential orbital momentum!
+                            rb.linearVelocity = initialTangent3D * entrySpeed;
                         }
-                        else if (scrap != null && (scrap.currentSpiralRadius <= 0.01f || scrap.currentSpiralRadius > config.accretionThresholdRadius))
+                        else if (scrap != null && scrap.currentSpiralRadius <= 0.01f)
                         {
-                            scrap.currentSpiralRadius = Mathf.Min(dist3D, config.accretionThresholdRadius);
+                            scrap.currentSpiralRadius = Mathf.Clamp(dist3D, config.eventHorizonRadius + 2f, config.accretionThresholdRadius);
                         }
 
                         if (scrap != null)
@@ -321,56 +342,42 @@ namespace OrbitalPanopticon.Physics
                             scrap.timeInVortex += Time.fixedDeltaTime;
                         }
 
-                        float thresholdRange = Mathf.Max(0.1f, config.accretionThresholdRadius - config.eventHorizonRadius);
-                        float depth01 = 1f - Mathf.Clamp01((dist3D - config.eventHorizonRadius) / thresholdRange);
+                        // Normalized depth along the vortex span (0 at threshold, 1 at event horizon)
+                        float totalVortexSpan = Mathf.Max(1f, config.accretionThresholdRadius - config.eventHorizonRadius);
+                        float currentRadius = scrap != null ? scrap.currentSpiralRadius : dist3D;
+                        float depth01 = 1f - Mathf.Clamp01((currentRadius - config.eventHorizonRadius) / totalVortexSpan);
 
-                        // Step 1 — Shrink the target radius continuously down toward event horizon
+                        float baseAngularSpeed = config.baseOrbitalAngularSpeedDeg > 10f ? config.baseOrbitalAngularSpeedDeg : 260f;
+                        float targetOrbits = config.targetOrbitsBeforeConsumption > 0.5f ? config.targetOrbitsBeforeConsumption : 3.5f;
+
+                        // Angular speed in radians/sec: accelerates up to 2.2x as radius shrinks
+                        float angularSpeedRad = Mathf.Lerp(baseAngularSpeed, baseAngularSpeed * 2.2f, depth01) * Mathf.Deg2Rad;
+
+                        // Tangential linear speed:
+                        float swirlSpeed = angularSpeedRad * currentRadius;
+
+                        // Exact radial shrink rate derived from targetOrbitsBeforeConsumption:
+                        float timePerOrbit = (2f * Mathf.PI) / angularSpeedRad;
+                        float radialShrinkSpeed = totalVortexSpan / Mathf.Max(0.1f, targetOrbits * timePerOrbit);
+
+                        // Advance spiral radius
                         if (scrap != null)
                         {
-                            float shrinkStep = config.spiralRadiusShrinkRate * (1f + depth01 * 1.5f) * config.globalSimulationSpeed * Time.fixedDeltaTime;
-                            scrap.currentSpiralRadius = Mathf.Max(config.eventHorizonRadius * 0.8f, scrap.currentSpiralRadius - shrinkStep);
+                            scrap.currentSpiralRadius -= radialShrinkSpeed * Time.fixedDeltaTime;
                         }
 
-                        // Step 2 — Fast Exponential Clockwise Swirl scaled smoothly by radius to eliminate Stage 1 slingshot fling
-                        float stageGravityMult = (BlackHoleStageManager.Instance != null) ? BlackHoleStageManager.Instance.CurrentStageGravityMultiplier : ((BlackHoleMassAndEnergyManager.Instance != null) ? BlackHoleMassAndEnergyManager.Instance.CurrentStageGravityMultiplier : 1.0f);
-                        float swirlSpeed = Mathf.Lerp(config.innerMinSwirlSpeed, config.innerMaxSwirlSpeed, Mathf.Pow(depth01, config.swirlExponentialPower)) * config.globalSimulationSpeed * stageGravityMult;
-                        float maxSafeTangentialSpeed = scrap != null ? Mathf.Min(swirlSpeed, scrap.currentSpiralRadius * 3.8f) : swirlSpeed;
-
-                        // Step 3 — Compensate Centrifugal Drift & Pull Inward strictly along dirToCenter3D (True 3D Center Pull)
-                        float targetRadius = scrap != null ? scrap.currentSpiralRadius : Mathf.Min(dist3D, config.accretionThresholdRadius);
-                        float radiusError = dist3D - targetRadius;
-                        float inwardSpeed = ((config.spiralRadiusShrinkRate * (1f + depth01)) + Mathf.Max(0f, radiusError * config.spiralTightnessSpring)) * stageGravityMult;
-
-                        // 3D Spiral strictly along the item's customOrbitAxis
+                        // 3D Spiral vectors strictly along item's customOrbitAxis
                         Vector3 orbitAxis = (scrap != null && scrap.customOrbitAxis.sqrMagnitude > 0.01f) ? scrap.customOrbitAxis : Vector3.up;
                         Vector3 tangent3D = Vector3.Cross(dirToCenter3D, orbitAxis).normalized;
 
                         // Keep object locked onto its tilted orbital plane passing through center (0,0,0)
-                        Vector3 planeDriftCorrection = -Vector3.Project(rb.position - center, orbitAxis) * 6.0f;
+                        Vector3 planeDriftCorrection = -Vector3.Project(rb.position - center, orbitAxis) * 8.0f;
 
-                        Vector3 spiralVel = (tangent3D * maxSafeTangentialSpeed) + (dirToCenter3D * inwardSpeed) + planeDriftCorrection;
+                        // Smoothly guide object onto the shrinking sphere of radius currentSpiralRadius
+                        Vector3 targetPosOnSphere = center - dirToCenter3D * (scrap != null ? scrap.currentSpiralRadius : dist3D);
+                        Vector3 radialCorrectionVel = (targetPosOnSphere - rb.position) * 8.0f;
 
-                        // Smooth momentum blend on entry: takes 0.85s to smoothly blend from ballistic throw to spiral orbit
-                        float timeInVortex = scrap != null ? scrap.timeInVortex : 1.0f;
-                        float entryBlend = Mathf.SmoothStep(0f, 1f, timeInVortex / 0.85f);
-                        rb.linearVelocity = Vector3.Lerp(rb.linearVelocity, spiralVel, Mathf.Clamp01(entryBlend * 5.0f * Time.fixedDeltaTime + (depth01 * 8.0f * Time.fixedDeltaTime)));
-
-                        // Only apply tight radial clamping when depth01 > 0.65f (deep inside near Event Horizon)
-                        // This makes initial capture at the threshold look completely natural without position jerking
-                        if (scrap != null && scrap.hasEnteredVortex && depth01 > 0.65f)
-                        {
-                            if (dist3D > scrap.currentSpiralRadius)
-                            {
-                                rb.position = center - dirToCenter3D * scrap.currentSpiralRadius;
-                            }
-
-                            // Strip outward radial velocity so scrap can never fling or slingshot outward
-                            float radialDot = Vector3.Dot(rb.linearVelocity, dirToCenter3D);
-                            if (radialDot < 0f)
-                            {
-                                rb.linearVelocity -= dirToCenter3D * radialDot;
-                            }
-                        }
+                        rb.linearVelocity = (tangent3D * swirlSpeed) + radialCorrectionVel + planeDriftCorrection;
                     }
                 }
             }
@@ -406,19 +413,70 @@ namespace OrbitalPanopticon.Physics
                 return;
             }
 
+            Vector3 itemPos = body.transform.position;
+            Vector3 center = centerPoint != null ? centerPoint.position : transform.position;
+            Camera mainCam = Camera.main;
+            Vector3 toCam = mainCam != null ? (mainCam.transform.position - center).normalized : Vector3.up;
+
+            GameBalanceConfig config = balanceConfig != null ? balanceConfig : (GameManager.GameBalanceConfigInstance ?? GameBalanceConfig.Instance);
+            float ehRadius = config != null ? config.eventHorizonRadius : 5.8f;
+
+            // Offset the particle burst position slightly toward Camera.main along the surface of the Event Horizon
+            Vector3 vfxSpawnPos = itemPos + toCam * (ehRadius * 0.6f);
+
+            // Spawn the consumption sparks overlay burst
+            SpawnConsumptionBurst(vfxSpawnPos);
+
             _consumingBodies.Add(body);
 
-            // Notify scrap system if applicable
+            // Notify scrap system if applicable & record horizon entry position
             ScrapItem scrap = body.GetComponent<ScrapItem>();
             if (scrap != null)
             {
+                scrap.consumptionPosition = itemPos;
                 scrap.SetState(ScrapState.Consumed);
             }
 
-            StartCoroutine(SpaghettifyRoutine(body));
+            StartCoroutine(SpaghettifyRoutine(body, vfxSpawnPos));
         }
 
-        private IEnumerator SpaghettifyRoutine(GravityBody body)
+        private void SpawnConsumptionBurst(Vector3 spawnPos)
+        {
+            GameObject prefab = singularityImplosionPrefab;
+            if (prefab == null)
+            {
+#if UNITY_EDITOR
+                prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/VFX_SingularityImplosion.prefab");
+                if (prefab == null)
+                {
+                    prefab = UnityEditor.AssetDatabase.LoadAssetAtPath<GameObject>("Assets/_Project/Prefabs/VFX_AccretionSparks.prefab");
+                }
+#endif
+                if (prefab == null)
+                {
+                    prefab = Resources.Load<GameObject>("VFX_SingularityImplosion");
+                    if (prefab == null)
+                    {
+                        prefab = Resources.Load<GameObject>("VFX_AccretionSparks");
+                    }
+                }
+            }
+
+            if (prefab != null)
+            {
+                GameObject burst = Instantiate(prefab, spawnPos, Quaternion.identity);
+                ParticleSystem ps = burst.GetComponent<ParticleSystem>();
+                if (ps != null)
+                {
+                    var em = ps.emission;
+                    em.enabled = true;
+                    ps.Play();
+                }
+                if (Application.isPlaying) Destroy(burst, 0.85f); else DestroyImmediate(burst);
+            }
+        }
+
+        private IEnumerator SpaghettifyRoutine(GravityBody body, Vector3 vfxSpawnPos)
         {
             if (body == null) yield break;
 
@@ -512,7 +570,7 @@ namespace OrbitalPanopticon.Physics
                     yield break;
                 }
 
-                TriggerSingularityImplosion(center);
+                TriggerSingularityImplosion(vfxSpawnPos);
 
                 OnObjectConsumed?.Invoke(body);
                 _trackedBodies.Remove(body);
@@ -545,7 +603,7 @@ namespace OrbitalPanopticon.Physics
             if (singularityImplosionPrefab != null)
             {
                 GameObject implosion = Instantiate(singularityImplosionPrefab, center, Quaternion.identity);
-                Destroy(implosion, 0.6f);
+                if (Application.isPlaying) Destroy(implosion, 0.6f); else DestroyImmediate(implosion);
             }
 
             if (PostProcessingToolkitController.Instance != null)

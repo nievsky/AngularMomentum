@@ -1184,3 +1184,145 @@ All runtime singletons implement a strict three-tier lookup: Serialized Referenc
   - `Shift` remains strictly dedicated to the snappy directional dash.
 - **Tutorial & Localization Alignment** ([`LocalizationManager.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/LocalizationManager.cs)):
   - Updated slide 1 control instructions in Russian and English to `[WASD] — движение / [Space] — экстренный тормоз / [Shift] — рывок`.
+
+
+### 7.18 True 3D Camera-Aligned Dash (Shift) & 3D Flight Across All 3 Axes
+- **True 3D Camera Vectors (No Y=0 Flattening)** ([`DroneController.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Player/DroneController.cs)):
+  - Samples full 3D normalized vectors directly from `mainCamera.transform`:
+    - `camForward3D = mainCamera.transform.forward.normalized;`
+    - `camRight3D = mainCamera.transform.right.normalized;`
+  - Zero-flattening on the Y axis has been eliminated for both WASD thrust and the Left Shift Dash.
+  - **Natural 3D WASD Flight**: Since dedicated vertical ascent/descent keys (Space/Ctrl) were removed to dedicate Space to emergency braking, looking up or down with the camera and pressing `W` or `S` naturally flies the drone up and down across 3D cosmic space.
+- **True 3D Relative Dash Direction on `Left Shift`**:
+  - Samples raw movement inputs: `moveZ = _moveInput.y` (W = +1, S = -1) and `moveX = _moveInput.x` (D = +1, A = -1).
+  - Determines 3D travel vector:
+    - If no WASD keys are actively held down (`Mathf.Approximately(moveZ, 0f) && Mathf.Approximately(moveX, 0f)`): dashes straight along the 3D camera gaze vector `camForward3D` (including vertical pitch).
+    - If WASD keys are held down: combines 3D camera vectors with player input:
+      `dashDir3D = (camForward3D * moveZ + camRight3D * moveX).normalized;`
+    - Full 3D omnidirectional behavior:
+      - Look Straight Up + Neutral/W $\rightarrow$ dash straight up `(0, 1, 0)`.
+      - Look Straight Up + S $\rightarrow$ dash straight down `(0, -1, 0)`.
+      - Look Straight Down + Neutral/W $\rightarrow$ dash straight down `(0, -1, 0)`.
+      - Look Straight Down + S $\rightarrow$ dash straight up `(0, 1, 0)`.
+      - Look Angled Up 45° + S $\rightarrow$ dash backward-down `(0, -0.71, -0.71)`.
+- **Instant 3D Velocity Impulse (`rb.linearVelocity`)**:
+  - Sets linear velocity instantly to `dashDir3D * impulse` (`dashImpulse = 22f`), imparting snappy 3D arcade momentum without zeroing or clamping `rb.linearVelocity.y`.
+  - Thruster burst particle orientation employs singularity-safe upward fallback (`Vector3 upwards = Mathf.Abs(Vector3.Dot(-dashDir3D, Vector3.up)) > 0.95f ? Vector3.forward : Vector3.up;`) ensuring zero gimbal warnings when dashing along vertical poles.
+  - Directional roll/pitch tilts, FOV kicks, chromatic aberration pulses, and FMOD spatial audio trigger seamlessly across 3D space.
+
+
+### 7.19 Centralized Economy Balancing: Loot Rewards Decoupling & Dynamic Upgrade Tree Costs
+- **Decoupled Coin & Mass Rewards Pipeline** ([`GameBalanceConfig.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/GameBalanceConfig.cs), [`GameBalanceConfig.asset`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/ScriptableObjects/GameBalanceConfig.asset)):
+  - Centralized loot rewards under `[Header("6A. Loot Coin & Mass Rewards Balance")]`:
+    - `globalCoinIncomeMultiplier = 1.0f`: master multiplier slider for total scrap coin income.
+    - `scrapTierBaseCoins = new int[] { 4, 10, 25, 65 }`: base coin reward per tier (Tier 1–4).
+    - `scrapTierBaseMass = new float[] { 12f, 35f, 90f, 250f }`: base Black Hole mass per tier (Tier 1–4).
+    - `stageCoinMultipliers = new float[] { 1.0f, 1.2f, 1.45f, 1.75f }`: separate, modest coin multipliers per Stage 1–4, completely decoupled from the large `stageValueMultipliers` (`[1.0, 2.5, 6.0, 15.0]`) so late-game Stage 4 doesn't inflate currency rewards by 15x.
+    - `valuableLootCoinMultiplier = 2.5f` & `valuableLootMassMultiplier = 3.5f`: dedicated tuning multipliers for glowing magma/lava loot.
+  - In [`QuotaAndScoreManager.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/QuotaAndScoreManager.cs) & [`BlackHoleStageManager.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Gameplay/BlackHoleStageManager.cs):
+    - **Coins Gained**: `config.GetScrapCoinsReward(tier, stage, isValuable)` = `Mathf.RoundToInt(scrapTierBaseCoins[tier - 1] * stageCoinMultipliers[stage - 1] * (isValuable ? valuableLootCoinMultiplier : 1f) * globalCoinIncomeMultiplier)`.
+    - **Mass Gained**: `config.GetScrapMassReward(tier, stage, isValuable)` = `scrapTierBaseMass[tier - 1] * stageValueMultipliers[stage - 1] * (isValuable ? valuableLootMassMultiplier : 1f)`.
+- **Dynamic Skill Tree Node Costs** ([`GameBalanceConfig.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/GameBalanceConfig.cs), [`UpgradeTreeManager.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/UpgradeTreeManager.cs), [`UpgradeTreeUI.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/UpgradeTreeUI.cs)):
+  - Centralized all tree node prices under `[Header("6B. Upgrade Tree Costs Balance")]`:
+    - `globalUpgradeCostMultiplier = 1.0f`: master scale slider for all node prices.
+    - Branch 1 (Player): `playerSpeedCosts = { 25, 80, 220 }`, `playerManeuverCosts = { 25, 80, 220 }`, `playerCapacityCosts = { 35, 110, 300 }`, `playerWowPerkCost = 750`.
+    - Branch 2 (Black Hole): `blackHoleHeatCosts = { 30, 75, 160, 320, 600 }`, `blackHoleWowPerkCost = 850`.
+    - Branch 3 (Scrap): `scrapSpawnFrequencyCosts = { 30, 90, 240 }`, `scrapTierUnlockCosts = { 50, 180 }`, `scrapTier4AnomalyWowCost = 950`.
+    - Branch 4 (Valuable Scrap): `valuableScrapChanceCosts = { 35, 100, 260 }`, `valuableScrapMultiplierCosts = { 40, 125, 340 }`, `quantumDecayWowCost = 900`.
+    - Branch 5 (Robots): `robotPowerCosts = { 35, 100, 250 }`, `robotSpeedCosts = { 35, 100, 250 }`, `magnetRangeCosts = { 30, 85, 220 }`, `kamikazeProtocolWowCost = 800`, `fixedHelperRobotPrice = 120`, `helperRobotPriceGrowthMultiplier = 1.0f`.
+  - **Live Play Mode Tuning**: `UpgradeTreeManager.SyncNodeCostsFromConfig()` dynamically recalculates node costs (`Mathf.RoundToInt(rawCost * globalUpgradeCostMultiplier)`) and updates UI button labels whenever the tree opens (`SetTreeOpen(true)` or `RefreshUI()`), allowing designers to tweak prices in `GameBalanceConfig.asset` during live gameplay without restarting.
+
+
+### 7.20 UI Typography Restoration, Fallback Tables & Resilient Balance Array Serialization
+- **Font Asset Unification & Cyrillic Glyph Coverage** ([`Mayak SDF.asset`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Resources/Mayak%20SDF.asset), [`LiberationSans SDF.asset`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/TextMesh%20Pro/Resources/Fonts%20&%20Materials/LiberationSans%20SDF.asset)):
+  - Identified root cause of missing Cyrillic characters: `Assets/TextMesh Pro/Fonts/Mayak SDF.asset` contained only 69 uppercase characters with 0 lowercase Cyrillic characters, causing lowercase Russian text (e.g., Settings menu descriptions, tutorial hints) to render as missing glyphs.
+  - Unified the character table with the 128-character set from `Assets/Resources/Mayak SDF.asset` containing full Cyrillic uppercase/lowercase, Latin alphabets, numbers, and symbols.
+  - Bound `LiberationSans SDF.asset` into `Mayak SDF`'s `fallbackFontAssetTable` on both font assets, ensuring any non-standard glyph or punctuation seamlessly falls back without rendering invisible or blank boxes.
+- **Font Material Assignment & Tutorial Scope Decoupling** ([`GlobalFontApplier.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/GlobalFontApplier.cs), [`GlobalFontEditorUtility.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Editor/GlobalFontEditorUtility.cs)):
+  - Enforced exact synchronization between `tmp.font` and `tmp.fontSharedMaterial = config.masterTMPFont.material` across `ApplyToTMP` and batch editor routines, preventing TMP CanvasRenderer from drawing blank meshes due to null or mismatched material headers.
+  - Discovered and resolved a critical filter bug where `tmp.GetComponentInParent<TutorialSlideshowUI>() != null` caused all 30 HUD elements under `HUD_Canvas` to be skipped because `TutorialSlideshowUI` is attached directly to the `HUD_Canvas` root GameObject.
+  - Propagated font, material, and full opacity (`alpha = 1.0f`) to all 12 elements in `MainMenuScene.unity`, all 30 elements in `GameplayScene.unity`, and all 3 elements in `CreditsScene.unity`.
+- **Resilient Balance Configuration & Dynamic Cost Population** ([`GameBalanceConfig.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/GameBalanceConfig.cs), [`UpgradeTreeManager.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/UpgradeTreeManager.cs)):
+  - Implemented `ValidateAndPopulateDefaultArrays()` in `GameBalanceConfig.cs` hooked into `OnEnable()` and `OnValidate()`, automatically repopulating default values if any array is deserialized as null or empty (`Length == 0`).
+  - Added `GetSafeCost(int[] costArray, int levelIndex, int fallbackCost)` in `UpgradeTreeManager.cs`, eliminating `IndexOutOfRangeException` or `NullReferenceException` when initializing skill tree nodes.
+
+
+### 7.21 Pre-Baked Cyrillic Master Font Asset (`MasterCyrillicFont_SDF`), Sub-Asset Serialization & Safe Deep Scene Deserialization
+- **True Cyrillic Source Font & SDFAA Atlas Generation** ([`MasterCyrillicFont.ttf`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/Fonts/MasterCyrillicFont.ttf), [`FontAtlasRebuilder.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/Scripts/Editor/FontAtlasRebuilder.cs)):
+  - Imported Windows Arial Bold (`MasterCyrillicFont.ttf`) into `Assets/_Project/Fonts/`.
+  - Created [`MasterCyrillicFont_SDF.asset`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/Fonts/MasterCyrillicFont_SDF.asset) with 1024x1024 SDFAA atlas and Dynamic population mode.
+  - Pre-baked all 168 characters (full Russian Cyrillic uppercase and lowercase `А-Я`, `а-я`, `Ё`, `ё`, English Latin `A-Z`, `a-z`, numerals `0-9`, and all punctuation/currency/UI symbols `№—–«»•●<>[]()_+#%`) directly into the atlas texture with 0 missing characters.
+- **Physical Sub-Asset Embedding on Disk**:
+  - Embedded `atlasTexture` (`Texture2D`) and `material` (`Material`) as genuine serialized sub-assets inside the `.asset` file via `AssetDatabase.AddObjectToAsset(atlasTex, sdfFont)` and `AssetDatabase.AddObjectToAsset(fontMat, sdfFont)`.
+  - Enforced `fontMat.mainTexture == atlasTex` with shader `TextMeshPro/Mobile/Distance Field`.
+  - Copied to [`Assets/Resources/MasterCyrillicFont_SDF.asset`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Resources/MasterCyrillicFont_SDF.asset) so `Resources.Load<TMP_FontAsset>("MasterCyrillicFont_SDF")` resolves reliably both in-Editor and in standalone player builds.
+- **DeepSceneCorruptionFixer Immunity Protection**:
+  - Hardened [`DeepSceneCorruptionFixer.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/Scripts/Editor/DeepSceneCorruptionFixer.cs): added explicit early return when `targetObj is TMPro.TMP_Text || targetObj is TMPro.TMP_FontAsset`, and immune paths `prop.propertyPath.Contains("font") || prop.propertyPath.Contains("material") || prop.propertyPath.Contains("shader")` to permanently prevent in-memory purging of font materials.
+- **Global Settings & Scene Propagation**:
+  - Bound `MasterCyrillicFont_SDF` to `TMPro.TMP_Settings.defaultFontAsset`, `GlobalFontConfig.masterTMPFont`, all UI prefabs, and 100% of `TMP_Text` components across `MainMenuScene.unity` (12), `GameplayScene.unity` (30), and `CreditsScene.unity` (3).
+
+### 7.22 Multi-Orbit Accretion Vortex Dynamics, Momentum Redirection & Radial Contraction Math
+- **Root Cause & Vortex Penetration Problem**:
+  - Previously, high-speed scrap thrown or punted directly at the Black Hole by the player would penetrate the Event Horizon in ~0.2 seconds without visibly orbiting the singularity, bypassing the accretion disk gameplay loop.
+- **Inward Momentum Redirection to Tangential Orbital Swirl** ([`BlackHoleGravity.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Physics/BlackHoleGravity.cs)):
+  - The instant an object crosses `accretionThresholdRadius` (`!scrap.hasEnteredVortex`), its dynamic 3D orbital plane axis is computed:
+    `scrap.customOrbitAxis = Vector3.Cross(dirToCenter3D, entryTangent).normalized;`
+  - Inward radial velocity is converted entirely into orbital swirl tangential velocity:
+    `float entrySpeed = Mathf.Max(rb.linearVelocity.magnitude, 14f);`
+    `Vector3 initialTangent3D = Vector3.Cross(dirToCenter3D, scrap.customOrbitAxis).normalized;`
+    `rb.linearVelocity = initialTangent3D * entrySpeed;`
+  - Initial `scrap.currentSpiralRadius` is clamped safely outside the Event Horizon (`Mathf.Clamp(dist3D, config.eventHorizonRadius + 1f, config.accretionThresholdRadius)`).
+- **Configurable Multi-Orbit Parameters** ([`GameBalanceConfig.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/GameBalanceConfig.cs), [`GameBalanceConfig.asset`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/ScriptableObjects/GameBalanceConfig.asset)):
+  - Added serialized parameters under `[Header("6B. Accretion Multi-Orbit Physics")]`:
+    - `public float targetOrbitsBeforeConsumption = 3.5f;` (Enforces >= 3.0 full revolutions before crossing the Event Horizon)
+    - `public float baseOrbitalAngularSpeedDeg = 260f;` (Base swirl speed accelerating up to 2.2x as radius contracts)
+  - Added self-healing validation in `ValidateAndPopulateDefaultArrays()` ensuring non-zero defaults even if deserialized empty.
+- **Mathematically Derived Radial Shrink Rate**:
+  - To achieve exactly N_target revolutions regardless of depth acceleration, radial contraction speed is tied directly to instantaneous angular velocity:
+    v_shrink = totalVortexSpan / (targetOrbits * timePerOrbit) = (totalVortexSpan * omega(t)) / (2 * pi * targetOrbits)
+  - Integrating radial velocity with respect to angular displacement yields:
+    Delta R = integral(v_shrink dt) = (totalVortexSpan / (2 * pi * targetOrbits)) * integral(omega(t) dt) = totalVortexSpan * (theta / (2 * pi * targetOrbits))
+  - Hence, every 2*pi radians (one full revolution), the orbit radius decreases by exactly totalVortexSpan / targetOrbits, guaranteeing that r hits `eventHorizonRadius` precisely after targetOrbits (3.5 revolutions).
+- **Boundary Escape & Clamping Resolution**:
+  - Hardened threshold check: `if (dist3D > config.accretionThresholdRadius && (scrap == null || !scrap.hasEnteredVortex))` to prevent discretization overshoot at the outer threshold boundary from releasing already-trapped objects.
+  - Eliminated premature reset clamp in `BlackHoleGravity.cs`: only reset `currentSpiralRadius` if uninitialized (`<= 0.01f`), allowing smooth penetration into the Event Horizon trigger.
+- **Multi-Scenario Headless Verification**:
+  - Verified across multiple entrance velocities and 3D angles in Unity:
+    - Vertical drop at 40 m/s: **3.39 revolutions (1221.0 deg)**, Event Horizon reached in 3.30s.
+    - Oblique angle at 33 m/s: **3.43 revolutions (1234.2 deg)**, Event Horizon reached in 3.34s.
+    - Low-speed entry at 15 m/s: **3.36 revolutions (1209.6 deg)**, Event Horizon reached in 3.26s.
+    - High-speed direct punt at 50 m/s: **3.29 revolutions (1184.0 deg)**, Event Horizon reached in 3.16s.
+  - All test cases strictly satisfy the requirement (>= 3.0 full orbits before Event Horizon consumption).
+
+### 7.23 Consumption Sparks Overlay VFX, Floating Score Rendering Pipeline & Horizon Offset Geometry
+- **Singularity Depth Occlusion Root Cause**:
+  - The Event Horizon core sphere (`M_EventHorizonBlackCore.mat`, `S_EventHorizonBlackCore.shader`) writes to the Z-buffer with `ZWrite On` at `renderQueue = 2950`, while the lensing distortion shader (`S_OuterWildsBlackHole.shader`) operates at `renderQueue = 2900`.
+  - Standard transparent particles (`Queue = 3000`) and TextMeshPro instances with `ZTest LEqual` were occluded whenever scrap spaghettified into the singularity core (`Vector3.zero`), hiding both the consumption spark bursts and floating score text behind the opaque black core sphere.
+- **Dedicated Consumption Sparks Overlay Shader & Material** ([`S_ConsumptionSparksOverlay.shader`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/Materials/S_ConsumptionSparksOverlay.shader), [`M_ConsumptionSparksOverlay.mat`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/Materials/M_ConsumptionSparksOverlay.mat)):
+  - Built `S_ConsumptionSparksOverlay.shader` using URP Core HLSL with explicit tags:
+    - `"Queue" = "Transparent+150"` (enforcing `renderQueue = 3150`, strictly after black core at 2950 and lensing at 2900).
+    - `ZTest Always` to completely disable depth occlusion against the event horizon core.
+    - `ZWrite Off` and `Blend One One` (pure Additive HDR glow).
+  - Assigned `M_ConsumptionSparksOverlay.mat` to both [`VFX_AccretionSparks.prefab`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/Prefabs/VFX_AccretionSparks.prefab) and [`VFX_SingularityImplosion.prefab`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/Prefabs/VFX_SingularityImplosion.prefab) (and mirrored to `Assets/Resources/`).
+- **Camera-Aligned Event Horizon Surface Offset** ([`BlackHoleGravity.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Physics/BlackHoleGravity.cs)):
+  - In `ConsumeObject()`, the particle burst position is calculated on the front-facing hemisphere of the Event Horizon:
+    `Vector3 toCam = (camPos - center).normalized;`
+    `Vector3 vfxSpawnPos = itemPos + toCam * (ehRadius * 0.6f);`
+    `SpawnConsumptionBurst(vfxSpawnPos);`
+  - Preserved entry position in `scrap.consumptionPosition = itemPos;` so downstream score popups know the exact horizon plunge coordinates instead of collapsing to `(0,0,0)`.
+- **Score Popup Text Overlay Material & Outer Rim DOTween Pop Animation** ([`ScorePopupManager.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/ScorePopupManager.cs), [`FloatingScorePopupManager.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/FloatingScorePopupManager.cs), [`WorldScorePopup.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/WorldScorePopup.cs), [`M_ScorePopupTextOverlay.mat`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/Materials/M_ScorePopupTextOverlay.mat)):
+  - Generated dedicated text overlay material `M_ScorePopupTextOverlay.mat` using `MasterCyrillicFont_SDF` atlas texture with `Shader "TextMeshPro/Distance Field Overlay"` (`Queue = 4000`, `ZTest Always`, `ZWrite Off`).
+  - Set `MeshRenderer.sortingOrder = 500` on the popup GameObject.
+  - In `ScorePopupManager.SpawnPopup()`:
+    - Calculates radial unit vector `Vector3 radialDir = (worldPos - center).normalized;`
+    - Spawns at outer rim: `Vector3 popupPos = center + radialDir * (ehRadius * 1.15f) + toCam * 1.5f;`
+  - In `WorldScorePopup.Setup()`:
+    - `DOTween` sequence executes a snappy scale pop: `0 -> 1.35x -> 1.0x` (`Ease.OutBack`).
+    - Smoothly floats outward and upward along `(Vector3.up * 1.35f + radialDir * 0.9f).normalized * floatDistance` (`Ease.OutQuad`).
+    - Smooth alpha fadeout in the second half of its duration, auto-destroying upon completion.
+- **Verification**:
+  - Headless Play Mode test verified:
+    - `M_ConsumptionSparksOverlay`: `Queue = 3150`, `ZTest Always`.
+    - `M_ScorePopupTextOverlay`: `Queue = 4000`, `ZTest Always`.
+    - Score popup spawned at `7.25m` (>= `ehRadius * 1.15f = 7.09m`), `sortingOrder = 500`.
+    - Consumption burst triggered at `vfxSpawnPos` in front of event horizon with 0 errors.

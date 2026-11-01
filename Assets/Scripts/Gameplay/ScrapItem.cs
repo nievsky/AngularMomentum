@@ -65,6 +65,7 @@ namespace OrbitalPanopticon.Gameplay
         [SerializeField] public bool hasEnteredVortex = false;
         [SerializeField] public float timeInVortex = 0f;
         [SerializeField] public bool isKamikazeDelivery = false;
+        [SerializeField] public Vector3 consumptionPosition = Vector3.zero;
 
         [Header("Ballistic Launch State")]
         [SerializeField] public float ballisticLaunchTimer = 0f;
@@ -273,14 +274,36 @@ namespace OrbitalPanopticon.Gameplay
         {
             get
             {
-                float m = scrapData != null ? scrapData.Mass : (rb != null && rb.mass > 0.05f ? rb.mass : 1f);
+                var cfg = OrbitalPanopticon.Core.GameManager.GameBalanceConfigInstance;
+                if (cfg != null && cfg.scrapTierBaseMass != null && cfg.scrapTierBaseMass.Length > 0)
+                {
+                    int tIdx = Mathf.Clamp(Tier - 1, 0, cfg.scrapTierBaseMass.Length - 1);
+                    float m = cfg.scrapTierBaseMass[tIdx];
+                    if (isValuableScrap)
+                    {
+                        m *= cfg.valuableLootMassMultiplier;
+                    }
+                    return m;
+                }
+                float defaultM = scrapData != null ? scrapData.Mass : (rb != null && rb.mass > 0.05f ? rb.mass : 1f);
                 if (isValuableScrap)
                 {
-                    var cfg = OrbitalPanopticon.Core.GameManager.GameBalanceConfigInstance;
-                    m *= (cfg != null ? cfg.valuableScrapMultiplier : 3.0f);
+                    defaultM *= (cfg != null ? cfg.valuableScrapMultiplier : 3.0f);
                 }
-                return m;
+                return defaultM;
             }
+        }
+
+        public int GetCoinReward(int currentStage)
+        {
+            var cfg = OrbitalPanopticon.Core.GameManager.GameBalanceConfigInstance;
+            return cfg != null ? cfg.GetScrapCoinsReward(Tier, currentStage, isValuableScrap) : 4;
+        }
+
+        public float GetMassReward(int currentStage)
+        {
+            var cfg = OrbitalPanopticon.Core.GameManager.GameBalanceConfigInstance;
+            return cfg != null ? cfg.GetScrapMassReward(Tier, currentStage, isValuableScrap) : Mass;
         }
 
         public bool IsInAccretionZone => isInAccretionZone;
@@ -924,6 +947,7 @@ namespace OrbitalPanopticon.Gameplay
             wasInteractedByPlayer = false;
             homeOrbitRadius = 0f;
             hasEnteredVortex = false;
+            consumptionPosition = Vector3.zero;
             timeInVortex = 0f;
             customOrbitAxis = Vector3.up;
             SetupValuableScrap(false);
@@ -1016,6 +1040,7 @@ namespace OrbitalPanopticon.Gameplay
             if (currentState == ScrapState.Held)
             {
                 hasEnteredVortex = false;
+            consumptionPosition = Vector3.zero;
                 timeInVortex = 0f;
             }
             else if (currentState == ScrapState.Floating || currentState == ScrapState.Launched)
