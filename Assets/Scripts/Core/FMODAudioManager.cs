@@ -602,6 +602,18 @@ namespace OrbitalPanopticon.Core
             }
         }
 
+        public void PlayOverseerBeamAttack(Vector3 position = default)
+        {
+            EventReference eventRef = (audioConfig != null && !audioConfig.overseerBeamAttackOneShot.IsNull)
+                ? audioConfig.overseerBeamAttackOneShot
+                : RuntimeManager.PathToEventReference("event:/Boss/Overseer_BeamAttack");
+
+            if (!eventRef.IsNull)
+            {
+                PlayOneShot(eventRef, position);
+            }
+        }
+
         private void HandleOverseerIdle(OverseerContainmentEye eye, Vector3 position)
         {
             PlayOverseerIdle(position);

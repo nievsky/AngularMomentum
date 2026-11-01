@@ -35,6 +35,9 @@ namespace OrbitalPanopticon.Gameplay
         [Header("Overloaded Broken Eye Red Laser")]
         [SerializeField] private LineRenderer redSweepingLaserBeam;
         [SerializeField] private Material redLaserMaterial;
+        [SerializeField] private BeamSplineAudioEmitter beamAudioEmitter;
+        [Tooltip("If true, Overseer_BeamAttack plays at telegraph start (t=0); if false, plays at active beam sweep start.")]
+        [SerializeField] private bool triggerBeamAttackSoundAtTelegraph = false;
         private float _redLaserTimer = 0f;
         private Coroutine _redLaserSweepCoroutine;
         private bool _isSweepingLaserActive = false;
@@ -168,6 +171,10 @@ namespace OrbitalPanopticon.Gameplay
             {
                 redSweepingLaserBeam.enabled = false;
             }
+            if (beamAudioEmitter != null)
+            {
+                beamAudioEmitter.StopLoop(FMOD.Studio.STOP_MODE.IMMEDIATE);
+            }
 
             _activeEyes.Remove(this);
             if (_coroutineRunner == this)
@@ -192,6 +199,10 @@ namespace OrbitalPanopticon.Gameplay
             if (redSweepingLaserBeam != null)
             {
                 redSweepingLaserBeam.enabled = false;
+            }
+            if (beamAudioEmitter != null)
+            {
+                beamAudioEmitter.StopLoop(FMOD.Studio.STOP_MODE.IMMEDIATE);
             }
 
             _activeEyes.Remove(this);
@@ -450,6 +461,15 @@ namespace OrbitalPanopticon.Gameplay
 
             redSweepingLaserBeam.sharedMaterial = redLaserMaterial;
             redSweepingLaserBeam.enabled = false;
+
+            if (beamAudioEmitter == null)
+            {
+                beamAudioEmitter = GetComponent<BeamSplineAudioEmitter>();
+                if (beamAudioEmitter == null)
+                {
+                    beamAudioEmitter = gameObject.AddComponent<BeamSplineAudioEmitter>();
+                }
+            }
         }
 
         private void Update()
@@ -662,6 +682,11 @@ namespace OrbitalPanopticon.Gameplay
 
             // 2) Telegraph Phase (redLaserTelegraphDuration = 2.0s):
             // Pulse Eye's red emissive core brightly and display thin faint warning laser line along start angle
+            if (triggerBeamAttackSoundAtTelegraph && FMODAudioManager.Instance != null)
+            {
+                FMODAudioManager.Instance.PlayOverseerBeamAttack(PupilPosition);
+            }
+
             if (redSweepingLaserBeam != null)
             {
                 redSweepingLaserBeam.startWidth = 0.15f;
@@ -708,6 +733,26 @@ namespace OrbitalPanopticon.Gameplay
                 redSweepingLaserBeam.endColor = Color.white;
             }
 
+            Vector3 initSweepDir = Quaternion.AngleAxis(startAngle, sweepAxis) * eyeToCenter;
+            Vector3 initBeamStart = PupilPosition;
+            Vector3 initBeamEnd = initBeamStart + (initSweepDir * 160f);
+
+            // 1. Play 3D attack sound on the Overseer
+            if (!triggerBeamAttackSoundAtTelegraph && FMODAudioManager.Instance != null)
+            {
+                FMODAudioManager.Instance.PlayOverseerBeamAttack(initBeamStart);
+            }
+
+            // 2. Start continuous 3D beam loop tracking along the beam rail
+            if (beamAudioEmitter != null)
+            {
+                EventReference loopRef = (FMODAudioManager.Instance != null && FMODAudioManager.Instance.Config != null)
+                    ? FMODAudioManager.Instance.Config.overseerBeamLoop
+                    : FMODUnity.RuntimeManager.PathToEventReference("event:/Boss/Overseer_BeamLoop");
+
+                beamAudioEmitter.StartLoop(loopRef, initBeamStart, initBeamEnd);
+            }
+
             elapsed = 0f;
             while (elapsed < sweepDuration && !isConsumedOrCollapsing)
             {
@@ -726,6 +771,12 @@ namespace OrbitalPanopticon.Gameplay
                 {
                     redSweepingLaserBeam.SetPosition(0, beamStart);
                     redSweepingLaserBeam.SetPosition(1, beamEnd);
+                }
+
+                // Update continuous 3D beam audio emitter along beam rail at closest point to player
+                if (beamAudioEmitter != null)
+                {
+                    beamAudioEmitter.UpdatePosition(redSweepingLaserBeam);
                 }
 
                 if (CameraShakeController.Instance != null)
@@ -747,6 +798,11 @@ namespace OrbitalPanopticon.Gameplay
                 }
 
                 yield return null;
+            }
+
+            if (beamAudioEmitter != null)
+            {
+                beamAudioEmitter.StopLoop(FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
             }
 
             if (redSweepingLaserBeam != null)
