@@ -30,15 +30,12 @@ namespace OrbitalPanopticon.Editor
             // 1. Ensure Mayak SDF font asset exists
             TMP_FontAsset fontAsset = EnsureMayakFontAsset();
 
-            // 2. Load the 4 slide sprites
-            Sprite[] slideSprites = new Sprite[4];
-            for (int i = 0; i < 4; i++)
+            Sprite LoadSprite(string path, string resFallback)
             {
-                string slidePath = $"Assets/_Project/Textures/UI/Tutorial/Tutorial_Slide_{i + 1}.png";
-                slideSprites[i] = AssetDatabase.LoadAssetAtPath<Sprite>(slidePath);
-                if (slideSprites[i] == null)
+                Sprite s = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+                if (s == null)
                 {
-                    TextureImporter ti = AssetImporter.GetAtPath(slidePath) as TextureImporter;
+                    TextureImporter ti = AssetImporter.GetAtPath(path) as TextureImporter;
                     if (ti != null && ti.textureType != TextureImporterType.Sprite)
                     {
                         ti.textureType = TextureImporterType.Sprite;
@@ -47,13 +44,25 @@ namespace OrbitalPanopticon.Editor
                         ti.maxTextureSize = 2048;
                         ti.SaveAndReimport();
                     }
-                    slideSprites[i] = AssetDatabase.LoadAssetAtPath<Sprite>(slidePath);
+                    s = AssetDatabase.LoadAssetAtPath<Sprite>(path);
                 }
-                if (slideSprites[i] == null)
+                if (s == null && !string.IsNullOrEmpty(resFallback))
                 {
-                    slideSprites[i] = AssetDatabase.LoadAssetAtPath<Sprite>($"Assets/Resources/Tutorial/Tutorial_Slide_{i + 1}.png");
+                    s = AssetDatabase.LoadAssetAtPath<Sprite>(resFallback);
                 }
-                Debug.Log($"[SetupTutorialUI] Slide {i + 1}: {(slideSprites[i] != null ? slideSprites[i].name : "NULL")}");
+                return s;
+            }
+
+            // 2. Load the slide sprites (Default, RU, EN)
+            Sprite[] slideSprites = new Sprite[4];
+            Sprite[] slideSpritesRU = new Sprite[4];
+            Sprite[] slideSpritesEN = new Sprite[4];
+            for (int i = 0; i < 4; i++)
+            {
+                slideSprites[i] = LoadSprite($"Assets/_Project/Textures/UI/Tutorial/Tutorial_Slide_{i + 1}.png", $"Assets/Resources/Tutorial/Tutorial_Slide_{i + 1}.png");
+                slideSpritesRU[i] = LoadSprite($"Assets/_Project/Textures/UI/Tutorial/Tutorial_Slide_{i + 1}_RU.png", $"Assets/Resources/Tutorial/Tutorial_Slide_{i + 1}_RU.png");
+                slideSpritesEN[i] = LoadSprite($"Assets/_Project/Textures/UI/Tutorial/Tutorial_Slide_{i + 1}_EN.png", $"Assets/Resources/Tutorial/Tutorial_Slide_{i + 1}_EN.png");
+                Debug.Log($"[SetupTutorialUI] Slide {i + 1}: RU={(slideSpritesRU[i] != null ? slideSpritesRU[i].name : "NULL")}, EN={(slideSpritesEN[i] != null ? slideSpritesEN[i].name : "NULL")}");
             }
 
             // 3. Update GameplayScene
@@ -67,7 +76,7 @@ namespace OrbitalPanopticon.Editor
                 TutorialSlideshowUI tutorialUI = Object.FindAnyObjectByType<TutorialSlideshowUI>();
                 if (tutorialUI != null)
                 {
-                    tutorialUI.ConfigureNewTutorial(slideSprites, fontAsset);
+                    tutorialUI.ConfigureNewTutorial(slideSprites, slideSpritesRU, slideSpritesEN, fontAsset);
                     EditorUtility.SetDirty(tutorialUI);
                     EditorSceneManager.MarkSceneDirty(scene);
                     EditorSceneManager.SaveScene(scene);

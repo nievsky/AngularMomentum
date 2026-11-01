@@ -27,6 +27,8 @@ namespace OrbitalPanopticon.Core
         [Header("Visual Frame & Slides")]
         [SerializeField] private Image slideImage;
         [SerializeField] private Sprite[] slideIllustrations = new Sprite[4];
+        [SerializeField] private Sprite[] slideIllustrationsRU = new Sprite[4];
+        [SerializeField] private Sprite[] slideIllustrationsEN = new Sprite[4];
 
         [Header("Typography")]
         [SerializeField] private TMP_FontAsset tutorialFont;
@@ -291,11 +293,20 @@ namespace OrbitalPanopticon.Core
                 pageIndicatorText.text = $"{_currentSlideIndex + 1} / {TotalSlides}";
             }
 
-            // Set current slide illustration
-            Sprite currentSprite = null;
-            if (slideIllustrations != null && _currentSlideIndex < slideIllustrations.Length)
+            EnsureSpritesLoaded();
+
+            // Set current slide illustration based on active language
+            bool isRU = LocalizationManager.IsRussian;
+            Sprite[] activeSlides = isRU ? slideIllustrationsRU : slideIllustrationsEN;
+            if (activeSlides == null || activeSlides.Length < TotalSlides || activeSlides[_currentSlideIndex] == null)
             {
-                currentSprite = slideIllustrations[_currentSlideIndex];
+                activeSlides = slideIllustrations;
+            }
+
+            Sprite currentSprite = null;
+            if (activeSlides != null && _currentSlideIndex < activeSlides.Length)
+            {
+                currentSprite = activeSlides[_currentSlideIndex];
             }
 
             if (slideImage != null)
@@ -350,11 +361,66 @@ namespace OrbitalPanopticon.Core
         /// </summary>
         public void ConfigureNewTutorial(Sprite[] sprites, TMP_FontAsset font)
         {
+            ConfigureNewTutorial(sprites, null, null, font);
+        }
+
+        public void ConfigureNewTutorial(Sprite[] sprites, Sprite[] spritesRU, Sprite[] spritesEN, TMP_FontAsset font)
+        {
             slideIllustrations = sprites;
+            if (spritesRU != null) slideIllustrationsRU = spritesRU;
+            if (spritesEN != null) slideIllustrationsEN = spritesEN;
             tutorialFont = font;
             BuildOrRebuildHierarchy();
             SetupButtonListeners();
             UpdateSlideUI();
+        }
+
+        private void EnsureSpritesLoaded()
+        {
+            if (slideIllustrations == null || slideIllustrations.Length < 4 || slideIllustrations[0] == null)
+            {
+                slideIllustrations = new Sprite[4];
+                for (int i = 0; i < 4; i++)
+                {
+                    slideIllustrations[i] = Resources.Load<Sprite>($"Tutorial/Tutorial_Slide_{i + 1}");
+#if UNITY_EDITOR
+                    if (slideIllustrations[i] == null)
+                    {
+                        slideIllustrations[i] = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>($"Assets/_Project/Textures/UI/Tutorial/Tutorial_Slide_{i + 1}.png");
+                    }
+#endif
+                }
+            }
+
+            if (slideIllustrationsRU == null || slideIllustrationsRU.Length < 4 || slideIllustrationsRU[0] == null)
+            {
+                slideIllustrationsRU = new Sprite[4];
+                for (int i = 0; i < 4; i++)
+                {
+                    slideIllustrationsRU[i] = Resources.Load<Sprite>($"Tutorial/Tutorial_Slide_{i + 1}_RU");
+#if UNITY_EDITOR
+                    if (slideIllustrationsRU[i] == null)
+                    {
+                        slideIllustrationsRU[i] = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>($"Assets/_Project/Textures/UI/Tutorial/Tutorial_Slide_{i + 1}_RU.png");
+                    }
+#endif
+                }
+            }
+
+            if (slideIllustrationsEN == null || slideIllustrationsEN.Length < 4 || slideIllustrationsEN[0] == null)
+            {
+                slideIllustrationsEN = new Sprite[4];
+                for (int i = 0; i < 4; i++)
+                {
+                    slideIllustrationsEN[i] = Resources.Load<Sprite>($"Tutorial/Tutorial_Slide_{i + 1}_EN");
+#if UNITY_EDITOR
+                    if (slideIllustrationsEN[i] == null)
+                    {
+                        slideIllustrationsEN[i] = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>($"Assets/_Project/Textures/UI/Tutorial/Tutorial_Slide_{i + 1}_EN.png");
+                    }
+#endif
+                }
+            }
         }
 
         /// <summary>
@@ -362,6 +428,8 @@ namespace OrbitalPanopticon.Core
         /// </summary>
         public void EnsureTutorialHierarchy()
         {
+            EnsureSpritesLoaded();
+
             if (tutorialWindowPanel != null && slideImage != null && prevButton != null && nextButton != null && startButton != null)
             {
                 // Already properly connected
@@ -397,21 +465,8 @@ namespace OrbitalPanopticon.Core
                 }
             }
 
-            // Load sprites if needed
-            if (slideIllustrations == null || slideIllustrations.Length < 4 || slideIllustrations[0] == null)
-            {
-                slideIllustrations = new Sprite[4];
-                for (int i = 0; i < 4; i++)
-                {
-                    slideIllustrations[i] = Resources.Load<Sprite>($"Tutorial/Tutorial_Slide_{i + 1}");
-#if UNITY_EDITOR
-                    if (slideIllustrations[i] == null)
-                    {
-                        slideIllustrations[i] = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>($"Assets/_Project/Textures/UI/Tutorial/Tutorial_Slide_{i + 1}.png");
-                    }
-#endif
-                }
-            }
+            // Ensure all slide sprites (Default, RU, EN) are loaded
+            EnsureSpritesLoaded();
 
             // 1. Root TutorialWindowPanel (Fullscreen Dimmer Backdrop)
             if (tutorialWindowPanel == null)

@@ -63,7 +63,7 @@ namespace OrbitalPanopticon.Core
             { "TUT_Next", ("ДАЛЕЕ >", "NEXT >") },
             { "TUT_Start", ("НАЧАТЬ ИГРУ", "START GAME") },
             { "TUT_Slide1_Title", ("Управление", "Controls") },
-            { "TUT_Slide1_Desc", ("[WASD] — движение\n[Space] — экстренный тормоз\n[Shift] — рывок", "[WASD] — movement\n[Space] — emergency brake\n[Shift] — dash") },
+            { "TUT_Slide1_Desc", ("[WASD] — движение\n[Shift] — рывок\n[Space] — торможение", "[WASD] — movement\n[Shift] — dash\n[Space] — braking") },
             { "TUT_Slide2_Title", ("Сбор ресурсов", "Resource Gathering") },
             { "TUT_Slide2_Desc", ("Держать [ПКМ] — схватить мусор\n[ЛКМ] — кинуть в Черную дыру (растит массу)\nСветящийся мусор дает больше массы и монет.", "Hold [RMB] — grab debris\n[LMB] — throw into the Black Hole (increases mass)\nGlowing debris yields more mass and coins.") },
             { "TUT_Slide3_Title", ("Цель", "Objective") },
