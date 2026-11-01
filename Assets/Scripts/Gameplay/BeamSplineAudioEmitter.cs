@@ -3,6 +3,7 @@ using UnityEngine;
 using FMODUnity;
 using FMOD.Studio;
 using OrbitalPanopticon.Player;
+using STOP_MODE = FMOD.Studio.STOP_MODE;
 
 namespace OrbitalPanopticon.Gameplay
 {
@@ -34,7 +35,7 @@ namespace OrbitalPanopticon.Gameplay
         /// </summary>
         public void StartLoop(EventReference eventRef, Vector3 startPos, Vector3 endPos)
         {
-            StopLoop(STOP_MODE.IMMEDIATE);
+            StopLoop(FMOD.Studio.STOP_MODE.IMMEDIATE);
 
             if (eventRef.IsNull || !RuntimeManager.HaveAllBanksLoaded) return;
 
@@ -120,7 +121,7 @@ namespace OrbitalPanopticon.Gameplay
         /// <summary>
         /// Stops the looping beam audio with the requested stop mode (default: ALLOWFADEOUT) and releases the handle.
         /// </summary>
-        public void StopLoop(STOP_MODE stopMode = STOP_MODE.ALLOWFADEOUT)
+        public void StopLoop(FMOD.Studio.STOP_MODE stopMode = FMOD.Studio.STOP_MODE.ALLOWFADEOUT)
         {
             if (_beamLoopInstance.isValid())
             {
@@ -205,12 +206,12 @@ namespace OrbitalPanopticon.Gameplay
 
         private void OnDisable()
         {
-            StopLoop(STOP_MODE.IMMEDIATE);
+            StopLoop(FMOD.Studio.STOP_MODE.IMMEDIATE);
         }
 
         private void OnDestroy()
         {
-            StopLoop(STOP_MODE.IMMEDIATE);
+            StopLoop(FMOD.Studio.STOP_MODE.IMMEDIATE);
         }
 
 #if UNITY_EDITOR
