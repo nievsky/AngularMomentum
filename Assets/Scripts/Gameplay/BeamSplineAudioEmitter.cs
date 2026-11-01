@@ -37,11 +37,24 @@ namespace OrbitalPanopticon.Gameplay
         {
             StopLoop(FMOD.Studio.STOP_MODE.IMMEDIATE);
 
-            if (eventRef.IsNull || !RuntimeManager.HaveAllBanksLoaded) return;
+            if (!RuntimeManager.HaveAllBanksLoaded)
+            {
+                Debug.LogWarning("[BeamSplineAudioEmitter] Banks not yet loaded, cannot start beam loop.");
+                return;
+            }
 
             try
             {
-                _beamLoopInstance = RuntimeManager.CreateInstance(eventRef);
+                if (!eventRef.IsNull)
+                {
+                    _beamLoopInstance = RuntimeManager.CreateInstance(eventRef);
+                }
+
+                if (!_beamLoopInstance.isValid())
+                {
+                    _beamLoopInstance = RuntimeManager.CreateInstance("event:/Boss/Overseer_BeamLoop");
+                }
+
                 if (_beamLoopInstance.isValid())
                 {
                     Vector3 closest = GetClosestPoint(startPos, endPos, GetListenerPosition());
@@ -51,6 +64,10 @@ namespace OrbitalPanopticon.Gameplay
                     _beamLoopInstance.set3DAttributes(RuntimeUtils.To3DAttributes(closest));
                     _beamLoopInstance.start();
                     _isPlaying = true;
+                }
+                else
+                {
+                    Debug.LogWarning("[BeamSplineAudioEmitter] Failed to create event instance for Overseer_BeamLoop (neither Guid nor Path resolved).");
                 }
             }
             catch (Exception ex)

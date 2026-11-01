@@ -757,6 +757,7 @@ namespace OrbitalPanopticon.Gameplay
             }
 
             // 2. Start continuous 3D beam loop tracking along the beam rail
+            if (beamAudioEmitter == null) beamAudioEmitter = GetComponent<BeamSplineAudioEmitter>() ?? gameObject.AddComponent<BeamSplineAudioEmitter>();
             if (beamAudioEmitter != null)
             {
                 EventReference loopRef = (FMODAudioManager.Instance != null && FMODAudioManager.Instance.Config != null)

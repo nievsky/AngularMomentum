@@ -161,11 +161,11 @@ MonoBehaviour:
     Path: event:/Player/Thruster_Loop
   shiftDashOneShot:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -590785909
+      Data2: 1101236009
+      Data3: -1843988332
+      Data4: -277249955
+    Path: event:/Player/Thruster_Boost
   gravityGunHoldLoop:
     Guid:
       Data1: -628893757

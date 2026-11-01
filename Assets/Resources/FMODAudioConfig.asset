@@ -94,6 +94,20 @@ MonoBehaviour:
       Data3: -17583228
       Data4: 1076307175
     Path: event:/Player/Beam_Shock
+  overseerBeamAttackOneShot:
+    Guid:
+      Data1: 1111477683
+      Data2: 1081840932
+      Data3: 2014428841
+      Data4: 1889853342
+    Path: event:/Boss/Overseer_BeamAttack
+  overseerBeamLoop:
+    Guid:
+      Data1: 1846008426
+      Data2: 1078908951
+      Data3: 855107259
+      Data4: -1507346751
+    Path: event:/Boss/Overseer_BeamLoop
   overseerIdleOneShot:
     Guid:
       Data1: 56212931
@@ -147,11 +161,11 @@ MonoBehaviour:
     Path: event:/Player/Thruster_Loop
   shiftDashOneShot:
     Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
+      Data1: -590785909
+      Data2: 1101236009
+      Data3: -1843988332
+      Data4: -277249955
+    Path: event:/Player/Thruster_Boost
   gravityGunHoldLoop:
     Guid:
       Data1: -628893757

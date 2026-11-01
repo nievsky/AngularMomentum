@@ -435,7 +435,8 @@ namespace OrbitalPanopticon.Player
             float impulse = config != null ? config.dashImpulse : 22f;
             float duration = config != null ? config.dashDuration : 0.22f;
 
-            if (keyboard.leftShiftKey.wasPressedThisFrame && Time.time - _lastDashTime >= cooldown)
+            bool shiftPressed = (keyboard.leftShiftKey != null && keyboard.leftShiftKey.wasPressedThisFrame) || (keyboard.rightShiftKey != null && keyboard.rightShiftKey.wasPressedThisFrame);
+            if (shiftPressed && Time.time - _lastDashTime >= cooldown)
             {
                 Transform camTransform = mainCamera != null ? mainCamera.transform : transform;
                 Vector3 camForward = camTransform.forward;

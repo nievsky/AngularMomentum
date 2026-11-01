@@ -616,7 +616,14 @@ namespace OrbitalPanopticon.Core
 
         public void PlayShiftDash(Vector3 position)
         {
-            if (audioConfig != null) PlayOneShot(audioConfig.shiftDashOneShot, position);
+            EventReference eventRef = (audioConfig != null && !audioConfig.shiftDashOneShot.IsNull)
+                ? audioConfig.shiftDashOneShot
+                : RuntimeManager.PathToEventReference("event:/Player/Thruster_Boost");
+
+            if (!eventRef.IsNull)
+            {
+                PlayOneShot(eventRef, position);
+            }
         }
 
         public void PlayGravityGunPunt(Vector3 position)
