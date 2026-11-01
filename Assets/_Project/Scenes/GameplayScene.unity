@@ -8265,6 +8265,16 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 4f759b6cee7e47fb9e28adfd9ce40fb3, type: 3}
   - {fileID: 21300000, guid: 321c91709a31498d90bb1e9baf36db5a, type: 3}
   - {fileID: 21300000, guid: 6df12ff28b464caeb2b3346e7c0b1c8c, type: 3}
+  slideIllustrationsRU:
+  - {fileID: 21300000, guid: 6216706a218049e7bf1d702d0e66691e, type: 3}
+  - {fileID: 21300000, guid: e7d55fee3c9e4630bd58b2a2efe4d3bf, type: 3}
+  - {fileID: 21300000, guid: 7d0072d37c454e969c287c734f33f91c, type: 3}
+  - {fileID: 21300000, guid: 7493b059bc284b28befafff3e1dd418b, type: 3}
+  slideIllustrationsEN:
+  - {fileID: 21300000, guid: 8b82b11d360f4f60a3756c7d9e4707a2, type: 3}
+  - {fileID: 21300000, guid: 56dd5b45afaa480688308585f0d4d9d7, type: 3}
+  - {fileID: 21300000, guid: f520c18717614412b8c6f0777cebbba9, type: 3}
+  - {fileID: 21300000, guid: 7525ff660c8f4bc5b44ebebeae6e03a4, type: 3}
   tutorialFont: {fileID: 11400000, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
   navBarPanel: {fileID: 399452090}
   prevButton: {fileID: 395406012}
@@ -19561,7 +19571,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: a2bf02de07154a9694915dcef7003bfc, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 6216706a218049e7bf1d702d0e66691e, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
