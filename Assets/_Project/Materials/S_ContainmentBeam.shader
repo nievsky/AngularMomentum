@@ -3,8 +3,8 @@ Shader "OrbitalPanopticon/ContainmentBeam"
     Properties
     {
         [Header(Beam Colors)]
-        [HDR] _CoreColor ("Core Color (HDR White-Cyan)", Color) = (2.0, 7.5, 9.5, 1.0)
-        [HDR] _GlowColor ("Glow Color (HDR Deep Cyan)", Color) = (0.2, 3.5, 6.0, 1.0)
+        [HDR] _CoreColor ("Core Color (HDR Fiery Yellow/White)", Color) = (8.0, 5.5, 1.5, 1.0)
+        [HDR] _GlowColor ("Glow Color (HDR Fiery Yellow/Orange)", Color) = (8.0, 3.2, 0.5, 1.0)
 
         [Header(Animation)]
         _ScrollSpeed ("Plasma Scroll Speed", Range(0.5, 20.0)) = 5.0

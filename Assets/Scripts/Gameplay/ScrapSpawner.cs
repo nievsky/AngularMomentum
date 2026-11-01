@@ -17,8 +17,8 @@ namespace OrbitalPanopticon.Gameplay
         [Header("Spawn Boundaries")]
         [Tooltip("Center of the orbital arena (black hole center). Defaults to Vector3.zero.")]
         [SerializeField] private Transform centerTransform;
-        [SerializeField] private float minSpawnRadius = 18f;
-        [SerializeField] private float maxSpawnRadius = 38f;
+        [SerializeField] private float minSpawnRadius = 24f;
+        [SerializeField] private float maxSpawnRadius = 100f;
 
         [Header("Spawn Dynamics")]
         [SerializeField] private int maxActiveScrap = 40;
@@ -157,7 +157,9 @@ namespace OrbitalPanopticon.Gameplay
             // Calculate position in spherical shell
             Vector3 center = centerTransform != null ? centerTransform.position : Vector3.zero;
             Vector3 radialDir = Random.onUnitSphere;
-            float spawnRadius = Random.Range(minSpawnRadius, maxSpawnRadius);
+            float minR = config != null ? config.minSpawnRadius : minSpawnRadius;
+            float maxR = config != null ? config.maxSpawnRadius : maxSpawnRadius;
+            float spawnRadius = Random.Range(minR, maxR);
             Vector3 spawnPosition = center + (radialDir * spawnRadius);
 
             // Compute tangential orbital velocity

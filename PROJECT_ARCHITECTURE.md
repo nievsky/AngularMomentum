@@ -1083,11 +1083,17 @@ All runtime singletons implement a strict three-tier lookup: Serialized Referenc
   - Implemented `SetVisualAlpha(float alpha)` with state tracking via `_isTransparentMode`:
     - When `alpha < 0.98f`: Material instances switch to `renderQueue = 3000` (`Transparent`), `_SrcBlend = SrcAlpha (5)`, `_DstBlend = OneMinusSrcAlpha (10)`, and `_ZWrite = 0`.
     - When `alpha >= 0.99f`: Material instances restore to `renderQueue = 2000` (`Geometry`), `_SrcBlend = One (1)`, `_DstBlend = Zero (0)`, and `_ZWrite = 1`.
-- **Containment Beam Event Horizon Masking & Lensing** ([`OverseerContainmentEye.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Gameplay/OverseerContainmentEye.cs)):
-  - **Elimination of Visual Gap**: Previously, `containmentBeam.SetPosition(1, ...)` stopped at `currentEventHorizonRadius`, creating an angle-dependent visible gap between the beam tips and the black hole core. Beams now extend strictly to `blackHoleCenter` `(0, 0, 0)`.
-  - **Beam Rendering at Queue 2450** ([`S_ContainmentBeam.shader`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/Materials/S_ContainmentBeam.shader) & [`M_ContainmentBeam.mat`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/Materials/M_ContainmentBeam.mat)):
+- **Containment Beam Event Horizon Masking, Fiery HDR Color & Persistent Rendering** ([`OverseerContainmentEye.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Gameplay/OverseerContainmentEye.cs)):
+  - **Elimination of Visual Gap**: `containmentBeam.SetPosition(1, ...)` extends strictly to `blackHoleCenter` `(0, 0, 0)`.
+  - **Fiery Yellow/Orange HDR Palette**:
+    - Material [`M_ContainmentBeam.mat`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/Materials/M_ContainmentBeam.mat) and shader [`S_ContainmentBeam.shader`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/Materials/S_ContainmentBeam.shader) utilize `[HDR] _CoreColor = (8.0, 5.5, 1.5, 1.0)` (blazing white-gold core) and `[HDR] _GlowColor = (8.0, 3.2, 0.5, 1.0)` (fiery amber-orange outer glow).
+    - LineRenderer gradient configured with warm golden-white to fiery orange keys `(1.0, 0.95, 0.7) -> (1.0, 0.55, 0.15)`, eliminating all blue/cyan tints.
+  - **Elimination of Dynamic Culling & Flickering**:
+    - Set `containmentBeam.allowOcclusionWhenDynamic = false`, `shadowCastingMode = Off`, `receiveShadows = false`, and `alignment = LineAlignment.View`, preventing Unity's occlusion culling from turning off the beam when the camera pivots or when the Eye enters occluded frustum bounds.
+    - Explicitly updates positions every frame in `Update()` (as well as `LateUpdate()`): `lineRenderer.SetPosition(0, EyeLensTransform.position)` and `lineRenderer.SetPosition(1, blackHoleCenter)`.
+  - **Beam Rendering at Queue 2450**:
     - Configured with `"Queue"="Geometry+450"` (`2450`), `Blend One One` (Additive), `ZWrite Off`, and `ZTest LEqual`.
-    - Renders right before `_CameraOpaqueTexture` is captured at 2500, allowing its light to be captured and refracted into the Black Hole's photon ring at queue 2900.
+    - Renders right before `_CameraOpaqueTexture` is captured at 2500, allowing its fiery light to be captured and refracted into the Black Hole's photon ring at queue 2900.
     - Inside the event horizon, the 3D depth-writing sphere `EventHorizonBlackCoreSphere` (queue 2950, `ZWrite On`) cleanly masks out the beam tips entering the center, producing a gap-free visual transition where beams plunge directly into the singularity.
 
 ### 7.13 Minimalist "Numbers Go Up" Mass Counter & Bilingual Credits Text Architecture
@@ -1116,3 +1122,30 @@ All runtime singletons implement a strict three-tier lookup: Serialized Referenc
   - Wired directly to `StarWarsCrawlController` in `CreditsScene.unity` with automatic fallback to `Resources.Load<CreditsContentConfigSO>("CreditsContentConfig")` for standalone builds.
 
 
+### 7.14 Expanded Arena Scale, Boundary Dynamics & Deep Space Orbit Topology
+- **Doubled Arena & Safe Zone Radius** ([`GameBalanceConfig.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/GameBalanceConfig.cs), [`GameBalanceConfig.asset`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/ScriptableObjects/GameBalanceConfig.asset)):
+  - Doubled the playable cosmic arena bounds:
+    - `safeZoneRadius` (aliased to `arenaSafeRadius`): expanded from `60f` to **`120f`** (slider range `[30f, 180f]`).
+    - `arenaMaxRadius`: expanded from `70f` to **`140f`** (slider range `[35f, 220f]`).
+  - Updated fallback defaults in [`ArenaBoundaryManager.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Gameplay/ArenaBoundaryManager.cs) to `120f` / `140f`, with hard boundary escape ejection threshold updated to `arenaMaxRadius + 15f` (`155f`).
+- **Overseer Orbit & Laser Beam Coverage Expansion**:
+  - `overseerOrbitRadius` in `GameBalanceConfig` scaled proportionally from `78.0f` to **`155.0f`**, positioning the 4 Corporate Overseer Eyes far along the cosmic perimeter outside the maximum player movement bounds.
+  - In [`OverseerContainmentEye.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Gameplay/OverseerContainmentEye.cs): Red sweeping laser beam reach dynamically computes `beamReach = overseerOrbitRadius * 2.2f` (`341m`, previously hardcoded to `160f`), guaranteeing that the perimeter surveillance lasers sweep seamlessly across the entire expanded `310m` arena diameter.
+- **Debris Field & Autonomous Helper Bot Spatial Distribution**:
+  - Expanded debris spawn shell in [`ScrapSpawner.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Gameplay/ScrapSpawner.cs) and `GameBalanceConfig`: `minSpawnRadius = 24f` (range `[10f, 60f]`) and `maxSpawnRadius = 100f` (range `[25f, 130f]`).
+  - Active debris populates radial distances between `24m` and `100m`, providing a broad orbital cloud inside the `120m` safe perimeter while leaving the inner accretion zone (`0` - `24m`) clear for high-speed slingshots.
+  - [`HelperDroneManager.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Gameplay/HelperDroneManager.cs) and [`HelperDroneBot.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Gameplay/HelperDroneBot.cs) automatically sample `config.maxSpawnRadius` for spawn and patrol generation, seamlessly extending autonomous retrieval coverage across the doubled play volume.
+  - Dynamic audio scaling in [`FMODAudioManager.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Audio/FMODAudioManager.cs) and surveillance tracking in [`DynamicSurveillanceCamera.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/UI/DynamicSurveillanceCamera.cs) automatically bind to the updated `config.arenaMaxRadius` (`140f`).
+
+### 7.15 Minimalist Scrap Coins UI & Juicy "Numbers Go Up" Pop Animation
+- **Frameless 2-Element Horizontal Currency Layout** ([`UIManager.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/UIManager.cs), [`GameplayScene.unity`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/Scenes/GameplayScene.unity)):
+  - **Eliminated UI Box Borders & Clutter**: Removed the dark backing panel (`Image`), cyan outline border (`Outline`), and legacy text labels (`"SCRAP COINS:"` / `"ЛОМ-МОНЕТЫ:"`).
+  - **Clean Frameless Container**: Container `Panel_ScrapCoins` anchored to top-right corner `(-40, -36)` with pivot `(1, 1)` uses `HorizontalLayoutGroup` (`spacing = 10`, `childAlignment = MiddleRight`) and `ContentSizeFitter` (`horizontalFit = PreferredSize`). As coins accumulate, the container expands smoothly leftward into the screen without crossing screen boundaries.
+  - **Two Clean Elements**:
+    1. **Coins Icon (`Image` component)**: `Icon_Coins` with 32x32 size, `preserveAspect = true`, displaying the golden coin icon loaded directly from `Assets/_Project/Art/Sprites/coins.png` (with fallback to `Assets/Sprites/coins.png` and `Assets/Resources/coins.png`).
+    2. **Coins Number (`TextMeshProUGUI`)**: `Text_Coins` with bold 24pt text in warm gold (`#FFE040`) displaying strictly the raw number (`0`, `45`, `1,250`, `84,500`), aligned left immediately adjacent to the coin icon.
+- **Juicy "Numbers Go Up" DOTween Currency Animation**:
+  - **Rolling Digits**: On coin gain, rolls `_displayedCoinsValue` smoothly from old value to new value over `0.35s` via `DOTween.To(...)` with `Ease.OutQuad`.
+  - **Container Scale Punch**: Triggers `coinsContainer.DOScale(Vector3.one * 1.35f, 0.2f).SetLoops(2, LoopType.Yoyo).SetUpdate(true)` on the parent container, popping both the icon and the number simultaneously and resetting to `Vector3.one` upon completion.
+  - **Dual Event & Frame Detection**: Subscribes directly to `QuotaAndScoreManager.OnScoreAdded` for instantaneous reaction while maintaining frame-by-frame polling in `UpdateHUD()`.
+  - **Death Penalty Red Punch**: When coins are lost on player hazard/boundary death, triggers `TriggerScrapCoinsLossPunch()` with a sharp red flash (`#FF2626` $\rightarrow$ `#FFE040` over 0.5s) and `DOPunchScale(0.25f, 0.35f)`.

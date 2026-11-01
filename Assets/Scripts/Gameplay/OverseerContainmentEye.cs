@@ -24,8 +24,8 @@ namespace OrbitalPanopticon.Gameplay
 
         [Header("Containment Beam (100% Visual Only)")]
         [SerializeField] private LineRenderer containmentBeam;
-        [SerializeField] private Color beamColorCore = new Color(0.15f, 0.95f, 1f, 0.95f);
-        [SerializeField] private Color beamColorGlow = new Color(0.05f, 0.7f, 1f, 0.75f);
+        [ColorUsage(true, true)] [SerializeField] private Color beamColorCore = new Color(8.0f, 5.5f, 1.5f, 1.0f);
+        [ColorUsage(true, true)] [SerializeField] private Color beamColorGlow = new Color(8.0f, 3.2f, 0.5f, 1.0f);
         [SerializeField] private float beamStartWidth = 0.55f;
         [SerializeField] private float beamEndWidth = 0.2f;
 
@@ -95,6 +95,16 @@ namespace OrbitalPanopticon.Gameplay
         public string EyeName => eyeName;
         public bool IsLockBroken => isLockBroken;
         public bool IsActiveLock => !isLockBroken;
+
+        public Transform EyeLensTransform
+        {
+            get
+            {
+                if (pupilLight != null) return pupilLight.transform;
+                if (pupilRenderer != null) return pupilRenderer.transform;
+                return transform;
+            }
+        }
 
         public Vector3 PupilPosition
         {
@@ -393,8 +403,10 @@ namespace OrbitalPanopticon.Gameplay
             containmentBeam.startWidth = beamStartWidth;
             containmentBeam.endWidth = beamEndWidth;
             containmentBeam.useWorldSpace = true;
+            containmentBeam.allowOcclusionWhenDynamic = false;
             containmentBeam.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             containmentBeam.receiveShadows = false;
+            containmentBeam.alignment = LineAlignment.View;
 
             Material lineMat = null;
 #if UNITY_EDITOR
@@ -409,18 +421,20 @@ namespace OrbitalPanopticon.Gameplay
             if (lineMat != null)
             {
                 lineMat.renderQueue = 2450;
+                lineMat.SetColor("_CoreColor", beamColorCore);
+                lineMat.SetColor("_GlowColor", beamColorGlow);
                 containmentBeam.sharedMaterial = lineMat;
             }
 
             Gradient grad = new Gradient();
             grad.SetKeys(
                 new GradientColorKey[] {
-                    new GradientColorKey(beamColorCore, 0.0f),
-                    new GradientColorKey(beamColorGlow, 1.0f)
+                    new GradientColorKey(new Color(1.0f, 0.95f, 0.7f), 0.0f),
+                    new GradientColorKey(new Color(1.0f, 0.55f, 0.15f), 1.0f)
                 },
                 new GradientAlphaKey[] {
-                    new GradientAlphaKey(0.95f, 0.0f),
-                    new GradientAlphaKey(0.85f, 1.0f)
+                    new GradientAlphaKey(1.0f, 0.0f),
+                    new GradientAlphaKey(0.9f, 1.0f)
                 }
             );
             containmentBeam.colorGradient = grad;
@@ -508,6 +522,9 @@ namespace OrbitalPanopticon.Gameplay
 
             LookTowardCenterAndPlayer();
             AnimatePupil();
+
+            // Explicitly update containment beam every frame without conditional skipping
+            UpdateContainmentBeam();
         }
 
         private void CheckBeamPlayerHazard()
@@ -707,8 +724,9 @@ namespace OrbitalPanopticon.Gameplay
                 redSweepingLaserBeam.startColor = new Color(1f, 0.15f, 0.15f, 0.35f);
                 redSweepingLaserBeam.endColor = new Color(1f, 0.15f, 0.15f, 0.35f);
                 Vector3 startSweepDir = Quaternion.AngleAxis(startAngle, sweepAxis) * eyeToCenter;
+                float beamReach = (config != null ? config.overseerOrbitRadius * 2.2f : 350f);
                 redSweepingLaserBeam.SetPosition(0, PupilPosition);
-                redSweepingLaserBeam.SetPosition(1, PupilPosition + (startSweepDir * 160f));
+                redSweepingLaserBeam.SetPosition(1, PupilPosition + (startSweepDir * beamReach));
                 redSweepingLaserBeam.enabled = true;
             }
 
@@ -778,8 +796,9 @@ namespace OrbitalPanopticon.Gameplay
                 float currentAngle = Mathf.Lerp(startAngle, endAngle, smoothT);
                 Vector3 currentSweepDir = Quaternion.AngleAxis(currentAngle, sweepAxis) * eyeToCenter;
 
+                float beamReach = (config != null ? config.overseerOrbitRadius * 2.2f : 350f);
                 Vector3 beamStart = PupilPosition;
-                Vector3 beamEnd = beamStart + (currentSweepDir * 160f);
+                Vector3 beamEnd = beamStart + (currentSweepDir * beamReach);
 
                 if (redSweepingLaserBeam != null)
                 {
@@ -868,7 +887,7 @@ namespace OrbitalPanopticon.Gameplay
         {
             if (containmentBeam == null) return;
 
-            if (isLockBroken)
+            if (isLockBroken || isConsumedOrCollapsing)
             {
                 if (containmentBeam.enabled) containmentBeam.enabled = false;
                 return;
@@ -876,7 +895,8 @@ namespace OrbitalPanopticon.Gameplay
 
             if (!containmentBeam.enabled) containmentBeam.enabled = true;
 
-            Vector3 eyeLensPos = PupilPosition;
+            Transform eyeLens = EyeLensTransform;
+            Vector3 eyeLensPos = eyeLens != null ? eyeLens.position : PupilPosition;
             Vector3 blackHoleCenter = centerReference != null ? centerReference.position : Vector3.zero;
 
             containmentBeam.SetPosition(0, eyeLensPos);

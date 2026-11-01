@@ -16,8 +16,8 @@ MonoBehaviour:
   globalSimulationSpeed: 0.5
   enableNarrativeComms: 0
   clockwiseOrbit: 1
-  accretionThresholdRadius: 15.3312
-  eventHorizonRadius: 3.64704
+  accretionThresholdRadius: 18.0912
+  eventHorizonRadius: 5.0390396
   outerZoneDriftSpeed: 2.2
   outerZoneOrbitSpring: 1.5
   innerMinSwirlSpeed: 16
@@ -36,7 +36,7 @@ MonoBehaviour:
   orbitalGuidanceStrength: 2.5
   inwardSpiralDecay: 0.85
   maxSafeVelocity: 45
-  deathScrapCoinPenalty: 100
+  deathScrapCoinPenalty: 1000
   mouseSensitivity: 1.8
   baseThrusterAcceleration: 7.5
   verticalThrusterAcceleration: 6
@@ -49,7 +49,7 @@ MonoBehaviour:
   dashDuration: 0.22
   dashCooldown: 0.9
   isMagnetUnlocked: 0
-  grabRangeBase: 6
+  grabRangeBase: 10
   magnetPullRange: 18
   magnetConeAngle: 25
   magnetPullForce: 50
@@ -61,12 +61,12 @@ MonoBehaviour:
   maxHeldObjects: 3
   heldObjectAlpha: 0.42
   heldClusterRadius: 0.85
-  maxActiveScrap: 50
+  maxActiveScrap: 150
   scrapSpawnInterval: 1
-  minSpawnRadius: 16
-  maxSpawnRadius: 38
-  arenaSafeRadius: 60
-  arenaMaxRadius: 70
+  minSpawnRadius: 24
+  maxSpawnRadius: 80
+  arenaSafeRadius: 110
+  arenaMaxRadius: 140
   outOfBoundsWarningTime: 3
   scrapFadeOutDuration: 1.8
   cameraObservedMultiplier: 3
@@ -80,7 +80,7 @@ MonoBehaviour:
   baseQuotaTarget: 500
   quotaGrowthMultiplier: 1.75
   heatDecayDelay: 4.5
-  fixedHelperRobotPrice: 500
+  fixedHelperRobotPrice: 10000
   heatFillRateMultiplier: 1
   unlockedScrapTier: 1
   cameraGraviFlashUnlocked: 0
@@ -95,8 +95,8 @@ MonoBehaviour:
   stageMassTargets:
   - 1000
   - 10000
+  - 100000
   - 1000000
-  - 100000000
   stageBlackHoleScales:
   - 6
   - 10
@@ -116,7 +116,7 @@ MonoBehaviour:
   valuableScrapMultiplier: 3
   quantumDecayUnlocked: 0
   showAccretionDisk: 0
-  overseerOrbitRadius: 100
+  overseerOrbitRadius: 155
   overseerVisualScale: 9
   overseerOrbitAngularSpeed: 8
   overseerOrbitAxes:
