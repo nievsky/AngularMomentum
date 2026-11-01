@@ -88,8 +88,45 @@ namespace OrbitalPanopticon.Core
             {
                 PopulateDefaultNodes();
             }
+            else
+            {
+                SyncMissingNodeDescriptions();
+            }
 
             BuildNodeMap();
+        }
+
+        private void SyncMissingNodeDescriptions()
+        {
+            if (nodes == null || nodes.Count == 0) return;
+
+            var defaultList = new List<UpgradeNodeData>();
+            var prevList = nodes;
+            nodes = defaultList;
+            PopulateDefaultNodes();
+            nodes = prevList;
+
+            var defaultMap = new Dictionary<string, UpgradeNodeData>();
+            for (int i = 0; i < defaultList.Count; i++)
+            {
+                if (defaultList[i] != null && !string.IsNullOrEmpty(defaultList[i].nodeId))
+                {
+                    defaultMap[defaultList[i].nodeId] = defaultList[i];
+                }
+            }
+
+            for (int i = 0; i < nodes.Count; i++)
+            {
+                var n = nodes[i];
+                if (n == null || string.IsNullOrEmpty(n.nodeId)) continue;
+                if (defaultMap.TryGetValue(n.nodeId, out var def))
+                {
+                    if (string.IsNullOrEmpty(n.titleEN)) n.titleEN = def.titleEN;
+                    if (string.IsNullOrEmpty(n.titleRU)) n.titleRU = def.titleRU;
+                    if (string.IsNullOrEmpty(n.descriptionRU)) n.descriptionRU = def.descriptionRU;
+                    if (string.IsNullOrEmpty(n.descriptionEN)) n.descriptionEN = def.descriptionEN;
+                }
+            }
         }
 
         private bool HasEnergyBranch()

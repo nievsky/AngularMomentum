@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
+using UnityEngine.EventSystems;
 using TMPro;
 using DG.Tweening;
 
@@ -37,6 +38,19 @@ namespace OrbitalPanopticon.Core
         private CanvasGroup _canvasGroup;
         private Tweener _fadeTween;
         private bool _isInitialized = false;
+
+        [Header("Tooltip Runtime Fields")]
+        private GameObject _tooltipRoot;
+        private RectTransform _tooltipRect;
+        private CanvasGroup _tooltipCanvasGroup;
+        private Outline _tooltipOutline;
+        private TextMeshProUGUI _tooltipTitleText;
+        private TextMeshProUGUI _tooltipBadgeText;
+        private TextMeshProUGUI _tooltipDescText;
+        private TextMeshProUGUI _tooltipCostText;
+        private UpgradeNodeData _currentHoveredNode;
+        private bool _isHoveringRobotButton;
+        private bool _isHoveringResetButton;
 
         private class NodeUIElement
         {
@@ -115,6 +129,11 @@ namespace OrbitalPanopticon.Core
                     SetTreeOpen(false);
                 }
             }
+
+            if (UpgradeTreeManager.IsTreeOpen && _tooltipCanvasGroup != null && _tooltipCanvasGroup.alpha > 0.005f)
+            {
+                UpdateTooltipPosition();
+            }
         }
 
         public void ToggleTree()
@@ -167,6 +186,9 @@ namespace OrbitalPanopticon.Core
                 Time.timeScale = 1f;
                 Cursor.lockState = CursorLockMode.Locked;
                 Cursor.visible = false;
+
+                HideTooltip();
+                if (_tooltipCanvasGroup != null) _tooltipCanvasGroup.alpha = 0f;
 
                 if (_canvasGroup != null)
                 {
@@ -273,6 +295,7 @@ namespace OrbitalPanopticon.Core
             BuildNodeButtons();
             BuildRobotPurchaseButton();
             BuildResetCameraButton();
+            BuildTooltip();
 
             // Wire font applier to new hierarchy
             GlobalFontApplier.ApplyTo(panelRoot);
@@ -545,6 +568,10 @@ namespace OrbitalPanopticon.Core
             string capturedId = node.nodeId;
             btn.onClick.AddListener(() => OnNodeClicked(capturedId));
 
+            // Tooltip hover trigger
+            var hoverTrigger = nodeGo.AddComponent<UpgradeNodeHoverTrigger>();
+            hoverTrigger.Node = node;
+
             // Label
             GameObject labelGo = new GameObject("Text_Label", typeof(RectTransform), typeof(TextMeshProUGUI));
             labelGo.transform.SetParent(nodeGo.transform, false);
@@ -606,6 +633,9 @@ namespace OrbitalPanopticon.Core
 
             Button btn = robotGo.GetComponent<Button>();
             btn.onClick.AddListener(OnBuyRobotClicked);
+
+            var hoverTrigger = robotGo.AddComponent<UpgradeNodeHoverTrigger>();
+            hoverTrigger.IsRobotButton = true;
 
             GameObject labelGo = new GameObject("Text_Label", typeof(RectTransform), typeof(TextMeshProUGUI));
             labelGo.transform.SetParent(robotGo.transform, false);
@@ -669,6 +699,9 @@ namespace OrbitalPanopticon.Core
                     viewportController.ResetView();
                 }
             });
+
+            var hoverTrigger = resetGo.AddComponent<UpgradeNodeHoverTrigger>();
+            hoverTrigger.IsResetButton = true;
 
             GameObject labelGo = new GameObject("Text_Label", typeof(RectTransform), typeof(TextMeshProUGUI));
             labelGo.transform.SetParent(resetGo.transform, false);
@@ -764,6 +797,15 @@ namespace OrbitalPanopticon.Core
             RefreshNodeVisuals();
             RefreshLineVisuals();
             RefreshRobotButton();
+
+            if (_currentHoveredNode != null)
+            {
+                ShowNodeTooltip(_currentHoveredNode);
+            }
+            else if (_isHoveringRobotButton)
+            {
+                ShowRobotTooltip();
+            }
         }
 
         private void RefreshCurrencyText()
@@ -884,6 +926,385 @@ namespace OrbitalPanopticon.Core
             _robotButtonElement.label.text = LocalizationManager.Get("TREE_BuyRobot", costColor, cost, robots);
             _robotButtonElement.button.interactable = canAfford;
             _robotButtonElement.animator?.RefreshBaseColors();
+        }
+
+        #region Tooltip Implementation
+
+        private void BuildTooltip()
+        {
+            if (panelRoot == null) return;
+
+            Transform existing = panelRoot.transform.Find("UpgradeTree_Tooltip");
+            if (existing != null)
+            {
+                Destroy(existing.gameObject);
+            }
+
+            _tooltipRoot = new GameObject("UpgradeTree_Tooltip", typeof(RectTransform), typeof(CanvasGroup), typeof(Image), typeof(Outline), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
+            _tooltipRoot.transform.SetParent(panelRoot.transform, false);
+
+            _tooltipRect = _tooltipRoot.GetComponent<RectTransform>();
+            _tooltipRect.anchorMin = new Vector2(0.5f, 0.5f);
+            _tooltipRect.anchorMax = new Vector2(0.5f, 0.5f);
+            _tooltipRect.pivot = new Vector2(0f, 1f);
+            _tooltipRect.sizeDelta = new Vector2(300f, 0f);
+
+            _tooltipCanvasGroup = _tooltipRoot.GetComponent<CanvasGroup>();
+            _tooltipCanvasGroup.alpha = 0f;
+            _tooltipCanvasGroup.blocksRaycasts = false;
+            _tooltipCanvasGroup.interactable = false;
+
+            var bg = _tooltipRoot.GetComponent<Image>();
+            bg.color = new Color(0.04f, 0.06f, 0.10f, 0.97f);
+
+            _tooltipOutline = _tooltipRoot.GetComponent<Outline>();
+            _tooltipOutline.effectDistance = new Vector2(2f, -2f);
+            _tooltipOutline.effectColor = standardOutlineColor;
+
+            VerticalLayoutGroup layout = _tooltipRoot.GetComponent<VerticalLayoutGroup>();
+            layout.padding = new RectOffset(14, 14, 12, 12);
+            layout.spacing = 5;
+            layout.childControlWidth = true;
+            layout.childControlHeight = true;
+            layout.childForceExpandWidth = true;
+            layout.childForceExpandHeight = false;
+
+            ContentSizeFitter fitter = _tooltipRoot.GetComponent<ContentSizeFitter>();
+            fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            // 1. Title
+            GameObject titleGo = new GameObject("Text_Title", typeof(RectTransform), typeof(TextMeshProUGUI));
+            titleGo.transform.SetParent(_tooltipRoot.transform, false);
+            _tooltipTitleText = titleGo.GetComponent<TextMeshProUGUI>();
+            _tooltipTitleText.fontSize = 15;
+            _tooltipTitleText.fontStyle = FontStyles.Bold;
+            _tooltipTitleText.color = Color.white;
+            _tooltipTitleText.textWrappingMode = TextWrappingModes.Normal;
+            _tooltipTitleText.raycastTarget = false;
+
+            // 2. Badge (Branch + Status)
+            GameObject badgeGo = new GameObject("Text_Badge", typeof(RectTransform), typeof(TextMeshProUGUI));
+            badgeGo.transform.SetParent(_tooltipRoot.transform, false);
+            _tooltipBadgeText = badgeGo.GetComponent<TextMeshProUGUI>();
+            _tooltipBadgeText.fontSize = 10;
+            _tooltipBadgeText.fontStyle = FontStyles.Bold;
+            _tooltipBadgeText.color = new Color(0.2f, 0.85f, 1f, 1f);
+            _tooltipBadgeText.raycastTarget = false;
+
+            // 3. Divider
+            GameObject dividerGo = new GameObject("Image_Divider", typeof(RectTransform), typeof(Image), typeof(LayoutElement));
+            dividerGo.transform.SetParent(_tooltipRoot.transform, false);
+            Image divImg = dividerGo.GetComponent<Image>();
+            divImg.color = new Color(0.25f, 0.45f, 0.65f, 0.45f);
+            divImg.raycastTarget = false;
+            LayoutElement divLe = dividerGo.GetComponent<LayoutElement>();
+            divLe.preferredHeight = 1.5f;
+
+            // 4. Description
+            GameObject descGo = new GameObject("Text_Description", typeof(RectTransform), typeof(TextMeshProUGUI));
+            descGo.transform.SetParent(_tooltipRoot.transform, false);
+            _tooltipDescText = descGo.GetComponent<TextMeshProUGUI>();
+            _tooltipDescText.fontSize = 12;
+            _tooltipDescText.color = new Color(0.85f, 0.90f, 0.95f, 1f);
+            _tooltipDescText.textWrappingMode = TextWrappingModes.Normal;
+            _tooltipDescText.raycastTarget = false;
+
+            // 5. Cost / Level Footer
+            GameObject costGo = new GameObject("Text_Cost", typeof(RectTransform), typeof(TextMeshProUGUI));
+            costGo.transform.SetParent(_tooltipRoot.transform, false);
+            _tooltipCostText = costGo.GetComponent<TextMeshProUGUI>();
+            _tooltipCostText.fontSize = 11;
+            _tooltipCostText.fontStyle = FontStyles.Bold;
+            _tooltipCostText.color = new Color(1f, 0.9f, 0.25f, 1f);
+            _tooltipCostText.raycastTarget = false;
+
+            _tooltipRoot.transform.SetAsLastSibling();
+        }
+
+        public void ShowNodeTooltip(UpgradeNodeData node)
+        {
+            if (node == null || _tooltipRoot == null || _tooltipCanvasGroup == null) return;
+
+            _currentHoveredNode = node;
+            _isHoveringRobotButton = false;
+            _isHoveringResetButton = false;
+
+            _tooltipRoot.transform.SetAsLastSibling();
+
+            bool isRu = LocalizationManager.IsRussian;
+            var quotaManager = Object.FindAnyObjectByType<QuotaAndScoreManager>();
+            int coins = quotaManager != null ? quotaManager.ScrapCoins : 0;
+
+            bool prereqsMet = UpgradeTreeManager.Instance != null && UpgradeTreeManager.Instance.ArePrerequisitesMet(node);
+            bool canAfford = coins >= node.CurrentCost;
+            bool isMax = node.IsMaxLevel;
+
+            // 1. Title
+            _tooltipTitleText.text = node.GetTitle();
+
+            // 2. Branch & Status
+            string branchName = GetBranchDisplayName(node.branch, isRu);
+            string statusTag;
+            Color outlineCol;
+
+            if (node.nodeId == "hub")
+            {
+                statusTag = isRu ? "<color=#00FF88>[АКТИВНО]</color>" : "<color=#00FF88>[ACTIVE]</color>";
+                outlineCol = standardOutlineColor;
+            }
+            else if (isMax)
+            {
+                statusTag = isRu ? "<color=#00FF88>[МАКС. УРОВЕНЬ]</color>" : "<color=#00FF88>[MAX LEVEL]</color>";
+                outlineCol = maxedOutlineColor;
+            }
+            else if (prereqsMet)
+            {
+                if (canAfford)
+                {
+                    statusTag = isRu ? "<color=#FFD700>[ДОСТУПНО К ПОКУПКЕ]</color>" : "<color=#FFD700>[READY TO BUY]</color>";
+                    outlineCol = node.isWowPerk ? wowOutlineColor : standardOutlineColor;
+                }
+                else
+                {
+                    statusTag = isRu ? "<color=#FF5555>[НЕДОСТАТОЧНО МОНЕТ]</color>" : "<color=#FF5555>[INSUFFICIENT COINS]</color>";
+                    outlineCol = node.isWowPerk ? wowOutlineColor : new Color(0.2f, 0.5f, 0.6f, 0.8f);
+                }
+            }
+            else
+            {
+                string missingReqs = GetMissingPrerequisitesString(node, isRu);
+                statusTag = isRu ? $"<color=#8899A6>[ЗАКРЫТО: {missingReqs}]</color>" : $"<color=#8899A6>[LOCKED: {missingReqs}]</color>";
+                outlineCol = lockedOutlineColor;
+            }
+
+            _tooltipBadgeText.text = $"{branchName}  {statusTag}";
+            _tooltipOutline.effectColor = outlineCol;
+
+            // 3. Description
+            string desc = node.GetDescription();
+            if (string.IsNullOrEmpty(desc))
+            {
+                desc = isRu ? "Нет описания эффекта." : "No description available.";
+            }
+            _tooltipDescText.text = desc;
+
+            // 4. Cost / Level Footer
+            if (node.nodeId == "hub")
+            {
+                _tooltipCostText.text = isRu ? "<color=#778899>Центральный энергоузел станции</color>" : "<color=#778899>Main station power hub</color>";
+            }
+            else if (isMax)
+            {
+                _tooltipCostText.text = isRu ? $"<color=#00FF88>Уровень {node.currentLevel}/{node.maxLevel} (Максимум)</color>" : $"<color=#00FF88>Level {node.currentLevel}/{node.maxLevel} (Max)</color>";
+            }
+            else
+            {
+                string costColor = canAfford ? "#FFD700" : "#FF5555";
+                string levelStr = node.maxLevel > 1 ? $" (Ур. {node.currentLevel}/{node.maxLevel})" : "";
+                string costLabel = isRu ? "Стоимость" : "Cost";
+                _tooltipCostText.text = $"{costLabel}: <color={costColor}>{node.CurrentCost}©</color>{levelStr}";
+            }
+
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_tooltipRect);
+            UpdateTooltipPosition();
+
+            _tooltipCanvasGroup.DOKill();
+            _tooltipCanvasGroup.DOFade(1f, 0.12f).SetUpdate(true);
+        }
+
+        public void ShowRobotTooltip()
+        {
+            if (_tooltipRoot == null || _tooltipCanvasGroup == null) return;
+
+            _currentHoveredNode = null;
+            _isHoveringRobotButton = true;
+            _isHoveringResetButton = false;
+
+            _tooltipRoot.transform.SetAsLastSibling();
+
+            bool isRu = LocalizationManager.IsRussian;
+            var quotaManager = Object.FindAnyObjectByType<QuotaAndScoreManager>();
+            int coins = quotaManager != null ? quotaManager.ScrapCoins : 0;
+            GameBalanceConfig config = GameManager.GameBalanceConfigInstance;
+            int cost = config != null ? config.fixedHelperRobotPrice : 50;
+            int activeRobots = config != null ? config.activeHelperRobotsCount : 0;
+            bool canAfford = coins >= cost;
+
+            _tooltipTitleText.text = isRu ? "Робот-помощник" : "Helper Drone";
+            string branchName = isRu ? "АВТОНОМНЫЕ СИСТЕМЫ" : "AUTONOMOUS SYSTEMS";
+            string statusTag = canAfford
+                ? (isRu ? "<color=#FFD700>[ДОСТУПНО]</color>" : "<color=#FFD700>[AVAILABLE]</color>")
+                : (isRu ? "<color=#FF5555>[НЕДОСТАТОЧНО МОНЕТ]</color>" : "<color=#FF5555>[INSUFFICIENT COINS]</color>");
+
+            _tooltipBadgeText.text = $"{branchName}  {statusTag}";
+            _tooltipOutline.effectColor = new Color(1f, 0.85f, 0.2f, 1f);
+
+            _tooltipDescText.text = isRu
+                ? "Автономный сборщик. Самостоятельно патрулирует сектор, захватывает космический мусор и доставляет его прямо в Чёрную Дыру."
+                : "Autonomous scavenger drone. Automatically patrols the sector, tractors space debris, and deposits it directly into the Black Hole.";
+
+            string costColor = canAfford ? "#FFD700" : "#FF5555";
+            string costLabel = isRu ? "Стоимость" : "Cost";
+            string activeLabel = isRu ? "В строю" : "Active";
+            _tooltipCostText.text = $"{costLabel}: <color={costColor}>{cost}©</color> | {activeLabel}: {activeRobots}";
+
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_tooltipRect);
+            UpdateTooltipPosition();
+
+            _tooltipCanvasGroup.DOKill();
+            _tooltipCanvasGroup.DOFade(1f, 0.12f).SetUpdate(true);
+        }
+
+        public void ShowResetCameraTooltip()
+        {
+            if (_tooltipRoot == null || _tooltipCanvasGroup == null) return;
+
+            _currentHoveredNode = null;
+            _isHoveringRobotButton = false;
+            _isHoveringResetButton = true;
+
+            _tooltipRoot.transform.SetAsLastSibling();
+
+            bool isRu = LocalizationManager.IsRussian;
+            _tooltipTitleText.text = isRu ? "Центрировать камеру" : "Reset Camera View";
+            _tooltipBadgeText.text = isRu ? "НАВИГАЦИЯ  <color=#00E5FF>[ПРОБЕЛ]</color>" : "NAVIGATION  <color=#00E5FF>[SPACE]</color>";
+            _tooltipOutline.effectColor = new Color(0.3f, 0.8f, 1f, 0.8f);
+
+            _tooltipDescText.text = isRu
+                ? "Возвращает камеру дерева технологий в исходное положение по центру хаба."
+                : "Returns the skill tree camera view to the center hub position.";
+
+            _tooltipCostText.text = "";
+
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_tooltipRect);
+            UpdateTooltipPosition();
+
+            _tooltipCanvasGroup.DOKill();
+            _tooltipCanvasGroup.DOFade(1f, 0.12f).SetUpdate(true);
+        }
+
+        public void HideTooltip()
+        {
+            _currentHoveredNode = null;
+            _isHoveringRobotButton = false;
+            _isHoveringResetButton = false;
+
+            if (_tooltipCanvasGroup != null)
+            {
+                _tooltipCanvasGroup.DOKill();
+                _tooltipCanvasGroup.DOFade(0f, 0.08f).SetUpdate(true);
+            }
+        }
+
+        private void UpdateTooltipPosition()
+        {
+            if (Mouse.current == null || _tooltipRect == null || panelRoot == null) return;
+
+            Vector2 screenPos = Mouse.current.position.ReadValue();
+            RectTransform rootRect = panelRoot.GetComponent<RectTransform>();
+            Canvas canvas = panelRoot.GetComponentInParent<Canvas>();
+            Camera cam = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay ? canvas.worldCamera : null;
+
+            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(rootRect, screenPos, cam, out Vector2 localPoint))
+            {
+                float w = _tooltipRect.rect.width > 10f ? _tooltipRect.rect.width : 300f;
+                float h = _tooltipRect.rect.height > 10f ? _tooltipRect.rect.height : 120f;
+
+                Rect bounds = rootRect.rect;
+
+                float posX = localPoint.x + 18f;
+                float posY = localPoint.y - 18f;
+
+                if (posX + w > bounds.xMax - 15f)
+                {
+                    posX = localPoint.x - w - 18f;
+                }
+
+                if (posY - h < bounds.yMin + 15f)
+                {
+                    posY = localPoint.y + h + 18f;
+                }
+
+                posX = Mathf.Clamp(posX, bounds.xMin + 12f, bounds.xMax - w - 12f);
+                posY = Mathf.Clamp(posY, bounds.yMin + h + 12f, bounds.yMax - 12f);
+
+                _tooltipRect.anchoredPosition = new Vector2(posX, posY);
+            }
+        }
+
+        private string GetBranchDisplayName(UpgradeBranch branch, bool isRu)
+        {
+            switch (branch)
+            {
+                case UpgradeBranch.Hub:
+                    return isRu ? "ХАБ" : "HUB";
+                case UpgradeBranch.Player:
+                    return isRu ? "ДРОН" : "DRONE";
+                case UpgradeBranch.BlackHole:
+                    return isRu ? "ЧЁРНАЯ ДЫРА" : "BLACK HOLE";
+                case UpgradeBranch.Scrap:
+                    return isRu ? "МУСОР" : "SCRAP";
+                case UpgradeBranch.Energy:
+                    return isRu ? "ЭНЕРГИЯ И АНОМАЛИИ" : "ANOMALIES";
+                case UpgradeBranch.Robots:
+                    return isRu ? "РОБОТЫ" : "ROBOTS";
+                default:
+                    return isRu ? "СИСТЕМА" : "SYSTEM";
+            }
+        }
+
+        private string GetMissingPrerequisitesString(UpgradeNodeData node, bool isRu)
+        {
+            if (node.prerequisiteNodeIds == null || node.prerequisiteNodeIds.Length == 0)
+                return isRu ? "Требуются другие узлы" : "Requires prior nodes";
+
+            List<string> missing = new List<string>();
+            for (int i = 0; i < node.prerequisiteNodeIds.Length; i++)
+            {
+                var pNode = UpgradeTreeManager.Instance != null ? UpgradeTreeManager.Instance.GetNode(node.prerequisiteNodeIds[i]) : null;
+                if (pNode != null && !pNode.IsUnlocked)
+                {
+                    missing.Add(pNode.GetTitle());
+                }
+            }
+
+            if (missing.Count == 0)
+                return isRu ? "Требуется предыдущий узел" : "Requires previous node";
+
+            return isRu ? $"Требуется {string.Join(", ", missing)}" : $"Requires {string.Join(", ", missing)}";
+        }
+
+        #endregion
+    }
+
+    public class UpgradeNodeHoverTrigger : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+    {
+        public UpgradeNodeData Node { get; set; }
+        public bool IsRobotButton { get; set; }
+        public bool IsResetButton { get; set; }
+
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            if (UpgradeTreeUI.Instance == null) return;
+
+            if (IsRobotButton)
+            {
+                UpgradeTreeUI.Instance.ShowRobotTooltip();
+            }
+            else if (IsResetButton)
+            {
+                UpgradeTreeUI.Instance.ShowResetCameraTooltip();
+            }
+            else if (Node != null)
+            {
+                UpgradeTreeUI.Instance.ShowNodeTooltip(Node);
+            }
+        }
+
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            UpgradeTreeUI.Instance?.HideTooltip();
         }
     }
 }
