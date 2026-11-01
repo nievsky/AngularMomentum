@@ -16,8 +16,8 @@ MonoBehaviour:
   globalSimulationSpeed: 0.5
   enableNarrativeComms: 0
   clockwiseOrbit: 1
-  accretionThresholdRadius: 18.0912
-  eventHorizonRadius: 5.0390396
+  accretionThresholdRadius: 30
+  eventHorizonRadius: 6
   outerZoneDriftSpeed: 2.2
   outerZoneOrbitSpring: 1.5
   innerMinSwirlSpeed: 16
@@ -27,7 +27,7 @@ MonoBehaviour:
   spiralRadiusShrinkRate: 5.5
   spiralTightnessSpring: 8
   verticalFlattenStrength: 6
-  gravityWellRadius: 45
+  gravityWellRadius: 60
   playerGravityMultiplier: 0.65
   spaghettifyStretchMultiplier: 1.65
   spaghettifyThinnessMultiplier: 0.55
@@ -42,6 +42,7 @@ MonoBehaviour:
   verticalThrusterAcceleration: 6
   spaceLinearDamping: 0.08
   retroBrakeDamping: 3.5
+  brakeDecelerationRate: 12
   maxThrusterSpeed: 9
   boostImpulse: 16
   boostCooldown: 2
@@ -50,23 +51,23 @@ MonoBehaviour:
   dashCooldown: 0.9
   isMagnetUnlocked: 0
   grabRangeBase: 10
-  magnetPullRange: 18
+  magnetPullRange: 25
   magnetConeAngle: 25
-  magnetPullForce: 50
+  magnetPullForce: 80
   holdPointDistance: 2.8
   holdSpringStrength: 80
-  puntLaunchImpulse: 20
+  puntLaunchImpulse: 60
   dryPuntRange: 8.5
   dryPuntRadius: 2.2
   maxHeldObjects: 3
-  heldObjectAlpha: 0.42
+  heldObjectAlpha: 0.5
   heldClusterRadius: 0.85
   maxActiveScrap: 150
   scrapSpawnInterval: 1
   minSpawnRadius: 24
-  maxSpawnRadius: 80
-  arenaSafeRadius: 110
-  arenaMaxRadius: 140
+  maxSpawnRadius: 60
+  arenaSafeRadius: 90
+  arenaMaxRadius: 115
   outOfBoundsWarningTime: 3
   scrapFadeOutDuration: 1.8
   cameraObservedMultiplier: 3
@@ -98,10 +99,10 @@ MonoBehaviour:
   - 100000
   - 1000000
   stageBlackHoleScales:
-  - 6
   - 10
   - 15
-  - 22
+  - 20
+  - 30
   stageValueMultipliers:
   - 1
   - 2.5

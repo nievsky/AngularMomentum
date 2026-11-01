@@ -149,6 +149,10 @@ namespace OrbitalPanopticon.Core
         [Range(1f, 10f)]
         public float retroBrakeDamping = 3.5f;
 
+        [Tooltip("Emergency brake deceleration rate (rapid velocity damping to zero when holding Space).")]
+        [Range(2f, 30f)]
+        public float brakeDecelerationRate = 12.0f;
+
         [Tooltip("Max linear speed achievable solely from onboard drone thrusters (gravity slingshots exceed this!).")]
         [Range(5f, 30f)]
         public float maxThrusterSpeed = 9.0f;

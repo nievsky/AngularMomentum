@@ -58,6 +58,7 @@ namespace OrbitalPanopticon.Player
         private float _dashTimer = 0f;
         private float _lastDashTime = -999f;
         private TrailRenderer _dashTrail;
+        private bool _wasBrakingLastFrame = false;
 
         public float CurrentCargoMass
         {
@@ -70,7 +71,7 @@ namespace OrbitalPanopticon.Player
         public bool IsDashing => _dashTimer > 0f;
         public bool IsBoosting => IsDashing;
         public bool IsBraking => isBraking;
-        public bool HasThrusterInput => isControlEnabled && !isMovementLocked && !OrbitalPanopticon.Core.UpgradeTreeManager.IsTreeOpen && (_moveInput.sqrMagnitude > 0.001f || Mathf.Abs(_verticalInput) > 0.001f || isBraking || IsDashing);
+        public bool HasThrusterInput => isControlEnabled && !isMovementLocked && !OrbitalPanopticon.Core.UpgradeTreeManager.IsTreeOpen && (_moveInput.sqrMagnitude > 0.001f || isBraking || IsDashing);
         public float Pitch => currentPitch;
         public float Yaw => currentYaw;
 
@@ -406,25 +407,18 @@ namespace OrbitalPanopticon.Player
             var keyboard = Keyboard.current;
             if (keyboard == null) return;
 
-            // Horizontal thrust (WASD)
+            // Horizontal planar thrust (WASD)
             if (keyboard.wKey.isPressed) _moveInput.y += 1f;
             if (keyboard.sKey.isPressed) _moveInput.y -= 1f;
             if (keyboard.dKey.isPressed) _moveInput.x += 1f;
             if (keyboard.aKey.isPressed) _moveInput.x -= 1f;
             _moveInput = Vector2.ClampMagnitude(_moveInput, 1f);
 
-            // Vertical thrust UP is strictly Space; Vertical thrust DOWN is strictly LeftControl (or C).
-            // KeyCode.E and KeyCode.Q are strictly removed to eliminate input conflicts.
-            // Using New Input System (Keyboard.current) to avoid InvalidOperationException.
-            bool up = keyboard.spaceKey.isPressed;
-            bool down = keyboard.leftCtrlKey.isPressed || keyboard.cKey.isPressed;
-
-            if (up && !down) _verticalInput += 1f;
-            if (down && !up) _verticalInput -= 1f;
-
-            // Retro-Braking / Inertia match: X or holding both Up+Down
+            // Vertical controls (Space / Ctrl) are removed.
+            // Spacebar is now bound strictly to Emergency Brake (instant velocity damping).
+            bool spaceBrake = keyboard.spaceKey.isPressed;
             bool xBrake = keyboard.xKey.isPressed;
-            if (xBrake || (up && down))
+            if (spaceBrake || xBrake)
             {
                 isBraking = true;
             }
@@ -439,11 +433,13 @@ namespace OrbitalPanopticon.Player
             if (shiftPressed && Time.time - _lastDashTime >= cooldown)
             {
                 Transform camTransform = mainCamera != null ? mainCamera.transform : transform;
-                Vector3 camForward = camTransform.forward;
-                Vector3 camRight = camTransform.right;
+                Vector3 camForward = Vector3.ProjectOnPlane(camTransform.forward, Vector3.up).normalized;
+                if (camForward.sqrMagnitude < 0.001f) camForward = camTransform.forward;
+                Vector3 camRight = Vector3.ProjectOnPlane(camTransform.right, Vector3.up).normalized;
+                if (camRight.sqrMagnitude < 0.001f) camRight = camTransform.right;
 
-                // Calculate desired direction from active movement keys
-                Vector3 inputDir = (camForward * _moveInput.y) + (camRight * _moveInput.x) + (Vector3.up * _verticalInput);
+                // Calculate desired direction from active movement keys on horizontal plane
+                Vector3 inputDir = (camForward * _moveInput.y) + (camRight * _moveInput.x);
                 Vector3 dashDir = inputDir.sqrMagnitude > 0.01f ? inputDir.normalized : camForward;
 
                 _lastDashTime = Time.time;
@@ -538,26 +534,32 @@ namespace OrbitalPanopticon.Player
 
             GameBalanceConfig config = GameManager.GameBalanceConfigInstance;
             float spaceDamping = config != null ? config.spaceLinearDamping : 0.08f;
-            float brakeDamping = config != null ? config.retroBrakeDamping : 3.5f;
-            float pacing = config != null ? (config.globalSimulationSpeed / 0.5f) : 1.0f;
-            float baseAcc = (config != null ? config.baseThrusterAcceleration : 7.5f) * pacing;
+            float brakeDecel = config != null ? config.brakeDecelerationRate : 12.0f;
 
             if (isBraking)
             {
-                rb.linearDamping = brakeDamping;
-
-                // Active retro-thrust countering remaining velocity for a crisp stop
-                if (rb.linearVelocity.sqrMagnitude > 0.05f)
-                {
-                    rb.AddForce(-rb.linearVelocity.normalized * (baseAcc * 1.5f), ForceMode.Acceleration);
-                }
-                else
+                // Rapidly damp the drone's linear velocity toward zero on emergency brake
+                rb.linearVelocity = Vector3.Lerp(rb.linearVelocity, Vector3.zero, brakeDecel * Time.fixedDeltaTime);
+                if (rb.linearVelocity.sqrMagnitude < 0.01f)
                 {
                     rb.linearVelocity = Vector3.zero;
                 }
+
+                // Subtle tactile retro-burst on emergency brake initiation
+                if (!_wasBrakingLastFrame && rb.linearVelocity.sqrMagnitude > 0.5f)
+                {
+                    if (shiftDashBurstParticles != null)
+                    {
+                        shiftDashBurstParticles.transform.position = transform.position;
+                        shiftDashBurstParticles.transform.rotation = Quaternion.LookRotation(rb.linearVelocity.normalized, Vector3.up);
+                        shiftDashBurstParticles.Emit(8);
+                    }
+                }
+                _wasBrakingLastFrame = true;
             }
             else
             {
+                _wasBrakingLastFrame = false;
                 rb.linearDamping = spaceDamping;
             }
         }
@@ -575,16 +577,17 @@ namespace OrbitalPanopticon.Player
 
             Transform camTransform = mainCamera != null ? mainCamera.transform : transform;
 
-            // Fly Where You Look: Forward is directly along camera aim vector (including vertical pitch)
-            Vector3 camForward = camTransform.forward;
-            Vector3 camRight = camTransform.right;
+            // Planar Horizontal Movement: Move strictly horizontally/forward on the plane via WASD and strafe
+            Vector3 camForward = Vector3.ProjectOnPlane(camTransform.forward, Vector3.up).normalized;
+            if (camForward.sqrMagnitude < 0.001f) camForward = camTransform.forward;
+            Vector3 camRight = Vector3.ProjectOnPlane(camTransform.right, Vector3.up).normalized;
+            if (camRight.sqrMagnitude < 0.001f) camRight = camTransform.right;
 
             Vector3 desiredDir = (camForward * _moveInput.y) + (camRight * _moveInput.x);
-            Vector3 verticalThrust = Vector3.up * _verticalInput;
 
             // Cargo penalty calculation
             float cargoPenaltyMultiplier = 1f / (1f + (currentCargoMass * cargoMassPenaltyFactor));
-            Vector3 desiredAccel = ((desiredDir * baseAcc) + (verticalThrust * vertAcc)) * cargoPenaltyMultiplier;
+            Vector3 desiredAccel = desiredDir * baseAcc * cargoPenaltyMultiplier;
 
             // Smart Soft Cap: bypass while dashing so directional dash jump feels snappy and unrestrained
             if (_dashTimer <= 0f)

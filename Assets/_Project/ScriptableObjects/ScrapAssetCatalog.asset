@@ -52,6 +52,9 @@ MonoBehaviour:
   - modelOrPrefab: {fileID: 6099847550332604059, guid: 4a5c9640e63afcd40b26c1a5891ed39b, type: 3}
     scrapTier: 4
     customScaleMultiplier: 1.2
+  - modelOrPrefab: {fileID: 7651633680233397576, guid: 556c39c627beecf47a55d07c2f2c8d07, type: 3}
+    scrapTier: 1
+    customScaleMultiplier: 1.5
   defaultFallbackTier1: {fileID: 1332304283896392702, guid: 70d9e569d7a1f6a4bb3100f039438064, type: 3}
   defaultFallbackTier2: {fileID: 8209700772035700066, guid: a90c9a861e15828409c362691e77ca22, type: 3}
   defaultFallbackTier3: {fileID: 4085560199756304201, guid: 682d7e6588696fb4faf64c3baeed91a7, type: 3}

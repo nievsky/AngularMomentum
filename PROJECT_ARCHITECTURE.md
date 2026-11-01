@@ -1165,3 +1165,22 @@ All runtime singletons implement a strict three-tier lookup: Serialized Referenc
   - Updated shader queue tag to `"Queue" = "Transparent+50"` (`RenderQueue = 3050`), placing beam rendering *after* transparent geometry and scrap sorting, completely eliminating sorting occlusion bugs.
   - Configured `ZTest [_ZTest]` with default `LEqual` (4), `ZWrite Off`, and `Blend One One` (Additive). Any portion entering the black hole core is cleanly occluded by `EventHorizonBlackCoreSphere` (queue 2950), while in space the beam remains 100% visible and unclipped.
   - Hardcoded color tint inside `InitializeBeam()` and material property block to bright HDR Fiery Yellow/Orange: `beamColorCore = [HDR] (8.0f, 5.5f, 1.5f, 1.0f)` and `beamColorGlow = [HDR] (8.0f, 3.2f, 0.4f, 1.0f)`.
+
+### 7.17 Flight Control Remapping: Planar Horizontal Movement & Spacebar Emergency Brake
+- **Removal of Vertical Up/Down Elevation Inputs** ([`DroneController.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Player/DroneController.cs)):
+  - Removed vertical elevation checks (`Space` / `LeftControl` / `C`).
+  - Movement vectors projected strictly onto the horizontal plane ($Y = 0$):
+    - `camForward = Vector3.ProjectOnPlane(camTransform.forward, Vector3.up).normalized;`
+    - `camRight = Vector3.ProjectOnPlane(camTransform.right, Vector3.up).normalized;`
+    - `desiredDir = (camForward * _moveInput.y) + (camRight * _moveInput.x);`
+  - The drone maintains its vertical position during flight without accidental climbing or diving, moving purely horizontally across the accretion disc unless external forces (black hole gravity, slingshot accretion, or collisions) act upon it.
+- **Spacebar Emergency Brake (Rapid Velocity Damping)** ([`DroneController.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Player/DroneController.cs), [`GameBalanceConfig.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/GameBalanceConfig.cs), [`GameBalanceConfig.asset`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/ScriptableObjects/GameBalanceConfig.asset)):
+  - Rebound `Space` (alongside `X`) to trigger `isBraking = true`.
+  - While held, applies rapid velocity damping directly in `FixedUpdate()`:
+    - `rb.linearVelocity = Vector3.Lerp(rb.linearVelocity, Vector3.zero, brakeDecelerationRate * Time.fixedDeltaTime);`
+    - Tuned via `brakeDecelerationRate = 12.0f` in `GameBalanceConfig.asset`.
+    - Automatically snaps to absolute dead halt (`rb.linearVelocity = Vector3.zero`) once magnitude drops below `0.1 m/s`.
+  - Added subtle retro-burst tactile feedback: emits retro particles upon initiating the emergency brake when traveling at speed.
+  - `Shift` remains strictly dedicated to the snappy directional dash.
+- **Tutorial & Localization Alignment** ([`LocalizationManager.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Core/LocalizationManager.cs)):
+  - Updated slide 1 control instructions in Russian and English to `[WASD] — движение / [Space] — экстренный тормоз / [Shift] — рывок`.
