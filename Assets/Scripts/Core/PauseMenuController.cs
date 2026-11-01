@@ -335,7 +335,7 @@ namespace OrbitalPanopticon.Core
                 rt.anchoredPosition = Vector2.zero;
 
                 Image bg = panelGo.GetComponent<Image>();
-                bg.color = new Color(0.02f, 0.04f, 0.08f, 0.88f);
+                bg.color = new Color(0.02f, 0.02f, 0.03f, 0.90f);
 
                 // Central Box
                 GameObject boxGo = new GameObject("Box_Menu", typeof(RectTransform), typeof(Image), typeof(Outline));
@@ -349,10 +349,10 @@ namespace OrbitalPanopticon.Core
                 boxRt.sizeDelta = new Vector2(380f, 440f);
 
                 Image boxBg = boxGo.GetComponent<Image>();
-                boxBg.color = new Color(0.04f, 0.08f, 0.14f, 0.95f);
+                boxBg.color = new Color(0.08f, 0.07f, 0.07f, 0.96f);
 
                 Outline boxOutline = boxGo.GetComponent<Outline>();
-                boxOutline.effectColor = new Color(0.2f, 0.85f, 1f, 0.85f);
+                boxOutline.effectColor = new Color(1f, 0.73f, 0f, 1f);
                 boxOutline.effectDistance = new Vector2(2f, -2f);
 
                 // Title
@@ -370,7 +370,7 @@ namespace OrbitalPanopticon.Core
                 titleText.alignment = TextAlignmentOptions.Center;
                 titleText.fontSize = 20;
                 titleText.fontStyle = FontStyles.Bold;
-                titleText.color = new Color(0.2f, 0.92f, 1f);
+                titleText.color = new Color(1f, 0.73f, 0f, 1f);
 
                 // Buttons container
                 float btnStartY = -100f;
@@ -389,10 +389,10 @@ namespace OrbitalPanopticon.Core
                     bRt.sizeDelta = new Vector2(300f, 48f);
 
                     Image bImg = btnGo.GetComponent<Image>();
-                    bImg.color = new Color(0.08f, 0.14f, 0.22f, 0.95f);
+                    bImg.color = new Color(0.08f, 0.07f, 0.07f, 0.96f);
 
                     Outline bOut = btnGo.GetComponent<Outline>();
-                    bOut.effectColor = new Color(0.2f, 0.85f, 1f, 0.75f);
+                    bOut.effectColor = new Color(1f, 0.73f, 0f, 1f);
                     bOut.effectDistance = new Vector2(1.5f, -1.5f);
 
                     var anim = btnGo.GetComponent<UIButtonTweenAnimator>();
@@ -443,10 +443,10 @@ namespace OrbitalPanopticon.Core
                 sRt.sizeDelta = new Vector2(460f, 380f);
 
                 Image sBg = sGo.GetComponent<Image>();
-                sBg.color = new Color(0.05f, 0.09f, 0.16f, 0.98f);
+                sBg.color = new Color(0.08f, 0.07f, 0.07f, 0.98f);
 
                 Outline sOut = sGo.GetComponent<Outline>();
-                sOut.effectColor = new Color(0.2f, 0.85f, 1f, 0.9f);
+                sOut.effectColor = new Color(1f, 0.73f, 0f, 1f);
                 sOut.effectDistance = new Vector2(2f, -2f);
 
                 // Settings Title
@@ -464,7 +464,7 @@ namespace OrbitalPanopticon.Core
                 settingsTitleText.alignment = TextAlignmentOptions.Center;
                 settingsTitleText.fontSize = 18;
                 settingsTitleText.fontStyle = FontStyles.Bold;
-                settingsTitleText.color = new Color(0.2f, 0.92f, 1f);
+                settingsTitleText.color = new Color(1f, 0.73f, 0f, 1f);
 
                 // Music Volume Row
                 GameObject musicLabelGo = new GameObject("Label_MusicVolume", typeof(RectTransform), typeof(TextMeshProUGUI));

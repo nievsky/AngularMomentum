@@ -11,7 +11,7 @@ namespace OrbitalPanopticon.Editor
     public static class GlobalFontEditorUtility
     {
         public const string ConfigAssetPath = "Assets/_Project/ScriptableObjects/GlobalFontConfig.asset";
-        public const string DefaultTMPFontPath = "Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset";
+        public const string DefaultTMPFontPath = "Assets/TextMesh Pro/Fonts/Mayak SDF.asset";
 
         public static readonly string[] ScenePaths = new string[]
         {

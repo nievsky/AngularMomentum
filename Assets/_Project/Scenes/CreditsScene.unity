@@ -340,8 +340,8 @@ MonoBehaviour:
     / \u041B\u041A\u041C \u0414\u041B\u042F \u0423\u0421\u041A\u041E\u0420\u0415\u041D\u0418\u042F
     \u0422\u0415\u041A\u0421\u0422\u0410 x3 ]"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
-  m_sharedMaterial: {fileID: -118467892997532439, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
+  m_sharedMaterial: {fileID: -7312609412422781861, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -964,8 +964,8 @@ MonoBehaviour:
   m_text: "\u0412 \u0413\u041B\u0410\u0412\u041D\u041E\u0415 \u041C\u0415\u041D\u042E
     (ESC)"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
-  m_sharedMaterial: {fileID: -118467892997532439, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
+  m_sharedMaterial: {fileID: -7312609412422781861, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1243,8 +1243,8 @@ MonoBehaviour:
     Dynamic Soundscapes</color>\n\n\n\n<size=120%><color=#FFD700><b>\u0421\u041F\u0410\u0421\u0418\u0411\u041E
     \u0417\u0410 \u041E\u0427\u0418\u0421\u0422\u041A\u0423 \u041E\u0420\u0411\u0418\u0422\u042B!</b></color></size>"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
-  m_sharedMaterial: {fileID: -118467892997532439, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
+  m_sharedMaterial: {fileID: -7312609412422781861, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
