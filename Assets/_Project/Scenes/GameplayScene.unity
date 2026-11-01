@@ -7883,7 +7883,7 @@ LineRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Positions:
-  - {x: 214.1, y: 20, z: 50}
+  - {x: 214.1, y: 20, z: 54.2}
   - {x: 0, y: 0, z: 0}
   m_Parameters:
     serializedVersion: 3
@@ -8254,8 +8254,8 @@ MonoBehaviour:
   - {fileID: 21300000, guid: 4f759b6cee7e47fb9e28adfd9ce40fb3, type: 3}
   - {fileID: 21300000, guid: 321c91709a31498d90bb1e9baf36db5a, type: 3}
   - {fileID: 21300000, guid: 6df12ff28b464caeb2b3346e7c0b1c8c, type: 3}
-  tutorialFont: {fileID: 11400000, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
-  navBarPanel: {fileID: 399452090}
+  tutorialFont: {fileID: 0}
+  navBarPanel: {fileID: 0}
   prevButton: {fileID: 395406012}
   prevButtonText: {fileID: 1525382587}
   pageIndicatorText: {fileID: 2030487204}
@@ -14485,11 +14485,11 @@ MonoBehaviour:
   targetDrone: {fileID: 0}
   centerReference: {fileID: 0}
   visualRoot: {fileID: 0}
-  pupilLight: {fileID: 0}
-  pupilRenderer: {fileID: 0}
+  pupilLight: {fileID: 578487699}
+  pupilRenderer: {fileID: 923441419}
   containmentBeam: {fileID: 1447048280}
   beamColorCore: {r: 8, g: 5.5, b: 1.5, a: 1}
-  beamColorGlow: {r: 8, g: 3.2, b: 0.5, a: 1}
+  beamColorGlow: {r: 8, g: 3.2, b: 0.4, a: 1}
   beamStartWidth: 0.45
   beamEndWidth: 0.15
   isLockBroken: 0
@@ -14999,7 +14999,7 @@ LineRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Positions:
-  - {x: 0, y: 20, z: -150}
+  - {x: 0, y: 20, z: -145.8}
   - {x: 0, y: 0, z: 0}
   m_Parameters:
     serializedVersion: 3
@@ -19140,7 +19140,7 @@ LineRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Positions:
-  - {x: 0, y: -13.8, z: 141}
+  - {x: 0, y: -13.8, z: 145.2}
   - {x: 0, y: 0, z: 0}
   m_Parameters:
     serializedVersion: 3
@@ -22438,11 +22438,11 @@ MonoBehaviour:
   targetDrone: {fileID: 0}
   centerReference: {fileID: 0}
   visualRoot: {fileID: 0}
-  pupilLight: {fileID: 0}
-  pupilRenderer: {fileID: 0}
+  pupilLight: {fileID: 1439420291}
+  pupilRenderer: {fileID: 1887667842}
   containmentBeam: {fileID: 1021401234}
   beamColorCore: {r: 8, g: 5.5, b: 1.5, a: 1}
-  beamColorGlow: {r: 8, g: 3.2, b: 0.5, a: 1}
+  beamColorGlow: {r: 8, g: 3.2, b: 0.4, a: 1}
   beamStartWidth: 0.45
   beamEndWidth: 0.15
   isLockBroken: 0
@@ -22589,7 +22589,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 52.885002, y: -18}
-  m_SizeDelta: {x: 0, y: 36}
+  m_SizeDelta: {x: 21.77, y: 36}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1432325817
 MonoBehaviour:
@@ -22814,7 +22814,7 @@ LineRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_Positions:
-  - {x: -139.2, y: 20, z: 50}
+  - {x: -139.2, y: 20, z: 54.2}
   - {x: 0, y: 0, z: 0}
   m_Parameters:
     serializedVersion: 3
@@ -40534,11 +40534,11 @@ MonoBehaviour:
   targetDrone: {fileID: 0}
   centerReference: {fileID: 0}
   visualRoot: {fileID: 0}
-  pupilLight: {fileID: 0}
-  pupilRenderer: {fileID: 0}
+  pupilLight: {fileID: 1337363619}
+  pupilRenderer: {fileID: 1366207871}
   containmentBeam: {fileID: 499922746}
   beamColorCore: {r: 8, g: 5.5, b: 1.5, a: 1}
-  beamColorGlow: {r: 8, g: 3.2, b: 0.5, a: 1}
+  beamColorGlow: {r: 8, g: 3.2, b: 0.4, a: 1}
   beamStartWidth: 0.45
   beamEndWidth: 0.15
   isLockBroken: 0
@@ -43958,11 +43958,11 @@ MonoBehaviour:
   targetDrone: {fileID: 0}
   centerReference: {fileID: 0}
   visualRoot: {fileID: 0}
-  pupilLight: {fileID: 0}
-  pupilRenderer: {fileID: 0}
+  pupilLight: {fileID: 1139899602}
+  pupilRenderer: {fileID: 1670535286}
   containmentBeam: {fileID: 340910245}
   beamColorCore: {r: 8, g: 5.5, b: 1.5, a: 1}
-  beamColorGlow: {r: 8, g: 3.2, b: 0.5, a: 1}
+  beamColorGlow: {r: 8, g: 3.2, b: 0.4, a: 1}
   beamStartWidth: 0.45
   beamEndWidth: 0.15
   isLockBroken: 0

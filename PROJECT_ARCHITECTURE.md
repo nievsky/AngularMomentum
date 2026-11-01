@@ -1149,3 +1149,19 @@ All runtime singletons implement a strict three-tier lookup: Serialized Referenc
   - **Container Scale Punch**: Triggers `coinsContainer.DOScale(Vector3.one * 1.35f, 0.2f).SetLoops(2, LoopType.Yoyo).SetUpdate(true)` on the parent container, popping both the icon and the number simultaneously and resetting to `Vector3.one` upon completion.
   - **Dual Event & Frame Detection**: Subscribes directly to `QuotaAndScoreManager.OnScoreAdded` for instantaneous reaction while maintaining frame-by-frame polling in `UpdateHUD()`.
   - **Death Penalty Red Punch**: When coins are lost on player hazard/boundary death, triggers `TriggerScrapCoinsLossPunch()` with a sharp red flash (`#FF2626` $\rightarrow$ `#FFE040` over 0.5s) and `DOPunchScale(0.25f, 0.35f)`.
+
+### 7.16 Overseer Containment Beam Rendering Pipeline & Culling Nullification
+- **Frustum Culling & Bounding Box Enforcement** ([`OverseerContainmentEye.cs`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/Scripts/Gameplay/OverseerContainmentEye.cs)):
+  - Enforced per-frame properties on `containmentBeam` in both `Update()` and `LateUpdate()`:
+    - `useWorldSpace = true` (prevents local space coordinate interpretation).
+    - `positionCount = 2`.
+    - `generateLightingData = false`, `shadowCastingMode = Off`, `receiveShadows = false`.
+    - `alignment = LineAlignment.View` (guarantees camera-facing quad alignment).
+    - `allowOcclusionWhenDynamic = false` (prevents frustum or occlusion culling from turning off the beam when the eye is behind or outside the view frustum).
+  - Explicit Point Anchors:
+    - Position 0: strictly set to `EyeLensTransform.position` (bound to `Pupil_Light` / `Sphere.001` mesh center).
+    - Position 1: strictly anchored to singularity center `(0, 0, 0)` (`centerReference.position`).
+- **Solid HDR Yellow/Orange Material & Render Queue 3050** ([`S_ContainmentBeam.shader`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/Materials/S_ContainmentBeam.shader), [`M_ContainmentBeam.mat`](file:///D:/GameDev/UnityGames/AngularMomentum/Assets/_Project/Materials/M_ContainmentBeam.mat)):
+  - Updated shader queue tag to `"Queue" = "Transparent+50"` (`RenderQueue = 3050`), placing beam rendering *after* transparent geometry and scrap sorting, completely eliminating sorting occlusion bugs.
+  - Configured `ZTest [_ZTest]` with default `LEqual` (4), `ZWrite Off`, and `Blend One One` (Additive). Any portion entering the black hole core is cleanly occluded by `EventHorizonBlackCoreSphere` (queue 2950), while in space the beam remains 100% visible and unclipped.
+  - Hardcoded color tint inside `InitializeBeam()` and material property block to bright HDR Fiery Yellow/Orange: `beamColorCore = [HDR] (8.0f, 5.5f, 1.5f, 1.0f)` and `beamColorGlow = [HDR] (8.0f, 3.2f, 0.4f, 1.0f)`.

@@ -4,12 +4,13 @@ Shader "OrbitalPanopticon/ContainmentBeam"
     {
         [Header(Beam Colors)]
         [HDR] _CoreColor ("Core Color (HDR Fiery Yellow/White)", Color) = (8.0, 5.5, 1.5, 1.0)
-        [HDR] _GlowColor ("Glow Color (HDR Fiery Yellow/Orange)", Color) = (8.0, 3.2, 0.5, 1.0)
+        [HDR] _GlowColor ("Glow Color (HDR Fiery Yellow/Orange)", Color) = (8.0, 3.2, 0.4, 1.0)
 
         [Header(Animation)]
         _ScrollSpeed ("Plasma Scroll Speed", Range(0.5, 20.0)) = 5.0
         _CoreSharpness ("Core Sharpness", Range(1.0, 8.0)) = 2.5
         _BeamAlpha ("Beam Alpha Multiplier", Range(0.0, 1.0)) = 1.0
+        [Enum(UnityEngine.Rendering.CompareFunction)] _ZTest ("ZTest Mode", Float) = 4 // LEqual default
     }
 
     SubShader
@@ -18,7 +19,7 @@ Shader "OrbitalPanopticon/ContainmentBeam"
         {
             "RenderPipeline" = "UniversalPipeline"
             "RenderType" = "Transparent"
-            "Queue" = "Geometry+450" // Queue 2450: right before _CameraOpaqueTexture at 2500!
+            "Queue" = "Transparent+50" // Queue 3050: never occluded by transparency sorting
             "IgnoreProjector" = "True"
         }
 
@@ -29,7 +30,7 @@ Shader "OrbitalPanopticon/ContainmentBeam"
 
             Blend One One
             ZWrite Off
-            ZTest LEqual
+            ZTest [_ZTest]
             Cull Off
 
             HLSLPROGRAM
@@ -44,6 +45,7 @@ Shader "OrbitalPanopticon/ContainmentBeam"
                 float _ScrollSpeed;
                 float _CoreSharpness;
                 float _BeamAlpha;
+                float _ZTest;
             CBUFFER_END
 
             struct Attributes
