@@ -65,6 +65,12 @@ namespace OrbitalPanopticon.Core
         [Tooltip("One-shot played when player touches or takes damage from an active Overseer Containment Beam (for future sound)")]
         public EventReference containmentBeamShockOneShot;
 
+        [Tooltip("Attack sound played when an overloaded hostile Overseer initiates its sweeping beam attack")]
+        public EventReference overseerBeamAttackOneShot;
+
+        [Tooltip("Continuous beam loop audio that travels along the beam segment at closest point to player")]
+        public EventReference overseerBeamLoop;
+
         [Tooltip("Idle vocalization or scanning pulse emitted by active Overseer Containment Eyes")]
         public EventReference overseerIdleOneShot;
 

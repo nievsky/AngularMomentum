@@ -94,6 +94,20 @@ MonoBehaviour:
       Data3: -17583228
       Data4: 1076307175
     Path: event:/Player/Beam_Shock
+  overseerBeamAttackOneShot:
+    Guid:
+      Data1: 1111477683
+      Data2: 1081840932
+      Data3: 2014428841
+      Data4: 1889853342
+    Path: event:/Boss/Overseer_BeamAttack
+  overseerBeamLoop:
+    Guid:
+      Data1: 1846008426
+      Data2: 1078908951
+      Data3: 855107259
+      Data4: -1507346751
+    Path: event:/Boss/Overseer_BeamLoop
   overseerIdleOneShot:
     Guid:
       Data1: 56212931
