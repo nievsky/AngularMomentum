@@ -1190,7 +1190,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
-  m_EffectColor: {r: 0.2, g: 0.85, b: 1, a: 0.75}
+  m_EffectColor: {r: 1, g: 0.73, b: 0, a: 0.85}
   m_EffectDistance: {x: 1.5, y: -1.5}
   m_UseGraphicAlpha: 1
 --- !u!114 &115071173
@@ -1206,7 +1206,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.08, g: 0.14, b: 0.22, a: 0.95}
+  m_Color: {r: 0.08, g: 0.07, b: 0.07, a: 0.96}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -1330,7 +1330,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
-  m_EffectColor: {r: 0.2, g: 0.85, b: 1, a: 0.85}
+  m_EffectColor: {r: 1, g: 0.73, b: 0, a: 0.9}
   m_EffectDistance: {x: 2, y: -2}
   m_UseGraphicAlpha: 1
 --- !u!114 &136338506
@@ -1346,7 +1346,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.04, g: 0.08, b: 0.14, a: 0.95}
+  m_Color: {r: 0.08, g: 0.07, b: 0.07, a: 0.95}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -1655,8 +1655,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "BLACK HOLE STAGE 1/4 \u2014 MASS: 120 / 1000 (EFFICIENCY: x1.0)"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
-  m_sharedMaterial: {fileID: -118467892997532439, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
+  m_sharedMaterial: {fileID: -7312609412422781861, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1800,7 +1800,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
-  m_EffectColor: {r: 0.2, g: 0.85, b: 1, a: 0.75}
+  m_EffectColor: {r: 1, g: 0.73, b: 0, a: 0.85}
   m_EffectDistance: {x: 1.5, y: -1.5}
   m_UseGraphicAlpha: 1
 --- !u!114 &157842650
@@ -1816,7 +1816,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.08, g: 0.14, b: 0.22, a: 0.95}
+  m_Color: {r: 0.08, g: 0.07, b: 0.07, a: 0.96}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -2042,8 +2042,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "\u041D\u0410\u0421\u0422\u0420\u041E\u0419\u041A\u0418 \u0421\u0418\u0421\u0422\u0415\u041C\u042B"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
-  m_sharedMaterial: {fileID: -118467892997532439, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
+  m_sharedMaterial: {fileID: -7312609412422781861, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -2259,8 +2259,8 @@ MonoBehaviour:
   m_text: "\u0427\u0443\u0432\u0441\u0442\u0432\u0438\u0442\u0435\u043B\u044C\u043D\u043E\u0441\u0442\u044C
     \u043C\u044B\u0448\u0438 (Sens):"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
-  m_sharedMaterial: {fileID: -118467892997532439, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
+  m_sharedMaterial: {fileID: -7312609412422781861, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -2454,9 +2454,10 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 3245ec927659c4140ac4f8d17403cc18, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.ContentSizeFitter
-  m_HorizontalFit: 2
-  m_VerticalFit: 2
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
+  m_EffectColor: {r: 1, g: 0.73, b: 0, a: 0.85}
+  m_EffectDistance: {x: 1.5, y: -1.5}
+  m_UseGraphicAlpha: 1
 --- !u!114 &243975303
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8151,12 +8152,12 @@ MonoBehaviour:
   headerText: {fileID: 0}
   resetCameraButton: {fileID: 0}
   viewportController: {fileID: 0}
-  standardOutlineColor: {r: 0.2, g: 0.9, b: 1, a: 1}
-  wowOutlineColor: {r: 1, g: 0.2, b: 0.2, a: 1}
-  maxedOutlineColor: {r: 0.2, g: 1, b: 0.4, a: 1}
-  lockedOutlineColor: {r: 0.35, g: 0.4, b: 0.5, a: 0.4}
-  nodeBgColor: {r: 0.06, g: 0.09, b: 0.14, a: 0.95}
-  wowBgColor: {r: 0.22, g: 0.05, b: 0.05, a: 0.95}
+  standardOutlineColor: {r: 1, g: 0.73, b: 0, a: 1}
+  wowOutlineColor: {r: 1, g: 0.85, b: 0.2, a: 1}
+  maxedOutlineColor: {r: 1, g: 0.88, b: 0.4, a: 1}
+  lockedOutlineColor: {r: 0.28, g: 0.25, b: 0.25, a: 0.5}
+  nodeBgColor: {r: 0.08, g: 0.07, b: 0.07, a: 0.96}
+  wowBgColor: {r: 0.14, g: 0.1, b: 0.04, a: 0.98}
 --- !u!114 &343821895
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14135,8 +14136,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "\u041F\u0420\u041E\u0414\u041E\u041B\u0416\u0418\u0422\u042C"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
-  m_sharedMaterial: {fileID: -118467892997532439, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
+  m_sharedMaterial: {fileID: -7312609412422781861, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -14354,8 +14355,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: REC
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
-  m_sharedMaterial: {fileID: -118467892997532439, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
+  m_sharedMaterial: {fileID: -7312609412422781861, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -14847,8 +14848,8 @@ MonoBehaviour:
 
     SIGNAL LOSS IN 3.0s'
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
-  m_sharedMaterial: {fileID: -118467892997532439, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
+  m_sharedMaterial: {fileID: -7312609412422781861, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -15564,8 +15565,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "\u0412\u042B\u0419\u0422\u0418 \u0418\u0417 \u0418\u0413\u0420\u042B"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
-  m_sharedMaterial: {fileID: -118467892997532439, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
+  m_sharedMaterial: {fileID: -7312609412422781861, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -15837,7 +15838,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
-  m_EffectColor: {r: 0.2, g: 0.85, b: 1, a: 0.75}
+  m_EffectColor: {r: 1, g: 0.73, b: 0, a: 0.85}
   m_EffectDistance: {x: 1.5, y: -1.5}
   m_UseGraphicAlpha: 1
 --- !u!114 &625845479
@@ -15993,8 +15994,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: '[ CLICK LMB TO CONNECT TO DRONE ]'
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
-  m_sharedMaterial: {fileID: -118467892997532439, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
+  m_sharedMaterial: {fileID: -7312609412422781861, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -17431,7 +17432,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
-  m_EffectColor: {r: 0.2, g: 0.85, b: 1, a: 0.9}
+  m_EffectColor: {r: 1, g: 0.73, b: 0, a: 0.9}
   m_EffectDistance: {x: 0, y: 2}
   m_UseGraphicAlpha: 1
 --- !u!222 &819638090
@@ -17851,8 +17852,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "\u0417\u0410\u041A\u0420\u042B\u0422\u042C"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
-  m_sharedMaterial: {fileID: -118467892997532439, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
+  m_sharedMaterial: {fileID: -7312609412422781861, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -19319,8 +19320,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: 
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
-  m_sharedMaterial: {fileID: -118467892997532439, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
+  m_sharedMaterial: {fileID: -7312609412422781861, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -19847,8 +19848,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "\u041F\u0410\u0423\u0417\u0410 \u0421\u0418\u0421\u0422\u0415\u041C\u042B"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
-  m_sharedMaterial: {fileID: -118467892997532439, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
+  m_sharedMaterial: {fileID: -7312609412422781861, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -19981,7 +19982,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
-  m_EffectColor: {r: 0.2, g: 0.9, b: 1, a: 0.85}
+  m_EffectColor: {r: 1, g: 0.73, b: 0, a: 0.9}
   m_EffectDistance: {x: 2, y: -2}
   m_UseGraphicAlpha: 1
 --- !u!225 &1129139076
@@ -21364,8 +21365,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: 
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
-  m_sharedMaterial: {fileID: -118467892997532439, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
+  m_sharedMaterial: {fileID: -7312609412422781861, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -21643,7 +21644,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
-  m_EffectColor: {r: 0.2, g: 0.85, b: 1, a: 0.85}
+  m_EffectColor: {r: 1, g: 0.73, b: 0, a: 0.9}
   m_EffectDistance: {x: 1.5, y: -1.5}
   m_UseGraphicAlpha: 1
 --- !u!114 &1339938960
@@ -22193,8 +22194,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "\u041D\u0410\u0421\u0422\u0420\u041E\u0419\u041A\u0418"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
-  m_sharedMaterial: {fileID: -118467892997532439, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
+  m_sharedMaterial: {fileID: -7312609412422781861, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -22494,8 +22495,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: 0
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
-  m_sharedMaterial: {fileID: -118467892997532439, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
+  m_sharedMaterial: {fileID: -7312609412422781861, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -22942,8 +22943,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: ANGULAR MOMENTUM
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
-  m_sharedMaterial: {fileID: -118467892997532439, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
+  m_sharedMaterial: {fileID: -7312609412422781861, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -23087,8 +23088,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: OBSERVED TARGET GRABBED - x3 VALUE!
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
-  m_sharedMaterial: {fileID: -118467892997532439, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
+  m_sharedMaterial: {fileID: -7312609412422781861, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -28140,7 +28141,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
-  m_EffectColor: {r: 0.2, g: 0.85, b: 1, a: 0.75}
+  m_EffectColor: {r: 1, g: 0.73, b: 0, a: 0.85}
   m_EffectDistance: {x: 1.5, y: -1.5}
   m_UseGraphicAlpha: 1
 --- !u!114 &1479090998
@@ -28156,7 +28157,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.08, g: 0.14, b: 0.22, a: 0.95}
+  m_Color: {r: 0.08, g: 0.07, b: 0.07, a: 0.96}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -28286,7 +28287,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
-  m_EffectColor: {r: 0.2, g: 0.9, b: 1, a: 0.65}
+  m_EffectColor: {r: 1, g: 0.73, b: 0, a: 0.75}
   m_EffectDistance: {x: 1.5, y: -1.5}
   m_UseGraphicAlpha: 1
 --- !u!222 &1487749122
@@ -29451,8 +29452,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: "\u0412 \u0413\u041B\u0410\u0412\u041D\u041E\u0415 \u041C\u0415\u041D\u042E"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
-  m_sharedMaterial: {fileID: -118467892997532439, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
+  m_sharedMaterial: {fileID: -7312609412422781861, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -29899,8 +29900,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: CORPORATE SURVEILLANCE SECTOR 7-G // DRONE #001
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
-  m_sharedMaterial: {fileID: -118467892997532439, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
+  m_sharedMaterial: {fileID: -7312609412422781861, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -30499,8 +30500,8 @@ MonoBehaviour:
   m_text: '[WASD] Flight  |  [SPACE/CTRL] Vertical  |  [RMB/LMB] Gravity Claw  | 
     [TAB] Upgrades'
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
-  m_sharedMaterial: {fileID: -118467892997532439, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
+  m_sharedMaterial: {fileID: -7312609412422781861, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -41846,8 +41847,8 @@ MonoBehaviour:
   m_text: "\u0413\u0440\u043E\u043C\u043A\u043E\u0441\u0442\u044C \u0437\u0432\u0443\u043A\u0430
     (Master Volume):"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
-  m_sharedMaterial: {fileID: -118467892997532439, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
+  m_sharedMaterial: {fileID: -7312609412422781861, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -41991,7 +41992,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
-  m_EffectColor: {r: 0.2, g: 0.85, b: 1, a: 0.75}
+  m_EffectColor: {r: 1, g: 0.73, b: 0, a: 0.85}
   m_EffectDistance: {x: 1.5, y: -1.5}
   m_UseGraphicAlpha: 1
 --- !u!114 &1844888308
@@ -42007,7 +42008,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.08, g: 0.14, b: 0.22, a: 0.95}
+  m_Color: {r: 0.08, g: 0.07, b: 0.07, a: 0.96}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -42116,8 +42117,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: OUT OF RANGE - SIGNAL LOST
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
-  m_sharedMaterial: {fileID: -118467892997532439, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
+  m_sharedMaterial: {fileID: -7312609412422781861, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -42383,8 +42384,8 @@ MonoBehaviour:
   m_text: "\u041A\u041E\u0420\u041F\u041E\u0420\u0410\u0422\u0418\u0412\u041D\u042B\u0419
     \u041A\u0423\u0420\u0410\u0422\u041E\u0420"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
-  m_sharedMaterial: {fileID: -118467892997532439, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
+  m_sharedMaterial: {fileID: -7312609412422781861, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -42950,7 +42951,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e19747de3f5aca642ab2be37e372fb86, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Outline
-  m_EffectColor: {r: 0.2, g: 0.85, b: 1, a: 0.9}
+  m_EffectColor: {r: 1, g: 0.73, b: 0, a: 0.9}
   m_EffectDistance: {x: 2, y: -2}
   m_UseGraphicAlpha: 1
 --- !u!114 &1964574090
@@ -42966,7 +42967,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.05, g: 0.09, b: 0.16, a: 0.98}
+  m_Color: {r: 0.08, g: 0.07, b: 0.07, a: 0.98}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -43148,8 +43149,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: 
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
-  m_sharedMaterial: {fileID: -118467892997532439, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
+  m_sharedMaterial: {fileID: -7312609412422781861, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -43276,7 +43277,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0.2, g: 0.85, b: 1, a: 0.85}
+  m_Color: {r: 1, g: 0.73, b: 0, a: 0.9}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -43478,8 +43479,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: RECONNECTING OPERATOR LINK...
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
-  m_sharedMaterial: {fileID: -118467892997532439, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
+  m_sharedMaterial: {fileID: -7312609412422781861, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -43733,8 +43734,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: 
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
-  m_sharedMaterial: {fileID: -118467892997532439, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
+  m_sharedMaterial: {fileID: -7312609412422781861, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -44432,8 +44433,8 @@ MonoBehaviour:
     <size=80%>+150 SCRAP COINS 
     <color=#FFD700>(SPEED BONUS +100%)</color></size>'
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
-  m_sharedMaterial: {fileID: -118467892997532439, guid: 50cb38430b1fb4f4181f879dee7803fc, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
+  m_sharedMaterial: {fileID: -7312609412422781861, guid: 40055faefb27b2e41a534c0470f2f45a, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -44647,7 +44648,7 @@ MonoBehaviour:
   blackHoleCenter: {fileID: 0}
   magnetBeamLine: {fileID: 0}
   magnetBeamSecondaryLine: {fileID: 0}
-  magnetBeamColor: {r: 0.2, g: 0.9, b: 1, a: 0.85}
+  magnetBeamColor: {r: 1, g: 0.73, b: 0, a: 0.9}
   magnetBeamSecondaryColor: {r: 3.5, g: 0.4, b: 5, a: 1}
   shockwaveColor: {r: 1, g: 0.8, b: 0.1, a: 1}
   puntShockwaveRing: {fileID: 0}

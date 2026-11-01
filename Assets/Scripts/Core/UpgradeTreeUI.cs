@@ -24,13 +24,13 @@ namespace OrbitalPanopticon.Core
         [SerializeField] private Button resetCameraButton;
         [SerializeField] private SkillTreeViewportController viewportController;
 
-        [Header("Visual Colors")]
-        [SerializeField] private Color standardOutlineColor = new Color(0.2f, 0.9f, 1f, 1f); // Cyan
-        [SerializeField] private Color wowOutlineColor = new Color(1f, 0.2f, 0.2f, 1f);      // Bright Red
-        [SerializeField] private Color maxedOutlineColor = new Color(0.2f, 1f, 0.4f, 1f);    // Bright Green
-        [SerializeField] private Color lockedOutlineColor = new Color(0.35f, 0.4f, 0.5f, 0.4f); // Dim Gray
-        [SerializeField] private Color nodeBgColor = new Color(0.06f, 0.09f, 0.14f, 0.95f);
-        [SerializeField] private Color wowBgColor = new Color(0.22f, 0.05f, 0.05f, 0.95f);
+        [Header("Visual Colors (Orange - Black - White Theme)")]
+        [SerializeField] private Color standardOutlineColor = new Color(1f, 0.73f, 0f, 1f);     // Warm Orange #FFBA00
+        [SerializeField] private Color wowOutlineColor = new Color(1f, 0.85f, 0.2f, 1f);          // Bright Gold #FFD700
+        [SerializeField] private Color maxedOutlineColor = new Color(1f, 0.88f, 0.4f, 1f);        // Maxed Light Gold #FFE066
+        [SerializeField] private Color lockedOutlineColor = new Color(0.28f, 0.25f, 0.25f, 0.5f); // Dim Charcoal Gray
+        [SerializeField] private Color nodeBgColor = new Color(0.08f, 0.07f, 0.07f, 0.96f);       // Deep Charcoal #141212
+        [SerializeField] private Color wowBgColor = new Color(0.14f, 0.10f, 0.04f, 0.98f);        // Dark Amber #241A0A
 
         private readonly Dictionary<string, NodeUIElement> _nodeUIElements = new Dictionary<string, NodeUIElement>();
         private readonly List<LineUIElement> _lineUIElements = new List<LineUIElement>();
@@ -309,7 +309,7 @@ namespace OrbitalPanopticon.Core
             // Dark full-screen translucent overlay
             var bgImg = panelRoot.GetComponent<Image>();
             if (bgImg == null) bgImg = panelRoot.AddComponent<Image>();
-            bgImg.color = new Color(0.04f, 0.06f, 0.09f, 0.94f);
+            bgImg.color = new Color(0.02f, 0.02f, 0.03f, 0.94f);
 
             // 1. Skill Tree Viewport (captures pan and scroll input)
             if (viewportRect == null)
@@ -431,8 +431,10 @@ namespace OrbitalPanopticon.Core
                     headerText.alignment = TextAlignmentOptions.Center;
                     headerText.fontSize = 24;
                     headerText.fontStyle = FontStyles.Bold;
-                    headerText.color = new Color(0.9f, 0.95f, 1f, 1f);
+                    headerText.color = new Color(1f, 0.73f, 0f, 1f);
                     headerText.text = "ДЕРЕВО НАВЫКОВ | SKILL TREE (TAB - Закрыть)";
+                    var mayak = Resources.Load<TMP_FontAsset>("Mayak SDF");
+                    if (mayak != null) headerText.font = mayak;
                 }
             }
 
@@ -458,7 +460,9 @@ namespace OrbitalPanopticon.Core
                     currencyText = currGo.GetComponent<TextMeshProUGUI>();
                     currencyText.alignment = TextAlignmentOptions.Center;
                     currencyText.fontSize = 18;
-                    currencyText.color = new Color(1f, 0.85f, 0.2f, 1f);
+                    currencyText.color = new Color(1f, 0.73f, 0f, 1f);
+                    var mayak = Resources.Load<TMP_FontAsset>("Mayak SDF");
+                    if (mayak != null) currencyText.font = mayak;
                 }
             }
         }
@@ -505,7 +509,7 @@ namespace OrbitalPanopticon.Core
                     rt.localRotation = Quaternion.Euler(0f, 0f, angle);
 
                     Image img = lineGo.GetComponent<Image>();
-                    img.color = new Color(0.3f, 0.35f, 0.45f, 0.25f);
+                    img.color = new Color(0.25f, 0.22f, 0.22f, 0.25f);
 
                     _lineUIElements.Add(new LineUIElement
                     {
@@ -584,6 +588,8 @@ namespace OrbitalPanopticon.Core
             label.fontSize = node.isWowPerk ? 12 : 11;
             label.textWrappingMode = TextWrappingModes.Normal;
             label.raycastTarget = false;
+            var mayakFont = Resources.Load<TMP_FontAsset>("Mayak SDF");
+            if (mayakFont != null) label.font = mayakFont;
 
             _nodeUIElements[node.nodeId] = new NodeUIElement
             {
@@ -619,11 +625,11 @@ namespace OrbitalPanopticon.Core
             rt.sizeDelta = size;
 
             Image bg = robotGo.GetComponent<Image>();
-            bg.color = new Color(0.12f, 0.10f, 0.05f, 0.95f);
+            bg.color = wowBgColor;
 
             Outline outline = robotGo.GetComponent<Outline>();
             outline.effectDistance = new Vector2(2f, -2f);
-            outline.effectColor = new Color(1f, 0.85f, 0.2f, 1f);
+            outline.effectColor = standardOutlineColor;
 
             UIButtonTweenAnimator animator = robotGo.GetComponent<UIButtonTweenAnimator>();
             animator.SetOriginalScale(Vector3.one);
@@ -648,6 +654,8 @@ namespace OrbitalPanopticon.Core
             label.fontSize = 11;
             label.textWrappingMode = TextWrappingModes.Normal;
             label.raycastTarget = false;
+            var mayakR = Resources.Load<TMP_FontAsset>("Mayak SDF");
+            if (mayakR != null) label.font = mayakR;
 
             _robotButtonElement = new NodeUIElement
             {
@@ -679,11 +687,11 @@ namespace OrbitalPanopticon.Core
             rt.sizeDelta = new Vector2(175f, 38f);
 
             Image bg = resetGo.GetComponent<Image>();
-            bg.color = new Color(0.08f, 0.12f, 0.18f, 0.95f);
+            bg.color = nodeBgColor;
 
             Outline outline = resetGo.GetComponent<Outline>();
             outline.effectDistance = new Vector2(1.5f, -1.5f);
-            outline.effectColor = new Color(0.3f, 0.8f, 1f, 0.8f);
+            outline.effectColor = standardOutlineColor;
 
             UIButtonTweenAnimator animator = resetGo.GetComponent<UIButtonTweenAnimator>();
             animator.SetOriginalScale(Vector3.one);
@@ -713,9 +721,11 @@ namespace OrbitalPanopticon.Core
             label.alignment = TextAlignmentOptions.Center;
             label.fontSize = 11;
             label.fontStyle = FontStyles.Bold;
-            label.color = new Color(0.7f, 0.95f, 1f, 1f);
+            label.color = Color.white;
             label.text = "[СБРОСИТЬ КАМЕРУ]";
             label.raycastTarget = false;
+            var mayakCam = Resources.Load<TMP_FontAsset>("Mayak SDF");
+            if (mayakCam != null) label.font = mayakCam;
         }
 
         private void OnNodeClicked(string nodeId)
@@ -736,7 +746,7 @@ namespace OrbitalPanopticon.Core
                         if (line.toId == nodeId && line.lineImage != null)
                         {
                             line.lineImage.DOKill();
-                            line.lineImage.color = new Color(0.2f, 1f, 0.5f, 1f);
+                            line.lineImage.color = new Color(1f, 0.73f, 0f, 1f);
                             line.lineImage.rectTransform.DOKill();
                             line.lineImage.rectTransform.DOPunchScale(new Vector3(0.1f, 1.4f, 0f), 0.35f, 8, 0.8f).SetUpdate(true);
                         }
@@ -840,14 +850,14 @@ namespace OrbitalPanopticon.Core
                 {
                     elem.outline.effectColor = standardOutlineColor;
                     elem.background.color = nodeBgColor;
-                    elem.label.text = $"<b>{nodeTitle}</b>\n<size=10><color=#00FF88>{activeTag}</color></size>";
+                    elem.label.text = $"<b>{nodeTitle}</b>\n<size=10><color=#FFBA00>{activeTag}</color></size>";
                     elem.button.interactable = false;
                 }
                 else if (isMax)
                 {
                     elem.outline.effectColor = maxedOutlineColor;
-                    elem.background.color = new Color(0.05f, 0.16f, 0.08f, 0.95f);
-                    elem.label.text = $"<b>{nodeTitle}</b>\n<size=10><color=#00FF88>{maxTag}</color></size>";
+                    elem.background.color = new Color(0.12f, 0.09f, 0.04f, 0.98f);
+                    elem.label.text = $"<b>{nodeTitle}</b>\n<size=10><color=#FFBA00>{maxTag}</color></size>";
                     elem.button.interactable = false;
                 }
                 else if (prereqsMet)
@@ -855,15 +865,15 @@ namespace OrbitalPanopticon.Core
                     if (node.isWowPerk)
                     {
                         elem.outline.effectColor = wowOutlineColor;
-                        elem.background.color = canAfford ? wowBgColor : new Color(0.14f, 0.05f, 0.05f, 0.95f);
+                        elem.background.color = canAfford ? wowBgColor : new Color(0.10f, 0.07f, 0.03f, 0.95f);
                     }
                     else
                     {
-                        elem.outline.effectColor = canAfford ? standardOutlineColor : new Color(0.2f, 0.5f, 0.6f, 0.8f);
+                        elem.outline.effectColor = canAfford ? standardOutlineColor : new Color(0.6f, 0.45f, 0.1f, 0.8f);
                         elem.background.color = nodeBgColor;
                     }
 
-                    string costColor = canAfford ? "#FFD700" : "#FF5555";
+                    string costColor = canAfford ? "#FFBA00" : "#FF6666";
                     string levelStr = node.maxLevel > 1 ? $"Lv.{node.currentLevel}/{node.maxLevel}" : "";
                     elem.label.text = $"<b>{nodeTitle}</b>\n<size=10><color={costColor}>{node.CurrentCost}©</color>  {levelStr}</size>";
                     elem.button.interactable = canPurchase;
@@ -872,8 +882,8 @@ namespace OrbitalPanopticon.Core
                 {
                     // Locked
                     elem.outline.effectColor = lockedOutlineColor;
-                    elem.background.color = new Color(0.04f, 0.05f, 0.07f, 0.85f);
-                    elem.label.text = $"<color=#778899><b>{nodeTitle}</b>\n<size=10>{lockTag}</size></color>";
+                    elem.background.color = new Color(0.05f, 0.05f, 0.05f, 0.88f);
+                    elem.label.text = $"<color=#777070><b>{nodeTitle}</b>\n<size=10>{lockTag}</size></color>";
                     elem.button.interactable = false;
                 }
 
@@ -894,15 +904,15 @@ namespace OrbitalPanopticon.Core
                 {
                     if (toNode.IsUnlocked)
                     {
-                        line.lineImage.color = new Color(0.2f, 1f, 0.5f, 0.85f); // Bright green
+                        line.lineImage.color = new Color(1f, 0.73f, 0f, 0.95f); // Bright warm orange
                     }
                     else if (UpgradeTreeManager.Instance.ArePrerequisitesMet(toNode))
                     {
-                        line.lineImage.color = new Color(0.2f, 0.9f, 1f, 0.6f); // Cyan
+                        line.lineImage.color = new Color(1f, 0.65f, 0f, 0.5f);  // Soft orange
                     }
                     else
                     {
-                        line.lineImage.color = new Color(0.3f, 0.35f, 0.45f, 0.20f); // Dim gray
+                        line.lineImage.color = new Color(0.25f, 0.22f, 0.22f, 0.20f); // Dim gray
                     }
                 }
             }
@@ -952,11 +962,11 @@ namespace OrbitalPanopticon.Core
             _tooltipCanvasGroup.interactable = false;
 
             var bg = _tooltipRoot.GetComponent<Image>();
-            bg.color = new Color(0.04f, 0.06f, 0.10f, 0.95f);
+            bg.color = nodeBgColor;
 
             _tooltipOutline = _tooltipRoot.GetComponent<Outline>();
-            _tooltipOutline.effectDistance = new Vector2(1.5f, -1.5f);
-            _tooltipOutline.effectColor = new Color(0.2f, 0.8f, 1f, 0.7f);
+            _tooltipOutline.effectDistance = new Vector2(2f, -2f);
+            _tooltipOutline.effectColor = standardOutlineColor;
 
             VerticalLayoutGroup layout = _tooltipRoot.GetComponent<VerticalLayoutGroup>();
             layout.padding = new RectOffset(10, 10, 7, 7);
@@ -973,10 +983,12 @@ namespace OrbitalPanopticon.Core
             descGo.transform.SetParent(_tooltipRoot.transform, false);
             _tooltipDescText = descGo.GetComponent<TextMeshProUGUI>();
             _tooltipDescText.fontSize = 12;
-            _tooltipDescText.color = new Color(0.92f, 0.95f, 1f, 1f);
+            _tooltipDescText.color = Color.white;
             _tooltipDescText.alignment = TextAlignmentOptions.Center;
             _tooltipDescText.textWrappingMode = TextWrappingModes.Normal;
             _tooltipDescText.raycastTarget = false;
+            var mayakTt = Resources.Load<TMP_FontAsset>("Mayak SDF");
+            if (mayakTt != null) _tooltipDescText.font = mayakTt;
 
             _tooltipRoot.transform.SetAsLastSibling();
         }
@@ -1058,7 +1070,7 @@ namespace OrbitalPanopticon.Core
                 ? "Центрировать камеру (Пробел)"
                 : "Center camera view (Space)";
 
-            _tooltipOutline.effectColor = new Color(0.3f, 0.8f, 1f, 0.8f);
+            _tooltipOutline.effectColor = standardOutlineColor;
 
             LayoutRebuilder.ForceRebuildLayoutImmediate(_tooltipRect);
             UpdateTooltipPosition();

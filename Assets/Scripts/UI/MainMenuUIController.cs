@@ -122,6 +122,7 @@ namespace OrbitalPanopticon.UI
             EnsureLanguageSwitcher();
             ResolveLabelReferences();
             UpdateLocalizedTexts();
+            ApplyOrangeTheme();
 
             LocalizationManager.OnLanguageChanged += HandleLanguageChanged;
         }
@@ -245,10 +246,10 @@ namespace OrbitalPanopticon.UI
             rt.sizeDelta = new Vector2(270f, 96f);
 
             Image bg = languageSwitcherPanel.GetComponent<Image>();
-            bg.color = new Color(0.04f, 0.08f, 0.14f, 0.92f);
+            bg.color = new Color(0.08f, 0.07f, 0.07f, 0.96f);
 
             Outline outline = languageSwitcherPanel.GetComponent<Outline>();
-            outline.effectColor = new Color(0.2f, 0.85f, 1f, 0.8f);
+            outline.effectColor = new Color(1f, 0.73f, 0f, 1f);
             outline.effectDistance = new Vector2(1.5f, -1.5f);
 
             // Clean up legacy small text buttons if present
@@ -343,7 +344,7 @@ namespace OrbitalPanopticon.UI
             rt.sizeDelta = new Vector2(110f, 74f);
 
             Image bg = btnGo.GetComponent<Image>();
-            bg.color = new Color(0.08f, 0.12f, 0.18f, 0.98f);
+            bg.color = new Color(0.08f, 0.07f, 0.07f, 0.98f);
 
             borderOutline = btnGo.GetComponent<Outline>();
             borderOutline.effectDistance = new Vector2(2f, -2f);
@@ -395,7 +396,7 @@ namespace OrbitalPanopticon.UI
 
             if (outlineFlagRU != null)
             {
-                outlineFlagRU.effectColor = isRU ? new Color(0.2f, 0.85f, 1f, 1f) : new Color(0.3f, 0.35f, 0.45f, 0.4f);
+                outlineFlagRU.effectColor = isRU ? new Color(1f, 0.73f, 0f, 1f) : new Color(0.3f, 0.28f, 0.28f, 0.4f);
                 outlineFlagRU.effectDistance = isRU ? new Vector2(3f, -3f) : new Vector2(1.5f, -1.5f);
             }
             if (btnFlagRU != null)
@@ -405,7 +406,7 @@ namespace OrbitalPanopticon.UI
 
             if (outlineFlagEN != null)
             {
-                outlineFlagEN.effectColor = !isRU ? new Color(0.2f, 0.85f, 1f, 1f) : new Color(0.3f, 0.35f, 0.45f, 0.4f);
+                outlineFlagEN.effectColor = !isRU ? new Color(1f, 0.73f, 0f, 1f) : new Color(0.3f, 0.28f, 0.28f, 0.4f);
                 outlineFlagEN.effectDistance = !isRU ? new Vector2(3f, -3f) : new Vector2(1.5f, -1.5f);
             }
             if (btnFlagEN != null)
@@ -800,6 +801,108 @@ namespace OrbitalPanopticon.UI
 #else
             Application.Quit();
 #endif
+        }
+
+        [ContextMenu("Apply Orange Theme")]
+        public void ApplyOrangeTheme()
+        {
+            Color orange = new Color(1f, 0.73f, 0f, 1f); // #FFBA00
+            Color darkBg = new Color(0.08f, 0.07f, 0.07f, 0.96f); // #141212
+            Color textWhite = Color.white;
+
+            TMP_FontAsset mayakFont = Resources.Load<TMP_FontAsset>("Mayak SDF");
+#if UNITY_EDITOR
+            if (mayakFont == null)
+            {
+                mayakFont = UnityEditor.AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/TextMesh Pro/Fonts/Mayak SDF.asset");
+            }
+#endif
+
+            void StyleButton(Button btn, bool isPrimary = false)
+            {
+                if (btn == null) return;
+                var img = btn.GetComponent<Image>();
+                if (img != null) img.color = darkBg;
+
+                var outl = btn.GetComponent<Outline>();
+                if (outl == null) outl = btn.gameObject.AddComponent<Outline>();
+                outl.effectColor = orange;
+                outl.effectDistance = new Vector2(2f, -2f);
+
+                var txt = btn.GetComponentInChildren<TextMeshProUGUI>();
+                if (txt != null)
+                {
+                    if (mayakFont != null) txt.font = mayakFont;
+                    txt.color = isPrimary ? orange : textWhite;
+                }
+            }
+
+            StyleButton(startButton, true);
+            StyleButton(settingsButton);
+            StyleButton(creditsButton);
+            StyleButton(quitButton);
+            StyleButton(closeSettingsButton);
+
+            if (titleText != null)
+            {
+                titleText.color = orange;
+                if (mayakFont != null) titleText.font = mayakFont;
+            }
+            if (subtitleText != null)
+            {
+                subtitleText.color = textWhite;
+                if (mayakFont != null) subtitleText.font = mayakFont;
+            }
+
+            if (settingsPanel != null)
+            {
+                var sImg = settingsPanel.GetComponent<Image>();
+                if (sImg != null) sImg.color = darkBg;
+
+                var sOut = settingsPanel.GetComponent<Outline>();
+                if (sOut != null)
+                {
+                    sOut.effectColor = orange;
+                    sOut.effectDistance = new Vector2(2f, -2f);
+                }
+
+                if (settingsTitleText != null)
+                {
+                    settingsTitleText.color = orange;
+                    if (mayakFont != null) settingsTitleText.font = mayakFont;
+                }
+
+                void StyleSlider(Slider slider, TextMeshProUGUI label, TextMeshProUGUI valText)
+                {
+                    if (label != null)
+                    {
+                        label.color = textWhite;
+                        if (mayakFont != null) label.font = mayakFont;
+                    }
+                    if (valText != null)
+                    {
+                        valText.color = orange;
+                        if (mayakFont != null) valText.font = mayakFont;
+                    }
+                    if (slider != null)
+                    {
+                        var fill = slider.fillRect != null ? slider.fillRect.GetComponent<Image>() : null;
+                        if (fill != null) fill.color = orange;
+
+                        var handle = slider.handleRect != null ? slider.handleRect.GetComponent<Image>() : null;
+                        if (handle != null) handle.color = orange;
+
+                        var bg = slider.transform.Find("Background")?.GetComponent<Image>();
+                        if (bg != null) bg.color = new Color(0.18f, 0.16f, 0.16f, 1f);
+                    }
+                }
+
+                StyleSlider(musicVolumeSlider, musicVolumeLabelText, musicVolumeValueText);
+                StyleSlider(soundsVolumeSlider, soundsVolumeLabelText, soundsVolumeValueText);
+                StyleSlider(mouseSensSlider, mouseSensLabelText, mouseSensValueText);
+            }
+
+            UpdateLanguageSwitcherVisuals();
         }
     }
 }
