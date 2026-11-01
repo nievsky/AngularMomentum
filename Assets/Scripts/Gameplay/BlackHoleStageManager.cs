@@ -34,6 +34,7 @@ namespace OrbitalPanopticon.Gameplay
         public event Action<int> OnContainmentLockBroken; // (lockIndex)
 
         public float CurrentMass => currentMass;
+        public float DisplayMass => 1f + currentMass;
         public int CurrentStageIndex => currentStageIndex;
         public int CurrentStage => currentStageIndex + 1; // 1, 2, 3, 4
         public int TotalStages => 4;
@@ -124,6 +125,9 @@ namespace OrbitalPanopticon.Gameplay
             {
                 var eh = visualRoot.Find("EventHorizonOpaqueCore");
                 if (eh != null) eh.gameObject.SetActive(false);
+
+                var blackCore = visualRoot.Find("EventHorizonBlackCoreSphere");
+                if (blackCore != null) blackCore.gameObject.SetActive(true);
             }
             if (eventHorizonOpaqueCore != null)
             {

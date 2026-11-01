@@ -2,7 +2,6 @@ using UnityEngine;
 
 namespace OrbitalPanopticon.Core
 {
-    [ExecuteAlways]
     [DisallowMultipleComponent]
     public class SpaceSkyboxController : MonoBehaviour
     {
@@ -110,10 +109,17 @@ namespace OrbitalPanopticon.Core
         {
             if (visualConfig == null)
             {
+                string sceneName = gameObject.scene.name;
+                string configName = "VisualConfig_Gameplay";
+                if (!string.IsNullOrEmpty(sceneName))
+                {
+                    if (sceneName.Contains("MainMenu")) configName = "VisualConfig_MainMenu";
+                    else if (sceneName.Contains("Credits")) configName = "VisualConfig_Credits";
+                }
+
 #if UNITY_EDITOR
-                visualConfig = UnityEditor.AssetDatabase.LoadAssetAtPath<VisualEnvironmentConfigSO>("Assets/_Project/ScriptableObjects/VisualEnvironmentConfig.asset");
-#else
-                visualConfig = Resources.Load<VisualEnvironmentConfigSO>("VisualEnvironmentConfig");
+                visualConfig = UnityEditor.AssetDatabase.LoadAssetAtPath<VisualEnvironmentConfigSO>(
+                    $"Assets/_Project/ScriptableObjects/{configName}.asset");
 #endif
             }
         }
@@ -191,35 +197,45 @@ namespace OrbitalPanopticon.Core
 
         private void Awake()
         {
-            if (Application.isPlaying)
-            {
-                if (Instance == null) Instance = this;
-            }
+            if (!Application.isPlaying) return;
+            Instance = this;
             EnsureConfig();
             LoadFromConfig();
         }
 
+        private void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
+#if UNITY_EDITOR
+            if (visualConfig != null)
+            {
+                SaveToConfig();
+                UnityEditor.EditorUtility.SetDirty(visualConfig);
+                UnityEditor.AssetDatabase.SaveAssets();
+            }
+#endif
+        }
+
         private void OnEnable()
         {
+            if (!Application.isPlaying) return;
             if (Instance == null) Instance = this;
             EnsureConfig();
             LoadFromConfig();
         }
 
+#if UNITY_EDITOR
         private void OnValidate()
         {
+            if (UnityEditor.BuildPipeline.isBuildingPlayer) return;
             EnsureConfig();
             SaveToConfig();
             UpdateMaterialProperties();
         }
+#endif
 
         private void Update()
         {
-            // Sync in Edit Mode so changes reflect immediately in Scene & Game views
-            if (!Application.isPlaying)
-            {
-                UpdateMaterialProperties();
-            }
         }
 
         public void EnsureMaterial()

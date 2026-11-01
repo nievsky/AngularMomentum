@@ -11,7 +11,10 @@ namespace OrbitalPanopticon.Player
     {
         public static DroneController Instance { get; private set; }
 
-        [Header("Tuning Fallbacks (Overrides from GameBalanceConfig)")]
+        [Header("Master Balance Configuration")]
+        [SerializeField] private GameBalanceConfig balanceConfig;
+
+[Header("Tuning Fallbacks (Overrides from GameBalanceConfig)")]
         [Tooltip("Damping factor for cargo weight penalty on acceleration.")]
         [SerializeField] private float cargoMassPenaltyFactor = 0.05f;
 

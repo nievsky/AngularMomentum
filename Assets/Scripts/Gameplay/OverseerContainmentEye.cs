@@ -398,10 +398,19 @@ namespace OrbitalPanopticon.Gameplay
 
             Material lineMat = null;
 #if UNITY_EDITOR
-            lineMat = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Materials/M_ValuableScrapGlow.mat");
+            lineMat = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Materials/M_ContainmentBeam.mat");
+            if (lineMat == null)
+            {
+                lineMat = UnityEditor.AssetDatabase.LoadAssetAtPath<Material>("Assets/_Project/Materials/M_ValuableScrapGlow.mat");
+            }
 #endif
+            if (lineMat == null) lineMat = Resources.Load<Material>("M_ContainmentBeam");
             if (lineMat == null) lineMat = Resources.Load<Material>("M_ValuableScrapGlow");
-            if (lineMat != null) containmentBeam.sharedMaterial = lineMat;
+            if (lineMat != null)
+            {
+                lineMat.renderQueue = 2450;
+                containmentBeam.sharedMaterial = lineMat;
+            }
 
             Gradient grad = new Gradient();
             grad.SetKeys(
@@ -854,7 +863,7 @@ namespace OrbitalPanopticon.Gameplay
             }
         }
 
-        private void UpdateContainmentBeam()
+        public void UpdateContainmentBeam()
         {
             if (containmentBeam == null) return;
 
@@ -869,14 +878,8 @@ namespace OrbitalPanopticon.Gameplay
             Vector3 eyeLensPos = PupilPosition;
             Vector3 blackHoleCenter = centerReference != null ? centerReference.position : Vector3.zero;
 
-            GameBalanceConfig cfg = GameManager.GameBalanceConfigInstance;
-            float currentEventHorizonRadius = (cfg != null) ? cfg.eventHorizonRadius : 3.5f;
-
-            Vector3 dirFromCenterToEye = (eyeLensPos - blackHoleCenter).normalized;
-            Vector3 beamEndPos = blackHoleCenter + dirFromCenterToEye * (currentEventHorizonRadius * 0.98f);
-
             containmentBeam.SetPosition(0, eyeLensPos);
-            containmentBeam.SetPosition(1, beamEndPos);
+            containmentBeam.SetPosition(1, blackHoleCenter);
         }
 
         /// <summary>

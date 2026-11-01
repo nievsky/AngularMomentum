@@ -6,7 +6,7 @@ Shader "OrbitalPanopticon/VHSMonitorEffect"
         _OverscanScale ("Overscan Scale", Range(0.5, 1.0)) = 0.90
 
         [Header(CRT Scanlines)]
-        _ScanlineIntensity ("Scanline Intensity", Range(0.0, 1.0)) = 0.28
+        _ScanlineIntensity ("Scanline Intensity", Range(0.0, 1.0)) = 0.15
         _ScanlineCount ("Scanline Count", Range(100.0, 1080.0)) = 640.0
         _ScanlineScrollSpeed ("Scanline Scroll Speed", Range(-10.0, 10.0)) = 0.8
 
@@ -20,7 +20,7 @@ Shader "OrbitalPanopticon/VHSMonitorEffect"
         _RGBShiftAmount ("RGB Shift Amount", Range(0.0, 0.05)) = 0.0055
 
         [Header(Tape Noise and Static)]
-        _TapeNoiseIntensity ("Tape Noise Intensity", Range(0.0, 1.0)) = 0.18
+        _TapeNoiseIntensity ("Tape Noise Intensity", Range(0.0, 1.0)) = 0.04
 
         [Header(CRT Curvature and Vignette)]
         _ScreenCurvature ("Screen Curvature", Range(0.0, 0.5)) = 0.12
@@ -130,12 +130,15 @@ Shader "OrbitalPanopticon/VHSMonitorEffect"
                 float colB = SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_LinearClamp, saturate(uvClamped + shiftB)).b;
                 float3 vhsColor = float3(colR, colG, colB);
 
-                // 5. Tape Noise & Static Snow
+                // 5. Tape Noise & Static Snow (Modulated by luma so pitch-black #000000 pixels stay 100% black)
                 float2 pixelCoord = rawUV * _ScreenParams.xy;
                 float staticNoise = frac(sin(dot(pixelCoord + float2(timeVal * 117.0, timeVal * 319.0), float2(12.9898, 78.233))) * 43758.5453);
+                float origLuma = dot(vhsColor, float3(0.2126, 0.7152, 0.0722));
+                float lumaMask = saturate(origLuma * 4.0);
                 float noiseMod = (staticNoise - 0.5) * _TapeNoiseIntensity;
                 noiseMod += (staticNoise - 0.5) * barFactor * 0.5;
-                vhsColor += noiseMod;
+                vhsColor += noiseMod * lumaMask;
+                vhsColor = max(0.0, vhsColor);
 
                 // 6. CRT Scanlines
                 float scan = sin((uv.y * _ScanlineCount + timeVal * _ScanlineScrollSpeed) * 6.2831853);

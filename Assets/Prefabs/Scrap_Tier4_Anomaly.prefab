@@ -244,7 +244,7 @@ MonoBehaviour:
   bonusMultiplierPerSecond: 0.5
   visualRoot: {fileID: 3082446462615102761}
   mainRenderer: {fileID: 7045257735716926476}
-  baseColdColor: {r: 0.15, g: 0.85, b: 1, a: 1}
+  baseColdColor: {r: 1, g: 1, b: 1, a: 1}
   hotAccretionColor: {r: 1, g: 0.45, b: 0.05, a: 1}
   isObserved: 0
   observedGoldColor: {r: 1, g: 0.84, b: 0.05, a: 1}

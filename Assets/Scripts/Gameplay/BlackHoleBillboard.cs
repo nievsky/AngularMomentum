@@ -6,7 +6,6 @@ namespace OrbitalPanopticon.Gameplay
     /// Keeps the BlackHoleLensQuad billboard oriented directly toward the active rendering camera.
     /// Operates in LateUpdate to guarantee alignment with camera position regardless of update order.
     /// </summary>
-    [ExecuteAlways]
     [DisallowMultipleComponent]
     public class BlackHoleBillboard : MonoBehaviour
     {
@@ -14,6 +13,8 @@ namespace OrbitalPanopticon.Gameplay
 
         private void LateUpdate()
         {
+            if (!Application.isPlaying) return;
+
             if (_cam == null || !_cam.isActiveAndEnabled)
             {
                 _cam = Camera.main;

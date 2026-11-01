@@ -29,6 +29,21 @@ namespace OrbitalPanopticon.Core
 
         public GameBalanceConfig BalanceConfig => balanceConfig;
 
+        private bool _isClonedForUpgrades = false;
+
+        public void PrepareForUpgradeMutation()
+        {
+            if (_isClonedForUpgrades || balanceConfig == null) return;
+
+            if (balanceConfig.allowRuntimeUpgradeCloning)
+            {
+                balanceConfig = Instantiate(balanceConfig);
+                GameBalanceConfig.Instance = balanceConfig;
+                _isClonedForUpgrades = true;
+                Debug.Log("<color=#00FFAA>[GameManager] Cloned GameBalanceConfig for runtime upgrade mutations.</color>");
+            }
+        }
+
         private void Awake()
         {
             if (Instance != null && Instance != this)
@@ -39,11 +54,20 @@ namespace OrbitalPanopticon.Core
             Instance = this;
             Application.runInBackground = true;
 
+            EnsureMasterConfig();
             if (balanceConfig != null)
             {
-                // Protect Editor Asset: clone in memory so upgrades mutate RuntimeConfig only!
-                balanceConfig = Instantiate(balanceConfig);
                 GameBalanceConfig.Instance = balanceConfig;
+            }
+        }
+
+        private void EnsureMasterConfig()
+        {
+            if (balanceConfig == null)
+            {
+#if UNITY_EDITOR
+                balanceConfig = UnityEditor.AssetDatabase.LoadAssetAtPath<GameBalanceConfig>("Assets/_Project/ScriptableObjects/GameBalanceConfig.asset");
+#endif
             }
         }
 

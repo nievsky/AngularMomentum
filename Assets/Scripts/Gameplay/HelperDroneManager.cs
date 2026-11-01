@@ -78,6 +78,7 @@ namespace OrbitalPanopticon.Gameplay
             HelperDroneBot bot = botObj.GetComponent<HelperDroneBot>();
             if (bot != null)
             {
+                bot.ConfigureVisualModel();
                 _activeBots.Add(bot);
             }
 

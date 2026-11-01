@@ -32,10 +32,10 @@ Material:
     - _OverscanScale: 0.9
     - _RGBShiftAmount: 0.0055
     - _ScanlineCount: 100
-    - _ScanlineIntensity: 0.28
+    - _ScanlineIntensity: 0.15
     - _ScanlineScrollSpeed: -0.1
     - _ScreenCurvature: 0.12
-    - _TapeNoiseIntensity: 0.18
+    - _TapeNoiseIntensity: 0.04
     - _TrackingBarIntensity: 0.45
     - _TrackingBarSpeed: 0.18
     - _TrackingBarThickness: 0.08

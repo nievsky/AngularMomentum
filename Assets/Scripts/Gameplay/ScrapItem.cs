@@ -36,7 +36,7 @@ namespace OrbitalPanopticon.Gameplay
         [Header("Visual Feedback")]
         [SerializeField] private Transform visualRoot;
         [SerializeField] private Renderer mainRenderer;
-        [SerializeField] private Color baseColdColor = new Color(0.15f, 0.85f, 1f, 1f); // Cyan
+        [SerializeField] private Color baseColdColor = new Color(1f, 1f, 1f, 1f); // Neutral White
         [SerializeField] private Color hotAccretionColor = new Color(1f, 0.45f, 0.05f, 1f); // Hot orange
 
         [Header("Observation Feedback")]
@@ -117,6 +117,8 @@ namespace OrbitalPanopticon.Gameplay
         private float _fadeDuration = 1.8f;
         private float _fadeElapsed = 0f;
         private float _currentAlpha = 1f;
+
+        private bool _isTransparentMode = false;
 
         [Header("Accretion & Spaghettification VFX")]
         [SerializeField] private ParticleSystem accretionSparksParticles;
@@ -853,10 +855,46 @@ namespace OrbitalPanopticon.Gameplay
             if (visualRoot == null) visualRoot = transform.Find("VisualRoot");
             Renderer[] rends = visualRoot != null ? visualRoot.GetComponentsInChildren<Renderer>(true) : GetComponentsInChildren<Renderer>(true);
 
+            // Dynamic Queue & Blend State Switch:
+            // When alpha < 0.98f (Held in front of camera or fading out at arena boundary), switch to Transparent (3000)
+            // When alpha >= 0.99f (Floating or Launched), switch to Opaque Geometry (2000)
+            bool shouldBeTransparent = _currentAlpha < 0.98f;
+            if (shouldBeTransparent != _isTransparentMode)
+            {
+                _isTransparentMode = shouldBeTransparent;
+                for (int i = 0; i < rends.Length; i++)
+                {
+                    Renderer r = rends[i];
+                    if (r == null || r is ParticleSystemRenderer || r is LineRenderer || r is TrailRenderer) continue;
+                    Material[] mats = Application.isPlaying ? r.materials : r.sharedMaterials;
+                    for (int m = 0; m < mats.Length; m++)
+                    {
+                        Material mat = mats[m];
+                        if (mat == null) continue;
+                        if (_isTransparentMode)
+                        {
+                            mat.renderQueue = 3000;
+                            mat.SetOverrideTag("RenderType", "Transparent");
+                            if (mat.HasProperty("_SrcBlend")) mat.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                            if (mat.HasProperty("_DstBlend")) mat.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                            if (mat.HasProperty("_ZWrite")) mat.SetFloat("_ZWrite", 0f);
+                        }
+                        else
+                        {
+                            mat.renderQueue = 2000;
+                            mat.SetOverrideTag("RenderType", "Opaque");
+                            if (mat.HasProperty("_SrcBlend")) mat.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.One);
+                            if (mat.HasProperty("_DstBlend")) mat.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.Zero);
+                            if (mat.HasProperty("_ZWrite")) mat.SetFloat("_ZWrite", 1f);
+                        }
+                    }
+                }
+            }
+
             for (int i = 0; i < rends.Length; i++)
             {
                 Renderer r = rends[i];
-                if (r == null || r is ParticleSystemRenderer || r is LineRenderer) continue;
+                if (r == null || r is ParticleSystemRenderer || r is LineRenderer || r is TrailRenderer) continue;
                 r.GetPropertyBlock(_propertyBlock);
                 _propertyBlock.SetColor(BaseColorId, currentColor);
                 _propertyBlock.SetColor(ColorId, currentColor);

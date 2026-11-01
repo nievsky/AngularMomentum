@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using OrbitalPanopticon.Physics;
+using OrbitalPanopticon.Core;
 
 namespace OrbitalPanopticon.Gameplay
 {
@@ -54,6 +55,16 @@ namespace OrbitalPanopticon.Gameplay
             }
             set => _instance = value;
         }
+
+        [Header("1. Helper Robot 3D Model Override")]
+        [Tooltip("Drag your Helper Robot FBX or prefab with its material here!")]
+        public GameObject customHelperRobotModelPrefab;
+
+        [Range(0.1f, 5.0f), Tooltip("Scale multiplier for Helper Robot (auto-normalized to ~1.8m diameter).")]
+        public float helperRobotScaleMultiplier = 1.0f;
+
+        [Tooltip("Rotation offset in degrees in case the artist exported the model facing -Z or +X.")]
+        public Vector3 helperRobotRotationOffset = Vector3.zero;
 
         [Header("Drag 3D Prefabs/Models Here & Pick Tier (1-4)")]
         [Tooltip("Add custom 3D models or prefabs here. When scrap of a matching tier spawns, one is chosen at random.")]
@@ -371,25 +382,39 @@ namespace OrbitalPanopticon.Gameplay
                             mat.SetColor("_Color", baseColor);
                             if (bumpMap != null) mat.SetTexture("_BumpMap", bumpMap);
                             if (specMap != null) mat.SetTexture("_SpecGlossMap", specMap);
-                            mat.SetFloat("_AmbientFloor", 0.38f);
-                            mat.SetColor("_RimColor", new Color(0.7f, 0.88f, 1.0f, 1.0f));
-                            mat.SetFloat("_RimPower", 3.0f);
-                            mat.SetFloat("_RimIntensity", 0.45f);
+                            mat.SetFloat("_MinLighting", 0.12f);
+                            mat.SetFloat("_MaxLighting", 0.85f);
+                            mat.SetColor("_SilhouetteColor", new Color(0.65f, 0.82f, 0.95f, 1.0f));
+                            mat.SetColor("_RimColor", new Color(0.65f, 0.82f, 0.95f, 1.0f));
+                            mat.SetFloat("_RimPower", 5.0f);
+                            mat.SetFloat("_SilhouetteIntensity", 0.35f);
+                            mat.SetFloat("_RimIntensity", 0.35f);
+                            mat.SetFloat("_PulseSpeed", 2.2f);
+                            mat.SetFloat("_Alpha", 1.0f);
+                            mat.renderQueue = 2000;
+                            mat.SetOverrideTag("RenderType", "Opaque");
+                            if (mat.HasProperty("_SrcBlend")) mat.SetFloat("_SrcBlend", 1f);
+                            if (mat.HasProperty("_DstBlend")) mat.SetFloat("_DstBlend", 0f);
+                            if (mat.HasProperty("_ZWrite")) mat.SetFloat("_ZWrite", 1f);
                             changed = true;
                         }
                     }
                     else
                     {
-                        if (mat.HasProperty("_AmbientFloor") && mat.GetFloat("_AmbientFloor") < 0.2f)
-                        {
-                            mat.SetFloat("_AmbientFloor", 0.38f);
-                            changed = true;
-                        }
-                        if (mat.HasProperty("_RimIntensity") && mat.GetFloat("_RimIntensity") < 0.2f)
-                        {
-                            mat.SetFloat("_RimIntensity", 0.45f);
-                            changed = true;
-                        }
+                        mat.SetFloat("_MinLighting", 0.12f);
+                        mat.SetFloat("_MaxLighting", 0.85f);
+                        mat.SetColor("_SilhouetteColor", new Color(0.65f, 0.82f, 0.95f, 1.0f));
+                        mat.SetColor("_RimColor", new Color(0.65f, 0.82f, 0.95f, 1.0f));
+                        mat.SetFloat("_RimPower", 5.0f);
+                        mat.SetFloat("_SilhouetteIntensity", 0.35f);
+                        mat.SetFloat("_RimIntensity", 0.35f);
+                        mat.SetFloat("_PulseSpeed", 2.2f);
+                        mat.renderQueue = 2000;
+                        mat.SetOverrideTag("RenderType", "Opaque");
+                        if (mat.HasProperty("_SrcBlend")) mat.SetFloat("_SrcBlend", 1f);
+                        if (mat.HasProperty("_DstBlend")) mat.SetFloat("_DstBlend", 0f);
+                        if (mat.HasProperty("_ZWrite")) mat.SetFloat("_ZWrite", 1f);
+                        changed = true;
                     }
                 }
                 if (changed)
@@ -401,5 +426,41 @@ namespace OrbitalPanopticon.Gameplay
                 }
             }
         }
+
+        public static GameObject GetCustomHelperRobotModel(out float scaleMultiplier, out Vector3 rotationOffset)
+        {
+            scaleMultiplier = 1.0f;
+            rotationOffset = Vector3.zero;
+
+            ScrapAssetCatalogSO catalog = Instance;
+            if (catalog != null && catalog.customHelperRobotModelPrefab != null)
+            {
+                scaleMultiplier = catalog.helperRobotScaleMultiplier <= 0.001f ? 1.0f : catalog.helperRobotScaleMultiplier;
+                rotationOffset = catalog.helperRobotRotationOffset;
+                return catalog.customHelperRobotModelPrefab;
+            }
+
+            GameBalanceConfig cfg = GameManager.GameBalanceConfigInstance;
+            if (cfg != null && cfg.customHelperRobotModelPrefab != null)
+            {
+                scaleMultiplier = cfg.helperRobotScaleMultiplier <= 0.001f ? 1.0f : cfg.helperRobotScaleMultiplier;
+                rotationOffset = cfg.helperRobotRotationOffset;
+                return cfg.customHelperRobotModelPrefab;
+            }
+
+            return null;
+        }
+
+        [ContextMenu("Rebuild Helper Robot Visuals")]
+        public void RebuildHelperRobotVisuals()
+        {
+            HelperDroneBot[] bots = Object.FindObjectsByType<HelperDroneBot>(FindObjectsInactive.Include);
+            foreach (var b in bots)
+            {
+                if (b != null) b.ConfigureVisualModel();
+            }
+            Debug.Log($"<color=#00FFAA>[ScrapAssetCatalog] Updated visual models for {bots.Length} HelperDroneBot instances!</color>");
+        }
+
     }
 }

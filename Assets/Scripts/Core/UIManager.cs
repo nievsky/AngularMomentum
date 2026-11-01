@@ -39,6 +39,17 @@ namespace OrbitalPanopticon.Core
         public TextMeshProUGUI BlackHoleBarText => blackHoleBarText;
         public TextMeshProUGUI StageHeaderText => stageHeaderText;
 
+        [Header("Juicy Numbers Go Up Mass Counter")]
+        [SerializeField] private TextMeshProUGUI massNumberText;
+        public TextMeshProUGUI MassNumberText => massNumberText != null ? massNumberText : blackHoleBarText;
+
+        private float _displayedMassValue = 1f;
+        private float _lastKnownTargetMass = -1f;
+        private Tweener _massRollTween;
+        private Tween _stage4TremorTween;
+        private Vector2 _originalMassTextAnchorPos = Vector2.zero;
+        private bool _isStage4Tremoring = false;
+
         [Header("Camera Viewfinder Overlay")]
         [SerializeField] private GameObject cameraViewfinderOverlay;
         [SerializeField] private Image recDotImage;
@@ -179,12 +190,23 @@ namespace OrbitalPanopticon.Core
             }
             _isOperatorConnected = false;
 
+            if (BlackHoleStageManager.Instance != null)
+            {
+                BlackHoleStageManager.Instance.OnMassChanged += HandleBlackHoleMassChanged;
+            }
+
             EnsureMinimalistHUD();
             EnsureViewfinderOverlay();
         }
 
         private void OnDestroy()
         {
+            if (BlackHoleStageManager.Instance != null)
+            {
+                BlackHoleStageManager.Instance.OnMassChanged -= HandleBlackHoleMassChanged;
+            }
+            _massRollTween?.Kill();
+            _stage4TremorTween?.Kill();
             if (quotaManager != null)
             {
                 quotaManager.OnQuotaCompleted -= HandleQuotaCelebration;
@@ -336,46 +358,179 @@ namespace OrbitalPanopticon.Core
                 scrapCoinsText.text = LocalizationManager.Get("HUD_ScrapCoins", coins);
             }
 
-            // 2. Black Hole Mass Progress Bar (Bottom-Center)
+            // 2. Hide HUD Clutter (Stage header and progress bar fill)
+            if (stageHeaderText != null && stageHeaderText.gameObject.activeSelf)
+            {
+                stageHeaderText.gameObject.SetActive(false);
+            }
+            if (blackHoleBarFill != null && blackHoleBarFill.gameObject.activeSelf)
+            {
+                blackHoleBarFill.gameObject.SetActive(false);
+            }
+
+            // 3. Pure Dynamic Number Starting at 1 (displayMass = 1 + currentMass)
+            float targetDisplayMass = 1f + mass;
+
+            if (_lastKnownTargetMass < 0f)
+            {
+                _lastKnownTargetMass = targetDisplayMass;
+                _displayedMassValue = targetDisplayMass;
+                UpdateMassTextString();
+            }
+            else if (targetDisplayMass > _lastKnownTargetMass)
+            {
+                float gain = targetDisplayMass - _lastKnownTargetMass;
+                _lastKnownTargetMass = targetDisplayMass;
+                OnMassGainedJuice(gain, targetDisplayMass);
+            }
+            else if (targetDisplayMass < _lastKnownTargetMass)
+            {
+                _lastKnownTargetMass = targetDisplayMass;
+                _displayedMassValue = targetDisplayMass;
+                UpdateMassTextString();
+            }
+
+            // 4. Dynamic Font Size & Color Scaling by Mass across Stages 1-4
+            ApplyMassVisualStyling(mass, stage, stageIndex, config);
+        }
+
+        private void HandleBlackHoleMassChanged(float mass, int stage)
+        {
+            float targetDisplayMass = 1f + mass;
+            if (_lastKnownTargetMass < 0f)
+            {
+                _lastKnownTargetMass = targetDisplayMass;
+                _displayedMassValue = targetDisplayMass;
+                UpdateMassTextString();
+            }
+            else if (targetDisplayMass > _lastKnownTargetMass)
+            {
+                float gain = targetDisplayMass - _lastKnownTargetMass;
+                _lastKnownTargetMass = targetDisplayMass;
+                OnMassGainedJuice(gain, targetDisplayMass);
+            }
+        }
+
+        private void UpdateMassTextString()
+        {
+            TextMeshProUGUI txt = MassNumberText;
+            if (txt == null) return;
+            long displayInt = (long)System.Math.Round(_displayedMassValue);
+            if (displayInt < 1) displayInt = 1;
+            txt.text = displayInt.ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        private void OnMassGainedJuice(float massGain, float newTargetMass)
+        {
+            TextMeshProUGUI txt = MassNumberText;
+            if (txt == null) return;
+
+            // 1. Smoothly roll displayedMassValue to new target mass over 0.35s
+            _massRollTween?.Kill();
+            _massRollTween = DOTween.To(() => _displayedMassValue, x =>
+            {
+                _displayedMassValue = x;
+                UpdateMassTextString();
+            }, newTargetMass, 0.35f).SetEase(Ease.OutQuad).SetUpdate(true);
+
+            // 2. Snappy DOTween scale punch + random rotational wobble + DOShakeAnchorPos
+            RectTransform rt = txt.rectTransform;
+            rt.DOKill(complete: false);
+            rt.localScale = Vector3.one;
+            rt.localRotation = Quaternion.identity;
+            rt.anchoredPosition = _originalMassTextAnchorPos;
+
+            // Snappy scale punch
+            rt.DOPunchScale(Vector3.one * 0.28f, 0.25f, 8, 0.7f).SetUpdate(true);
+
+            // Playful random rotational wobble/shake
+            float wobbleZ = UnityEngine.Random.Range(-7f, 7f);
+            if (Mathf.Abs(wobbleZ) < 2.0f) wobbleZ = wobbleZ < 0 ? -4.5f : 4.5f;
+            rt.DOPunchRotation(new Vector3(0f, 0f, wobbleZ), 0.25f, 10).SetUpdate(true);
+
+            // DOShakeAnchorPos scaled by how big the mass gain was
+            float shakeStrength = Mathf.Clamp(massGain * 0.08f, 2.0f, 15f);
+            rt.DOShakeAnchorPos(0.25f, shakeStrength, 14, 90f).SetUpdate(true).OnComplete(() =>
+            {
+                if (!_isStage4Tremoring && rt != null)
+                {
+                    rt.anchoredPosition = _originalMassTextAnchorPos;
+                    rt.localRotation = Quaternion.identity;
+                }
+            });
+        }
+
+        private void ApplyMassVisualStyling(float actualMass, int stage, int stageIndex, GameBalanceConfig config)
+        {
+            TextMeshProUGUI txt = MassNumberText;
+            if (txt == null) return;
+
             float prevTarget = (stageIndex > 0 && config != null && config.stageMassTargets != null && stageIndex - 1 < config.stageMassTargets.Length)
                 ? config.stageMassTargets[stageIndex - 1]
                 : 0f;
-            float fillNorm = Mathf.Clamp01((mass - prevTarget) / Mathf.Max(1f, targetMass - prevTarget));
+            float currTarget = (config != null && config.stageMassTargets != null && stageIndex < config.stageMassTargets.Length)
+                ? config.stageMassTargets[stageIndex]
+                : (prevTarget + 1000f);
 
-            if (blackHoleBarFill != null)
+            float stageProgress = Mathf.Clamp01((actualMass - prevTarget) / Mathf.Max(1f, currTarget - prevTarget));
+            float totalProgress = Mathf.Clamp01((stageIndex + stageProgress) / 4.0f);
+
+            // 1. Dynamic Font Size (48pt at mass 1 up to 92pt at high mass)
+            txt.fontSize = Mathf.Lerp(48f, 92f, totalProgress);
+
+            // 2. Dynamic Color Scaling
+            // Low Mass (Stage 1): Crisp Ice White (#FFFFFF) -> Soft Cyan (#60F0FF)
+            // Medium Mass (Stage 2): Electric Gold (#FFE040)
+            // High Mass (Stage 3): Fiery Orange (#FF6A10)
+            // Critical Mass (Stage 4): Blazing Crimson-Magenta (#FF1845) with tremor!
+            Color white = new Color(1f, 1f, 1f, 1f);
+            Color softCyan = new Color(0.376f, 0.941f, 1.0f, 1f);
+            Color electricGold = new Color(1.0f, 0.878f, 0.251f, 1f);
+            Color fieryOrange = new Color(1.0f, 0.416f, 0.063f, 1f);
+            Color blazingCrimson = new Color(1.0f, 0.094f, 0.271f, 1f);
+
+            Color targetColor;
+            if (stage <= 1)
             {
-                blackHoleBarFill.fillAmount = fillNorm;
-
-                if (stage == 1) blackHoleBarFill.color = new Color(0.15f, 0.9f, 1.0f, 0.95f);
-                else if (stage == 2) blackHoleBarFill.color = new Color(1.0f, 0.88f, 0.2f, 0.95f);
-                else if (stage == 3) blackHoleBarFill.color = new Color(1.0f, 0.55f, 0.1f, 0.95f);
-                else
-                {
-                    float pulse = 0.5f + (0.5f * Mathf.Sin(Time.time * 8f));
-                    blackHoleBarFill.color = Color.Lerp(new Color(1f, 0.15f, 0.15f, 0.95f), new Color(1f, 0.85f, 0.15f, 0.95f), pulse);
-                }
+                targetColor = Color.Lerp(white, softCyan, stageProgress);
+            }
+            else if (stage == 2)
+            {
+                targetColor = Color.Lerp(softCyan, electricGold, stageProgress);
+            }
+            else if (stage == 3)
+            {
+                targetColor = Color.Lerp(electricGold, fieryOrange, stageProgress);
+            }
+            else // Stage 4+
+            {
+                targetColor = Color.Lerp(fieryOrange, blazingCrimson, stageProgress);
+                float pulse = 0.5f + (0.5f * Mathf.Sin(Time.time * 6f));
+                targetColor = Color.Lerp(targetColor, blazingCrimson, pulse * 0.4f);
             }
 
-            if (blackHoleBarText != null)
-            {
-                blackHoleBarText.text = LocalizationManager.Get("HUD_MassBar", mass, targetMass);
-            }
+            txt.color = targetColor;
 
-            // 3. Stage Indicator (Directly above the Mass Bar)
-            if (stageHeaderText != null)
+            // 3. Stage 4 Subtle Continuous DOTween Tremor
+            if (stage >= 4)
             {
-                if (stage >= 4)
+                if (!_isStage4Tremoring)
                 {
-                    stageHeaderText.text = LocalizationManager.Get("HUD_Stage4_Critical");
-                    float pulse = 0.5f + (0.5f * Mathf.Sin(Time.time * 10f));
-                    stageHeaderText.color = Color.Lerp(new Color(1f, 0.2f, 0.15f), new Color(1f, 0.9f, 0.2f), pulse);
+                    _isStage4Tremoring = true;
+                    _stage4TremorTween?.Kill();
+                    _stage4TremorTween = txt.rectTransform.DOShakeAnchorPos(1.0f, 2.2f, 16, 90f, false, false)
+                        .SetLoops(-1, LoopType.Restart)
+                        .SetUpdate(true);
                 }
-                else
+            }
+            else
+            {
+                if (_isStage4Tremoring)
                 {
-                    stageHeaderText.text = LocalizationManager.Get("HUD_Stage", stage);
-                    if (stage == 1) stageHeaderText.color = new Color(0.2f, 0.92f, 1.0f);
-                    else if (stage == 2) stageHeaderText.color = new Color(1.0f, 0.88f, 0.2f);
-                    else if (stage == 3) stageHeaderText.color = new Color(1.0f, 0.55f, 0.1f);
+                    _isStage4Tremoring = false;
+                    _stage4TremorTween?.Kill();
+                    _stage4TremorTween = null;
+                    txt.rectTransform.anchoredPosition = _originalMassTextAnchorPos;
                 }
             }
         }
@@ -410,6 +565,10 @@ namespace OrbitalPanopticon.Core
             CanvasGroup cg = bottomHUDPanel.GetComponent<CanvasGroup>();
             if (cg == null) cg = bottomHUDPanel.AddComponent<CanvasGroup>();
 
+            _stage4TremorTween?.Kill();
+            _stage4TremorTween = null;
+            _isStage4Tremoring = false;
+
             cg.DOKill();
             cg.DOFade(0f, duration).SetUpdate(true).OnComplete(() =>
             {
@@ -422,6 +581,10 @@ namespace OrbitalPanopticon.Core
         /// </summary>
         public void HideBottomMassBar()
         {
+            _stage4TremorTween?.Kill();
+            _stage4TremorTween = null;
+            _isStage4Tremoring = false;
+
             if (bottomHUDPanel != null)
             {
                 bottomHUDPanel.SetActive(false);
@@ -532,19 +695,30 @@ namespace OrbitalPanopticon.Core
             bottomRt.anchorMin = new Vector2(0.5f, 0f);
             bottomRt.anchorMax = new Vector2(0.5f, 0f);
             bottomRt.pivot = new Vector2(0.5f, 0f);
-            bottomRt.anchoredPosition = new Vector2(0f, 32f);
-            bottomRt.sizeDelta = new Vector2(520f, 22f);
+            bottomRt.anchoredPosition = new Vector2(0f, 30f);
+            bottomRt.sizeDelta = new Vector2(900f, 140f);
 
             // Hide legacy battery bar if present
             Transform batT = bottomHUDPanel.transform.Find("Bar_Battery");
             if (batT != null) SafeDestroy(batT.gameObject);
 
-            // Re-anchor Bar_BlackHole
+            // Hide legacy Stage Header
+            Transform stageHeaderT = bottomHUDPanel.transform.Find("Text_StageHeader");
+            if (stageHeaderT != null)
+            {
+                stageHeaderT.gameObject.SetActive(false);
+            }
+            if (stageHeaderText != null)
+            {
+                stageHeaderText.gameObject.SetActive(false);
+            }
+
+            // Setup or re-anchor Bar_BlackHole container
             Transform bhT = bottomHUDPanel.transform.Find("Bar_BlackHole");
             GameObject bhBarGo;
             if (bhT == null)
             {
-                bhBarGo = new GameObject("Bar_BlackHole", typeof(RectTransform), typeof(Image), typeof(Outline));
+                bhBarGo = new GameObject("Bar_BlackHole", typeof(RectTransform));
                 bhBarGo.transform.SetParent(bottomHUDPanel.transform, false);
             }
             else
@@ -553,35 +727,31 @@ namespace OrbitalPanopticon.Core
             }
 
             RectTransform bhRt = bhBarGo.GetComponent<RectTransform>();
-            bhRt.anchorMin = Vector2.zero;
-            bhRt.anchorMax = Vector2.one;
-            bhRt.sizeDelta = Vector2.zero;
+            bhRt.anchorMin = new Vector2(0.5f, 0.5f);
+            bhRt.anchorMax = new Vector2(0.5f, 0.5f);
+            bhRt.pivot = new Vector2(0.5f, 0.5f);
+            bhRt.sizeDelta = new Vector2(900f, 140f);
             bhRt.anchoredPosition = Vector2.zero;
 
+            // Remove/disable background image and outline on Bar_BlackHole
             Image bhBg = bhBarGo.GetComponent<Image>();
-            bhBg.color = new Color(0.04f, 0.07f, 0.12f, 0.92f);
+            if (bhBg != null) bhBg.enabled = false;
 
             Outline bhOutline = bhBarGo.GetComponent<Outline>();
-            bhOutline.effectColor = new Color(0.2f, 0.85f, 1f, 0.75f);
-            bhOutline.effectDistance = new Vector2(1.5f, -1.5f);
+            if (bhOutline != null) bhOutline.enabled = false;
 
+            // Hide horizontal fill image
             Transform fillT = bhBarGo.transform.Find("Fill");
-            if (fillT == null)
+            if (fillT != null)
             {
-                GameObject fillGo = new GameObject("Fill", typeof(RectTransform), typeof(Image));
-                fillGo.transform.SetParent(bhBarGo.transform, false);
-                fillT = fillGo.transform;
+                fillT.gameObject.SetActive(false);
             }
-            RectTransform fillRt = fillT.GetComponent<RectTransform>();
-            fillRt.anchorMin = Vector2.zero;
-            fillRt.anchorMax = Vector2.one;
-            fillRt.sizeDelta = Vector2.zero;
+            if (blackHoleBarFill != null)
+            {
+                blackHoleBarFill.gameObject.SetActive(false);
+            }
 
-            blackHoleBarFill = fillT.GetComponent<Image>();
-            blackHoleBarFill.type = Image.Type.Filled;
-            blackHoleBarFill.fillMethod = Image.FillMethod.Horizontal;
-            blackHoleBarFill.color = new Color(0.2f, 0.9f, 1f, 0.95f);
-
+            // Setup Mass Number Text
             Transform textT = bhBarGo.transform.Find("Text");
             if (textT == null)
             {
@@ -590,36 +760,22 @@ namespace OrbitalPanopticon.Core
                 textT = tGo.transform;
             }
             RectTransform tRt = textT.GetComponent<RectTransform>();
-            tRt.anchorMin = Vector2.zero;
-            tRt.anchorMax = Vector2.one;
-            tRt.sizeDelta = Vector2.zero;
+            tRt.anchorMin = new Vector2(0.5f, 0.5f);
+            tRt.anchorMax = new Vector2(0.5f, 0.5f);
+            tRt.pivot = new Vector2(0.5f, 0.5f);
+            tRt.sizeDelta = new Vector2(900f, 140f);
+            tRt.anchoredPosition = Vector2.zero;
+            _originalMassTextAnchorPos = Vector2.zero;
 
             blackHoleBarText = textT.GetComponent<TextMeshProUGUI>();
             blackHoleBarText.alignment = TextAlignmentOptions.Center;
-            blackHoleBarText.fontSize = 13;
+            blackHoleBarText.fontSize = 48;
             blackHoleBarText.fontStyle = FontStyles.Bold;
             blackHoleBarText.color = Color.white;
-
-            // Stage Header (directly above the Mass Bar)
-            Transform stageHeaderT = bottomHUDPanel.transform.Find("Text_StageHeader");
-            if (stageHeaderT == null)
-            {
-                GameObject shGo = new GameObject("Text_StageHeader", typeof(RectTransform), typeof(TextMeshProUGUI));
-                shGo.transform.SetParent(bottomHUDPanel.transform, false);
-                stageHeaderT = shGo.transform;
-            }
-            RectTransform shRt = stageHeaderT.GetComponent<RectTransform>();
-            shRt.anchorMin = new Vector2(0.5f, 1f);
-            shRt.anchorMax = new Vector2(0.5f, 1f);
-            shRt.pivot = new Vector2(0.5f, 0f);
-            shRt.anchoredPosition = new Vector2(0f, 6f);
-            shRt.sizeDelta = new Vector2(520f, 26f);
-
-            stageHeaderText = stageHeaderT.GetComponent<TextMeshProUGUI>();
-            stageHeaderText.alignment = TextAlignmentOptions.Center;
-            stageHeaderText.fontSize = 14;
-            stageHeaderText.fontStyle = FontStyles.Bold;
-            stageHeaderText.color = new Color(0.2f, 0.92f, 1f);
+            blackHoleBarText.textWrappingMode = TextWrappingModes.NoWrap;
+            blackHoleBarText.overflowMode = TextOverflowModes.Overflow;
+            blackHoleBarText.raycastTarget = false;
+            massNumberText = blackHoleBarText;
 
             // 4. Ensure Camera Viewfinder Overlay (Corner Brackets + ● REC)
             EnsureViewfinderOverlay(canvas);
@@ -865,13 +1021,12 @@ namespace OrbitalPanopticon.Core
 
         private void HandleQuotaCelebration(int quotaLevel, int rewardCoins)
         {
-            if (quotaCelebrationPanel == null) return;
-
-            if (_celebrationCoroutine != null)
+            // Legacy quota celebration top banner ("КВОТА #X ВЫПОЛНЕНА") removed per design request
+            // Only clean Stage & Mass HUD remains
+            if (quotaCelebrationPanel != null)
             {
-                StopCoroutine(_celebrationCoroutine);
+                quotaCelebrationPanel.SetActive(false);
             }
-            _celebrationCoroutine = StartCoroutine(ShowQuotaCelebrationRoutine(quotaLevel, rewardCoins));
         }
 
         private IEnumerator ShowQuotaCelebrationRoutine(int quotaLevel, int rewardCoins)

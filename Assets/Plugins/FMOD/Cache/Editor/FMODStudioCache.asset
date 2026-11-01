@@ -431,7 +431,7 @@ MonoBehaviour:
   - {fileID: -4839272689148717466}
   MinDistance: 1
   MaxDistance: 20
-  Length: 149769
+  Length: 150769
 --- !u!114 &-910432846171389987
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -458,7 +458,7 @@ MonoBehaviour:
   Parameters: []
   MinDistance: 1
   MaxDistance: 20
-  Length: 8200
+  Length: 8353
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -495,13 +495,15 @@ MonoBehaviour:
   - {fileID: -2967011709845850287}
   - {fileID: 4297681670683708288}
   - {fileID: -7061914445993149545}
+  - {fileID: 4123171314202876339}
+  - {fileID: 3014943407342433644}
   EditorParameters: []
   MasterBanks:
   - {fileID: 1206500338223914334}
   StringsBanks:
   - {fileID: 384512280698726887}
   cacheVersion: 131848
-  cacheTime: 639290825189593084
+  cacheTime: 639291277043438500
   SerializableEventsDict:
   - key: event:/Blackhole/Singularity_Hum
     index: 0
@@ -543,6 +545,10 @@ MonoBehaviour:
     index: 18
   - key: event:/Player/Beam_Shock
     index: 19
+  - key: event:/Boss/Overseer_BeamLoop
+    index: 20
+  - key: event:/Boss/Overseer_BeamAttack
+    index: 21
 --- !u!114 &250376656742973212
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -585,12 +591,12 @@ MonoBehaviour:
   Path: Assets/FMOD/Desktop/Master.strings.bank
   Name: Master.strings
   StudioPath: bank:/Master.strings
-  lastModified: 639290749650084355
+  lastModified: 639291277043438500
   FileSizes:
   - Name: Desktop
-    Value: 1952
+    Value: 2040
   - Name: WEB
-    Value: 1952
+    Value: 2040
   Exists: 1
 --- !u!114 &452124941215673372
 MonoBehaviour:
@@ -688,12 +694,12 @@ MonoBehaviour:
   Path: Assets/FMOD/Desktop/Master.bank
   Name: Master
   StudioPath: bank:/Master
-  lastModified: 639290825189593084
+  lastModified: 639291277043372846
   FileSizes:
   - Name: Desktop
-    Value: 8079168
+    Value: 8383552
   - Name: WEB
-    Value: 8079168
+    Value: 8383552
   Exists: 1
 --- !u!114 &1606418619250310922
 MonoBehaviour:
@@ -830,6 +836,60 @@ MonoBehaviour:
   MinDistance: 1
   MaxDistance: 50
   Length: 851
+--- !u!114 &3014943407342433644
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Boss/Overseer_BeamAttack
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Boss/Overseer_BeamAttack
+  Guid:
+    Data1: 1111477683
+    Data2: 1081840932
+    Data3: 2014428841
+    Data4: 1889853342
+  Banks:
+  - {fileID: 1206500338223914334}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 1
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 290
+  Length: 5490
+--- !u!114 &4123171314202876339
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ceb653cd98e289a4e8697a1af55201f2, type: 3}
+  m_Name: event:/Boss/Overseer_BeamLoop
+  m_EditorClassIdentifier: FMODUnityEditor::FMODUnity.EditorEventRef
+  Path: event:/Boss/Overseer_BeamLoop
+  Guid:
+    Data1: 1846008426
+    Data2: 1078908951
+    Data3: 855107259
+    Data4: -1507346751
+  Banks:
+  - {fileID: 1206500338223914334}
+  IsStream: 0
+  Is3D: 1
+  IsOneShot: 0
+  Parameters: []
+  MinDistance: 1
+  MaxDistance: 60
+  Length: 6840
 --- !u!114 &4297681670683708288
 MonoBehaviour:
   m_ObjectHideFlags: 0

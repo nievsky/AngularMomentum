@@ -68,6 +68,9 @@ namespace OrbitalPanopticon.Core
 
         public event Action OnUpgradeTreeChanged;
 
+        [Header("Master Balance Configuration")]
+        [SerializeField] private GameBalanceConfig balanceConfig;
+
         [Header("Upgrade Nodes (Designer Data)")]
         [SerializeField] private List<UpgradeNodeData> nodes = new List<UpgradeNodeData>();
 
@@ -219,7 +222,8 @@ namespace OrbitalPanopticon.Core
 
         private void ApplyNodeEffect(UpgradeNodeData node)
         {
-            GameBalanceConfig config = GameManager.GameBalanceConfigInstance;
+            GameManager.Instance?.PrepareForUpgradeMutation();
+            GameBalanceConfig config = balanceConfig != null ? balanceConfig : GameManager.GameBalanceConfigInstance;
             if (config == null) return;
 
             switch (node.nodeId)

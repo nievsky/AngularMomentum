@@ -46,8 +46,8 @@ Material:
     - _NebulaColorA: {r: 0.08, g: 0.48, b: 0.85, a: 1}
     - _NebulaColorB: {r: 0.75, g: 0.15, b: 0.65, a: 1}
     - _NebulaOffset: {r: 3.96, g: 10.27, b: 5.6, a: 0}
-    - _SpaceHorizonColor: {r: 0.23720846, g: 0.07409222, b: 0.3490566, a: 1}
-    - _SpaceNadirColor: {r: 0.11461764, g: 0.055802785, b: 0.3584906, a: 1}
-    - _SpaceZenithColor: {r: 0.012, g: 0.018, b: 0.042, a: 1}
+    - _SpaceHorizonColor: {r: 0.0196078, g: 0.0156863, b: 0.0392157, a: 1}
+    - _SpaceNadirColor: {r: 0.001, g: 0.001, b: 0.002, a: 1}
+    - _SpaceZenithColor: {r: 0.0470588, g: 0.0352941, b: 0.0941176, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

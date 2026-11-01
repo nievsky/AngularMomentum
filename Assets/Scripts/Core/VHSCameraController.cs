@@ -3,7 +3,6 @@ using UnityEngine;
 
 namespace OrbitalPanopticon.Core
 {
-    [ExecuteAlways]
     [DisallowMultipleComponent]
     public class VHSCameraController : MonoBehaviour
     {
@@ -19,7 +18,7 @@ namespace OrbitalPanopticon.Core
         [Range(0.5f, 1.0f)] [SerializeField] private float overscanScale = 0.90f;
 
         [Header("1. CRT Scanlines")]
-        [Range(0f, 1f)] [SerializeField] private float scanlineIntensity = 0.28f;
+        [Range(0f, 1f)] [SerializeField] private float scanlineIntensity = 0.15f;
         [Range(100f, 1080f)] [SerializeField] private float scanlineCount = 640f;
         [Range(-10f, 10f)] [SerializeField] private float scanlineScrollSpeed = 0.8f;
 
@@ -33,7 +32,7 @@ namespace OrbitalPanopticon.Core
         [Range(0f, 0.05f)] [SerializeField] private float rgbShiftAmount = 0.0055f;
 
         [Header("4. Tape Noise & Static")]
-        [Range(0f, 1f)] [SerializeField] private float tapeNoiseIntensity = 0.18f;
+        [Range(0f, 1f)] [SerializeField] private float tapeNoiseIntensity = 0.04f;
 
         [Header("5. CRT Curvature & Vignette")]
         [Range(0f, 0.5f)] [SerializeField] private float screenCurvature = 0.12f;
@@ -99,10 +98,17 @@ namespace OrbitalPanopticon.Core
         {
             if (visualConfig == null)
             {
+                string sceneName = gameObject.scene.name;
+                string configName = "VisualConfig_Gameplay";
+                if (!string.IsNullOrEmpty(sceneName))
+                {
+                    if (sceneName.Contains("MainMenu")) configName = "VisualConfig_MainMenu";
+                    else if (sceneName.Contains("Credits")) configName = "VisualConfig_Credits";
+                }
+
 #if UNITY_EDITOR
-                visualConfig = UnityEditor.AssetDatabase.LoadAssetAtPath<VisualEnvironmentConfigSO>("Assets/_Project/ScriptableObjects/VisualEnvironmentConfig.asset");
-#else
-                visualConfig = Resources.Load<VisualEnvironmentConfigSO>("VisualEnvironmentConfig");
+                visualConfig = UnityEditor.AssetDatabase.LoadAssetAtPath<VisualEnvironmentConfigSO>(
+                    $"Assets/_Project/ScriptableObjects/{configName}.asset");
 #endif
             }
         }
@@ -168,32 +174,48 @@ namespace OrbitalPanopticon.Core
 
         private void Awake()
         {
-            if (Application.isPlaying)
-            {
-                if (Instance == null) Instance = this;
-            }
+            if (!Application.isPlaying) return;
+            Instance = this;
             EnsureConfig();
             LoadFromConfig();
         }
 
+        private void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
+#if UNITY_EDITOR
+            if (visualConfig != null)
+            {
+                SaveToConfig();
+                UnityEditor.EditorUtility.SetDirty(visualConfig);
+                UnityEditor.AssetDatabase.SaveAssets();
+            }
+#endif
+        }
+
         private void OnEnable()
         {
+            if (!Application.isPlaying) return;
             if (Instance == null) Instance = this;
             EnsureConfig();
             LoadFromConfig();
         }
 
+#if UNITY_EDITOR
         private void OnValidate()
         {
+            if (UnityEditor.BuildPipeline.isBuildingPlayer) return;
             EnsureConfig();
             SaveToConfig();
             UpdateMaterialProperties();
         }
+#endif
 
         private void Update()
         {
-            // Update in edit mode or when dynamic burst animation is running
-            if (!Application.isPlaying || _burstGlitchBoost > 0f || _finaleInterference > 0f)
+            if (!Application.isPlaying) return;
+
+            if (_burstGlitchBoost > 0f || _finaleInterference > 0f)
             {
                 UpdateMaterialProperties();
             }

@@ -7,66 +7,89 @@ namespace OrbitalPanopticon.Editor
 {
     public static class SetupVisualConfigLinker
     {
-        private const string ConfigPath = "Assets/_Project/ScriptableObjects/VisualEnvironmentConfig.asset";
+        private const string MainMenuConfigPath = "Assets/_Project/ScriptableObjects/VisualConfig_MainMenu.asset";
+        private const string GameplayConfigPath = "Assets/_Project/ScriptableObjects/VisualConfig_Gameplay.asset";
+        private const string CreditsConfigPath = "Assets/_Project/ScriptableObjects/VisualConfig_Credits.asset";
 
         [MenuItem("Tools/Orbital Panopticon/Link Visual Environment Config to All Scenes")]
         public static void LinkAllScenes()
         {
-            var config = AssetDatabase.LoadAssetAtPath<VisualEnvironmentConfigSO>(ConfigPath);
-            if (config == null)
+            var menuConfig = AssetDatabase.LoadAssetAtPath<VisualEnvironmentConfigSO>(MainMenuConfigPath);
+            var gameplayConfig = AssetDatabase.LoadAssetAtPath<VisualEnvironmentConfigSO>(GameplayConfigPath);
+            var creditsConfig = AssetDatabase.LoadAssetAtPath<VisualEnvironmentConfigSO>(CreditsConfigPath);
+
+            if (menuConfig == null || gameplayConfig == null || creditsConfig == null)
             {
-                Debug.LogError($"[SetupVisualConfigLinker] VisualEnvironmentConfig.asset not found at {ConfigPath}!");
+                Debug.LogError("[SetupVisualConfigLinker] One or more per-scene VisualConfig assets are missing!");
                 return;
             }
 
-            string[] scenePaths = new string[]
-            {
-                "Assets/_Project/Scenes/MainMenuScene.unity",
-                "Assets/_Project/Scenes/GameplayScene.unity",
-                "Assets/_Project/Scenes/CreditsScene.unity"
-            };
+            LinkScene("Assets/_Project/Scenes/MainMenuScene.unity", menuConfig);
+            LinkScene("Assets/_Project/Scenes/GameplayScene.unity", gameplayConfig);
+            LinkScene("Assets/_Project/Scenes/CreditsScene.unity", creditsConfig);
 
-            foreach (var scenePath in scenePaths)
-            {
-                var scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single);
-                Debug.Log($"[SetupVisualConfigLinker] Processing scene: {scene.name}");
+            AssetDatabase.SaveAssets();
+            Debug.Log("<color=#00FFCC>[SetupVisualConfigLinker] Dedicated per-scene visualConfig assignment complete!</color>");
+        }
 
-                var skyboxControllers = Object.FindObjectsByType<SpaceSkyboxController>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        private static void LinkScene(string scenePath, VisualEnvironmentConfigSO config)
+        {
+            bool isCurrent = UnityEngine.SceneManagement.SceneManager.GetActiveScene().path == scenePath;
+            var scene = isCurrent 
+                ? UnityEngine.SceneManagement.SceneManager.GetActiveScene() 
+                : EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Additive);
+
+            Debug.Log($"[SetupVisualConfigLinker] Linking scene: {scene.name} -> {config.name}");
+
+            var rootGos = scene.GetRootGameObjects();
+            foreach (var go in rootGos)
+            {
+                var skyboxControllers = go.GetComponentsInChildren<SpaceSkyboxController>(true);
                 foreach (var sky in skyboxControllers)
                 {
                     sky.visualConfig = config;
                     sky.LoadFromConfig();
                     EditorUtility.SetDirty(sky);
-                    Debug.Log($"[SetupVisualConfigLinker] Linked visualConfig to SpaceSkyboxController in {scene.name}");
                 }
 
-                var vhsControllers = Object.FindObjectsByType<VHSCameraController>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+                var vhsControllers = go.GetComponentsInChildren<VHSCameraController>(true);
                 foreach (var vhs in vhsControllers)
                 {
                     vhs.visualConfig = config;
                     vhs.LoadFromConfig();
                     EditorUtility.SetDirty(vhs);
-                    Debug.Log($"[SetupVisualConfigLinker] Linked visualConfig to VHSCameraController in {scene.name}");
                 }
 
-                var postControllers = Object.FindObjectsByType<PostProcessingToolkitController>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+                var postControllers = go.GetComponentsInChildren<PostProcessingToolkitController>(true);
                 foreach (var post in postControllers)
                 {
                     post.visualConfig = config;
+                    post.EnsureVolumeAndOverrides();
                     post.LoadFromConfig();
                     EditorUtility.SetDirty(post);
-                    Debug.Log($"[SetupVisualConfigLinker] Linked visualConfig to PostProcessingToolkitController in {scene.name}");
                 }
 
-                EditorSceneManager.MarkSceneDirty(scene);
-                EditorSceneManager.SaveScene(scene);
-                Debug.Log($"[SetupVisualConfigLinker] Saved scene: {scene.name}");
+                var cameras = go.GetComponentsInChildren<Camera>(true);
+                foreach (var cam in cameras)
+                {
+                    var addCam = cam.GetComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
+                    if (addCam == null)
+                    {
+                        addCam = cam.gameObject.AddComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
+                    }
+                    addCam.renderPostProcessing = true;
+                    addCam.volumeLayerMask = -1;
+                    EditorUtility.SetDirty(cam);
+                }
             }
 
-            // Restore GameplayScene as current active scene
-            EditorSceneManager.OpenScene("Assets/_Project/Scenes/GameplayScene.unity", OpenSceneMode.Single);
-            AssetDatabase.SaveAssets();
-            Debug.Log("<color=#00FFCC>[SetupVisualConfigLinker] Batch scene visualConfig assignment complete!</color>");
+            EditorSceneManager.MarkSceneDirty(scene);
+            EditorSceneManager.SaveScene(scene);
+
+            if (!isCurrent)
+            {
+                EditorSceneManager.CloseScene(scene, true);
+            }
         }
     }
 }

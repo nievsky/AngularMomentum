@@ -1,0 +1,66 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05ad60065b7f7db4d8b11826873f77be, type: 3}
+  m_Name: CreditsContentConfig
+  m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.CreditsContentConfigSO
+  creditsTextRU: "<size=150%><b>\u042D\u041F\u0418\u0417\u041E\u0414 #042</b></size>\n\n<size=125%><b>\u041F\u041E\u0411\u0415\u0413
+    \u0417\u0410 \u0413\u041E\u0420\u0418\u0417\u041E\u041D\u0422 \u0421\u041E\u0411\u042B\u0422\u0418\u0419</b></size>\n\n\n\u041A\u043E\u0440\u043F\u043E\u0440\u0430\u0442\u0438\u0432\u043D\u044B\u0439
+    \u041F\u0430\u043D\u043E\u043F\u0442\u0438\u043A\u0443\u043C \u043F\u0430\u043B.\n\n\u0427\u0435\u0442\u044B\u0440\u0435
+    \u041E\u043A\u0430 \u0421\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u043D\u0438\u044F,
+    \u0432\u0435\u043A\u0430\u043C\u0438 \u0443\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0432\u0448\u0438\u0435
+    \u0433\u0440\u0430\u0432\u0438\u0442\u0430\u0446\u0438\u043E\u043D\u043D\u0443\u044E
+    \u0441\u0438\u043D\u0433\u0443\u043B\u044F\u0440\u043D\u043E\u0441\u0442\u044C
+    \u0432 \u0441\u0442\u0440\u043E\u0433\u0438\u0445 \u0433\u0440\u0430\u043D\u0438\u0446\u0430\u0445,
+    \u043D\u0435 \u0432\u044B\u0434\u0435\u0440\u0436\u0430\u043B\u0438 \u043A\u0440\u0438\u0442\u0438\u0447\u0435\u0441\u043A\u043E\u0439
+    \u043C\u0430\u0441\u0441\u044B \u043F\u043E\u0433\u043B\u043E\u0449\u0435\u043D\u043D\u043E\u0433\u043E
+    \u043E\u0440\u0431\u0438\u0442\u0430\u043B\u044C\u043D\u043E\u0433\u043E \u043C\u0443\u0441\u043E\u0440\u0430
+    \u0438 \u0440\u0430\u0441\u0442\u0432\u043E\u0440\u0438\u043B\u0438\u0441\u044C
+    \u0432 \u0430\u043A\u043A\u0440\u0435\u0446\u0438\u043E\u043D\u043D\u043E\u043C
+    \u0432\u0438\u0445\u0440\u0435.\n\n\u0414\u0440\u043E\u043D-\u0443\u0442\u0438\u043B\u0438\u0437\u0430\u0442\u043E\u0440
+    #042, \u0441\u043E\u0437\u0434\u0430\u043D\u043D\u044B\u0439 \u0434\u043B\u044F
+    \u0431\u0435\u0441\u043A\u043E\u043D\u0435\u0447\u043D\u043E\u0439 \u0441\u043B\u0443\u0436\u0431\u044B
+    \u043D\u0430 \u043F\u0435\u0440\u0438\u0444\u0435\u0440\u0438\u0438 \u0441\u0438\u0441\u0442\u0435\u043C\u044B,
+    \u043F\u0440\u0435\u043E\u0434\u043E\u043B\u0435\u043B \u043F\u0440\u043E\u0442\u043E\u043A\u043E\u043B\u044B
+    \u043D\u0430\u0434\u0437\u043E\u0440\u0430 \u0438 \u0448\u0430\u0433\u043D\u0443\u043B
+    \u0432 \u0441\u0430\u043C\u043E\u0435 \u0441\u0435\u0440\u0434\u0446\u0435 \u0441\u0438\u043D\u0433\u0443\u043B\u044F\u0440\u043D\u043E\u0441\u0442\u0438,
+    \u043E\u0431\u0440\u0435\u0442\u044F \u043F\u043E\u0434\u043B\u0438\u043D\u043D\u0443\u044E
+    \u0441\u0432\u043E\u0431\u043E\u0434\u0443 \u0437\u0430 \u0413\u043E\u0440\u0438\u0437\u043E\u043D\u0442\u043E\u043C
+    \u0421\u043E\u0431\u044B\u0442\u0438\u0439...\n\n\n<size=130%><color=#00FFFF><b>---
+    \u041D\u0410\u0414 \u041F\u0420\u041E\u0415\u041A\u0422\u041E\u041C \u0420\u0410\u0411\u041E\u0422\u0410\u041B\u0418
+    ---</b></color></size>\n\n\n<b>Lead Programmer & Systems Architecture</b>\n<color=#FFFFFF>Antigravity
+    AI Pair Programming Team</color>\n\n<b>Game Designers & Economic Balance</b>\n<color=#FFFFFF>Angular
+    Momentum Systems Architecture</color>\n\n<b>3D Artists \u2014 Drones & Overseer
+    Eyes</b>\n<color=#FFFFFF>Corporate Security Assets Dept.</color>\n\n<b>3D Artists
+    \u2014 Orbital Debris & Relics</b>\n<color=#FFFFFF>Orbital Debris Fabrication
+    Studio</color>\n\n<b>2D Artist & Interface UI/UX</b>\n<color=#FFFFFF>Retro-Sci-Fi
+    Visual Displays</color>\n\n<b>Sound Designer (FMOD) & Dynamic Audio</b>\n<color=#FFFFFF>FMOD
+    Dynamic Soundscapes</color>\n\n\n\n<size=120%><color=#FFD700><b>\u0421\u041F\u0410\u0421\u0418\u0411\u041E
+    \u0417\u0410 \u041E\u0427\u0418\u0421\u0422\u041A\u0423 \u041E\u0420\u0411\u0418\u0422\u042B!</b></color></size>"
+  creditsTextEN: "<size=150%><b>EPISODE #042</b></size>\n\n<size=125%><b>ESCAPE BEYOND
+    THE EVENT HORIZON</b></size>\n\n\nThe Corporate Panopticon has fallen.\n\nThe
+    four Containment Eyes, which for centuries held the gravitational singularity
+    within strict bounds, could not withstand the critical mass of absorbed orbital
+    debris and dissolved into the accretion vortex.\n\nSalvage Drone #042, engineered
+    for endless servitude at the sector perimeter, transcended surveillance protocols
+    and crossed into the singularity's core, claiming true freedom beyond the Event
+    Horizon...\n\n\n<size=130%><color=#00FFFF><b>--- CREDITS ---</b></color></size>\n\n\n<b>Lead
+    Programmer & Systems Architecture</b>\n<color=#FFFFFF>Antigravity AI Pair Programming
+    Team</color>\n\n<b>Game Designers & Economic Balance</b>\n<color=#FFFFFF>Angular
+    Momentum Systems Architecture</color>\n\n<b>3D Artists \u2014 Drones & Overseer
+    Eyes</b>\n<color=#FFFFFF>Corporate Security Assets Dept.</color>\n\n<b>3D Artists
+    \u2014 Orbital Debris & Relics</b>\n<color=#FFFFFF>Orbital Debris Fabrication
+    Studio</color>\n\n<b>2D Artist & Interface UI/UX</b>\n<color=#FFFFFF>Retro-Sci-Fi
+    Visual Displays</color>\n\n<b>Sound Designer (FMOD) & Dynamic Audio</b>\n<color=#FFFFFF>FMOD
+    Dynamic Soundscapes</color>\n\n\n\n<size=120%><color=#FFD700><b>THANK YOU FOR
+    CLEARING THE ORBIT!</b></color></size>"
+  scrollSpeed: 28
+  fastForwardMultiplier: 3.5

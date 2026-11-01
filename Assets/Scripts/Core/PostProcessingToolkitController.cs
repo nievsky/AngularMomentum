@@ -5,7 +5,6 @@ using UnityEngine.Rendering.Universal;
 
 namespace OrbitalPanopticon.Core
 {
-    [ExecuteAlways]
     [DisallowMultipleComponent]
     public class PostProcessingToolkitController : MonoBehaviour
     {
@@ -19,8 +18,8 @@ namespace OrbitalPanopticon.Core
         [SerializeField] private TonemappingMode tonemappingMode = TonemappingMode.ACES;
 
         [Header("2. Bloom")]
-        [Range(0f, 10f)] [SerializeField] private float bloomIntensity = 1.6f;
-        [Range(0f, 2f)] [SerializeField] private float bloomThreshold = 0.85f;
+        [Range(0f, 10f)] [SerializeField] private float bloomIntensity = 1.25f;
+        [Range(0f, 2f)] [SerializeField] private float bloomThreshold = 1.1f;
         [Range(0f, 1f)] [SerializeField] private float bloomScatter = 0.65f;
         [SerializeField] private bool bloomHighQualityFiltering = true;
 
@@ -37,9 +36,9 @@ namespace OrbitalPanopticon.Core
         [SerializeField] private bool autoCompensateDistortionScale = true;
 
         [Header("6. Color Adjustments")]
-        [Range(-100f, 100f)] [SerializeField] private float contrast = 12f;
-        [Range(-5f, 5f)] [SerializeField] private float postExposure = 0.15f;
-        [Range(-100f, 100f)] [SerializeField] private float saturation = 8f;
+        [Range(-100f, 100f)] [SerializeField] private float contrast = 22f;
+        [Range(-5f, 5f)] [SerializeField] private float postExposure = -0.15f;
+        [Range(-100f, 100f)] [SerializeField] private float saturation = 12f;
         [SerializeField] private Color colorFilter = Color.white;
 
         [Header("7. Optional Cinematic Overrides")]
@@ -68,17 +67,23 @@ namespace OrbitalPanopticon.Core
         private Coroutine _pulseRoutine;
 
         public Volume PostProcessVolume => postProcessVolume;
-
         public VisualEnvironmentConfigSO VisualConfig => visualConfig;
 
         public void EnsureConfig()
         {
             if (visualConfig == null)
             {
+                string sceneName = gameObject.scene.name;
+                string configName = "VisualConfig_Gameplay";
+                if (!string.IsNullOrEmpty(sceneName))
+                {
+                    if (sceneName.Contains("MainMenu")) configName = "VisualConfig_MainMenu";
+                    else if (sceneName.Contains("Credits")) configName = "VisualConfig_Credits";
+                }
+
 #if UNITY_EDITOR
-                visualConfig = UnityEditor.AssetDatabase.LoadAssetAtPath<VisualEnvironmentConfigSO>("Assets/_Project/ScriptableObjects/VisualEnvironmentConfig.asset");
-#else
-                visualConfig = Resources.Load<VisualEnvironmentConfigSO>("VisualEnvironmentConfig");
+                visualConfig = UnityEditor.AssetDatabase.LoadAssetAtPath<VisualEnvironmentConfigSO>(
+                    $"Assets/_Project/ScriptableObjects/{configName}.asset");
 #endif
             }
         }
@@ -156,38 +161,120 @@ namespace OrbitalPanopticon.Core
 
         private void Awake()
         {
-            if (Application.isPlaying)
-            {
-                if (Instance == null)
-                {
-                    Instance = this;
-                }
-            }
+            if (!Application.isPlaying) return;
+            Instance = this;
             EnsureConfig();
+            EnsureCameraSettings();
+            EnsureVolumeAndOverrides();
             LoadFromConfig();
         }
 
         private void OnEnable()
         {
-            if (Instance == null) Instance = this;
+            if (!Application.isPlaying) return;
+            Instance = this;
             EnsureConfig();
+            EnsureCameraSettings();
+            EnsureVolumeAndOverrides();
             LoadFromConfig();
         }
 
+        private void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
+#if UNITY_EDITOR
+            if (visualConfig != null)
+            {
+                SaveToConfig();
+                UnityEditor.EditorUtility.SetDirty(visualConfig);
+                UnityEditor.AssetDatabase.SaveAssets();
+            }
+#endif
+        }
+
+        private void OnDisable()
+        {
+#if UNITY_EDITOR
+            if (visualConfig != null)
+            {
+                SaveToConfig();
+                UnityEditor.EditorUtility.SetDirty(visualConfig);
+            }
+#endif
+        }
+
+#if UNITY_EDITOR
         private void OnValidate()
         {
+            if (UnityEditor.BuildPipeline.isBuildingPlayer) return;
             EnsureConfig();
             SaveToConfig();
             EnsureVolumeAndOverrides();
             ApplySettingsToVolume();
         }
+#endif
 
         private void Update()
         {
-            // Keep volume updated in editor and runtime
-            if (!Application.isPlaying || _pulseBloomBoost > 0f || _pulseChromaticBoost > 0f || Mathf.Abs(_pulseLensDistortionBoost) > 0.001f || _pulseMotionBlurBoost > 0f)
+            if (!Application.isPlaying) return;
+
+            // 1. Maintain camera post-processing requirements
+            EnsureCameraSettings();
+
+            // 2. Synchronize sliders between controller and visualConfig
+            SyncConfigAndController();
+
+            // 3. Apply overrides every frame to guarantee instantaneous visual feedback in Play Mode
+            ApplySettingsToVolume();
+        }
+
+        private void EnsureCameraSettings()
+        {
+            Camera cam = Camera.main;
+            if (cam == null) cam = Camera.current;
+            if (cam != null)
             {
-                ApplySettingsToVolume();
+                UniversalAdditionalCameraData camData = cam.GetUniversalAdditionalCameraData();
+                if (camData != null)
+                {
+                    if (!camData.renderPostProcessing) camData.renderPostProcessing = true;
+                    if (camData.volumeLayerMask != -1) camData.volumeLayerMask = -1; // Everything
+                }
+            }
+
+            var urpAsset = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
+            if (urpAsset == null) urpAsset = QualitySettings.renderPipeline as UniversalRenderPipelineAsset;
+        }
+
+        private void SyncConfigAndController()
+        {
+            if (visualConfig == null) return;
+
+            bool controllerChanged =
+                tonemappingMode != visualConfig.tonemappingMode ||
+                !Mathf.Approximately(bloomIntensity, visualConfig.bloomIntensity) ||
+                !Mathf.Approximately(bloomThreshold, visualConfig.bloomThreshold) ||
+                !Mathf.Approximately(bloomScatter, visualConfig.bloomScatter) ||
+                bloomHighQualityFiltering != visualConfig.bloomHighQualityFiltering ||
+                !Mathf.Approximately(vignetteIntensity, visualConfig.vignetteIntensity) ||
+                !Mathf.Approximately(vignetteSmoothness, visualConfig.vignetteSmoothness) ||
+                !Mathf.Approximately(chromaticAberrationIntensity, visualConfig.chromaticAberrationIntensity) ||
+                !Mathf.Approximately(lensDistortionIntensity, visualConfig.lensDistortionIntensity) ||
+                !Mathf.Approximately(lensDistortionScale, visualConfig.lensDistortionScale) ||
+                autoCompensateDistortionScale != visualConfig.autoCompensateDistortionScale ||
+                !Mathf.Approximately(contrast, visualConfig.contrast) ||
+                !Mathf.Approximately(postExposure, visualConfig.postExposure) ||
+                !Mathf.Approximately(saturation, visualConfig.saturation) ||
+                colorFilter != visualConfig.colorFilter ||
+                enableFilmGrain != visualConfig.enableFilmGrain ||
+                !Mathf.Approximately(filmGrainIntensity, visualConfig.filmGrainIntensity) ||
+                enableMotionBlur != visualConfig.enableMotionBlur ||
+                !Mathf.Approximately(motionBlurIntensity, visualConfig.motionBlurIntensity) ||
+                enableDepthOfField != visualConfig.enableDepthOfField;
+
+            if (controllerChanged)
+            {
+                SaveToConfig();
             }
         }
 
@@ -203,8 +290,27 @@ namespace OrbitalPanopticon.Core
             }
             if (postProcessVolume == null) return;
 
-            VolumeProfile profile = postProcessVolume.sharedProfile;
-            if (profile == null) profile = postProcessVolume.profile;
+            // Enforce volume requirements
+            postProcessVolume.isGlobal = true;
+            postProcessVolume.weight = 1.0f;
+            postProcessVolume.priority = 100f;
+
+            if (postProcessVolume.sharedProfile == null)
+            {
+#if UNITY_EDITOR
+                postProcessVolume.sharedProfile = UnityEditor.AssetDatabase.LoadAssetAtPath<VolumeProfile>("Assets/DefaultVolumeProfile.asset");
+#endif
+            }
+
+            if (Application.isPlaying)
+            {
+                if (postProcessVolume.profile == null || postProcessVolume.profile == postProcessVolume.sharedProfile)
+                {
+                    postProcessVolume.profile = ScriptableObject.CreateInstance<VolumeProfile>();
+                }
+            }
+
+            VolumeProfile profile = Application.isPlaying ? postProcessVolume.profile : postProcessVolume.sharedProfile;
             if (profile == null) return;
 
             if (!profile.TryGet(out _tonemapping)) _tonemapping = profile.Add<Tonemapping>(true);
@@ -224,80 +330,63 @@ namespace OrbitalPanopticon.Core
 
             if (_tonemapping != null)
             {
-                _tonemapping.mode.overrideState = true;
-                _tonemapping.mode.value = tonemappingMode;
+                _tonemapping.active = true;
+                _tonemapping.mode.Override(tonemappingMode);
             }
 
             if (_bloom != null)
             {
-                _bloom.intensity.overrideState = true;
-                _bloom.intensity.value = Mathf.Max(0f, bloomIntensity + _pulseBloomBoost);
-
-                _bloom.threshold.overrideState = true;
-                _bloom.threshold.value = bloomThreshold;
-
-                _bloom.scatter.overrideState = true;
-                _bloom.scatter.value = bloomScatter;
-
-                _bloom.highQualityFiltering.overrideState = true;
-                _bloom.highQualityFiltering.value = bloomHighQualityFiltering;
+                _bloom.active = true;
+                _bloom.intensity.Override(Mathf.Max(0f, bloomIntensity + _pulseBloomBoost));
+                _bloom.threshold.Override(bloomThreshold);
+                _bloom.scatter.Override(bloomScatter);
+                _bloom.highQualityFiltering.Override(bloomHighQualityFiltering);
             }
 
             if (_vignette != null)
             {
-                _vignette.intensity.overrideState = true;
-                _vignette.intensity.value = vignetteIntensity;
-
-                _vignette.smoothness.overrideState = true;
-                _vignette.smoothness.value = vignetteSmoothness;
+                _vignette.active = true;
+                _vignette.intensity.Override(vignetteIntensity);
+                _vignette.smoothness.Override(vignetteSmoothness);
             }
 
             if (_chromaticAberration != null)
             {
-                _chromaticAberration.intensity.overrideState = true;
-                _chromaticAberration.intensity.value = Mathf.Clamp01(chromaticAberrationIntensity + _pulseChromaticBoost);
+                _chromaticAberration.active = true;
+                _chromaticAberration.intensity.Override(Mathf.Clamp01(chromaticAberrationIntensity + _pulseChromaticBoost));
             }
 
             if (_lensDistortion != null)
             {
+                _lensDistortion.active = true;
                 float totalIntensity = Mathf.Clamp(lensDistortionIntensity + _pulseLensDistortionBoost, -1f, 1f);
-                _lensDistortion.intensity.overrideState = true;
-                _lensDistortion.intensity.value = totalIntensity;
+                _lensDistortion.intensity.Override(totalIntensity);
 
-                _lensDistortion.scale.overrideState = true;
                 float effectiveScale = autoCompensateDistortionScale
                     ? Mathf.Max(1.0f, 1.0f + Mathf.Abs(totalIntensity) * 0.45f)
                     : lensDistortionScale;
-                _lensDistortion.scale.value = effectiveScale;
+                _lensDistortion.scale.Override(effectiveScale);
             }
 
             if (_colorAdjustments != null)
             {
-                _colorAdjustments.contrast.overrideState = true;
-                _colorAdjustments.contrast.value = contrast;
-
-                _colorAdjustments.postExposure.overrideState = true;
-                _colorAdjustments.postExposure.value = postExposure;
-
-                _colorAdjustments.saturation.overrideState = true;
-                _colorAdjustments.saturation.value = saturation;
-
-                _colorAdjustments.colorFilter.overrideState = true;
-                _colorAdjustments.colorFilter.value = colorFilter;
+                _colorAdjustments.active = true;
+                _colorAdjustments.contrast.Override(contrast);
+                _colorAdjustments.postExposure.Override(postExposure);
+                _colorAdjustments.saturation.Override(saturation);
+                _colorAdjustments.colorFilter.Override(colorFilter);
             }
 
             if (_filmGrain != null)
             {
                 _filmGrain.active = enableFilmGrain;
-                _filmGrain.intensity.overrideState = true;
-                _filmGrain.intensity.value = filmGrainIntensity;
+                _filmGrain.intensity.Override(filmGrainIntensity);
             }
 
             if (_motionBlur != null)
             {
                 _motionBlur.active = enableMotionBlur || (_pulseMotionBlurBoost > 0.001f);
-                _motionBlur.intensity.overrideState = true;
-                _motionBlur.intensity.value = Mathf.Clamp01(motionBlurIntensity + _pulseMotionBlurBoost);
+                _motionBlur.intensity.Override(Mathf.Clamp01(motionBlurIntensity + _pulseMotionBlurBoost));
             }
 
             if (_depthOfField != null)
@@ -306,10 +395,6 @@ namespace OrbitalPanopticon.Core
             }
         }
 
-        /// <summary>
-        /// Triggers a dynamic high-impact pulse (Bloom flash + Chromatic distortion + optional Lens Distortion / Motion Blur)
-        /// for dramatic gameplay feedback during punt launches, containment lock breaks, directional dashes, or stage shifts.
-        /// </summary>
         public void TriggerImpactPulse(float bloomBoost = 1.5f, float chromaticBoost = 0.35f, float duration = 0.4f)
         {
             TriggerImpactPulse(bloomBoost, chromaticBoost, 0f, duration, 0f);
@@ -336,7 +421,6 @@ namespace OrbitalPanopticon.Core
                 elapsed += Time.unscaledDeltaTime;
                 float t = Mathf.Clamp01(elapsed / duration);
 
-                // Sharp attack, smooth exponential decay
                 float decay = Mathf.Pow(1.0f - t, 2.2f);
                 _pulseBloomBoost = bloomBoost * decay;
                 _pulseChromaticBoost = chromaticBoost * decay;
@@ -355,7 +439,6 @@ namespace OrbitalPanopticon.Core
             _pulseRoutine = null;
         }
 
-        // Live Setters for External Controllers
         public void SetBloomIntensity(float val) { bloomIntensity = val; SaveToConfig(); ApplySettingsToVolume(); }
         public void SetChromaticAberration(float val) { chromaticAberrationIntensity = val; SaveToConfig(); ApplySettingsToVolume(); }
         public void SetVignetteIntensity(float val) { vignetteIntensity = val; SaveToConfig(); ApplySettingsToVolume(); }

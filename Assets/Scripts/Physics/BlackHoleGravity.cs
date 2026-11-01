@@ -11,6 +11,9 @@ namespace OrbitalPanopticon.Physics
     [DisallowMultipleComponent]
     public class BlackHoleGravity : MonoBehaviour
     {
+        [Header("Master Balance Configuration")]
+        [SerializeField] private GameBalanceConfig balanceConfig;
+
         [Header("Scene References")]
         [SerializeField] private Transform centerPoint;
         [SerializeField] private SphereCollider eventHorizonTrigger;

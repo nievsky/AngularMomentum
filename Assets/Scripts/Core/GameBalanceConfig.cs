@@ -15,16 +15,11 @@ namespace OrbitalPanopticon.Core
                 if (_instance == null)
                 {
 #if UNITY_EDITOR
-                    string[] guids = UnityEditor.AssetDatabase.FindAssets("t:GameBalanceConfig");
-                    if (guids.Length > 0)
-                    {
-                        string path = UnityEditor.AssetDatabase.GUIDToAssetPath(guids[0]);
-                        _instance = UnityEditor.AssetDatabase.LoadAssetAtPath<GameBalanceConfig>(path);
-                    }
+                    _instance = UnityEditor.AssetDatabase.LoadAssetAtPath<GameBalanceConfig>("Assets/_Project/ScriptableObjects/GameBalanceConfig.asset");
 #endif
-                    if (_instance == null)
+                    if (_instance == null && GameManager.Instance != null && GameManager.Instance.BalanceConfig != null)
                     {
-                        _instance = Resources.Load<GameBalanceConfig>("GameBalanceConfig");
+                        _instance = GameManager.Instance.BalanceConfig;
                     }
                     if (_instance == null)
                     {
@@ -35,6 +30,10 @@ namespace OrbitalPanopticon.Core
             }
             set => _instance = value;
         }
+
+        [Header("Runtime Upgrade Isolation")]
+        [Tooltip("If true, clones GameBalanceConfig in memory before applying upgrades so the master asset on disk is not mutated. Before any upgrades are purchased, the master asset is referenced directly.")]
+        public bool allowRuntimeUpgradeCloning = true;
 
         // =========================================================================
         // 0. Global Pacing
@@ -342,6 +341,14 @@ namespace OrbitalPanopticon.Core
 
         [Tooltip("Base speed of autonomous helper drone bots.")]
         public float helperBotSpeed = 14f;
+
+        [Header("Helper Robot 3D Model Override")]
+        [Tooltip("Drag custom 3D model, FBX, or prefab for Helper Robots here.")]
+        public GameObject customHelperRobotModelPrefab;
+        [Tooltip("Scale multiplier for custom helper robot model (normalized to ~1.8m diameter).")]
+        public float helperRobotScaleMultiplier = 1.0f;
+        [Tooltip("Rotation offset in degrees for custom helper robot model.")]
+        public Vector3 helperRobotRotationOffset = Vector3.zero;
 
         [Tooltip("Whether the WOW-perk Hyper-Beam is unlocked (x2 damage against Boss Eyes, infinite siphon range).")]
         public bool hyperBeamUnlocked = false;

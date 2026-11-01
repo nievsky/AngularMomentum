@@ -9,9 +9,9 @@ namespace OrbitalPanopticon.Core
     {
         [Header("=== 1. PROCEDURAL 3D SPACE SKYBOX ===")]
         [Header("Deep Space Gradient")]
-        public Color spaceZenithColor = new Color(0.012f, 0.018f, 0.042f, 1.0f);
-        public Color spaceHorizonColor = new Color(0.004f, 0.007f, 0.016f, 1.0f);
-        public Color spaceNadirColor = new Color(0.001f, 0.002f, 0.006f, 1.0f);
+        public Color spaceZenithColor = new Color(0.047f, 0.035f, 0.094f, 1.0f);
+        public Color spaceHorizonColor = new Color(0.020f, 0.016f, 0.039f, 1.0f);
+        public Color spaceNadirColor = new Color(0.001f, 0.001f, 0.002f, 1.0f);
         [Range(0.2f, 5.0f)] public float gradientExponent = 1.35f;
 
         [Header("Multi-Layered Starfield")]
@@ -45,7 +45,7 @@ namespace OrbitalPanopticon.Core
         [Range(0.5f, 1.0f)] public float overscanScale = 0.90f;
 
         [Header("Scanlines")]
-        [Range(0f, 1f)] public float scanlineIntensity = 0.28f;
+        [Range(0f, 1f)] public float scanlineIntensity = 0.15f;
         [Range(100f, 1080f)] public float scanlineCount = 640f;
         [Range(-10f, 10f)] public float scanlineScrollSpeed = 0.8f;
 
@@ -57,7 +57,7 @@ namespace OrbitalPanopticon.Core
 
         [Header("Color Shift, Noise & Optics")]
         [Range(0f, 0.05f)] public float rgbShiftAmount = 0.0055f;
-        [Range(0f, 1f)] public float tapeNoiseIntensity = 0.18f;
+        [Range(0f, 1f)] public float tapeNoiseIntensity = 0.04f;
         [Range(0f, 0.5f)] public float screenCurvature = 0.12f;
         [Range(0f, 1f)] public float cornerVignette = 0.45f;
         [Range(0f, 0.02f)] public float verticalJitter = 0.003f;
@@ -68,8 +68,8 @@ namespace OrbitalPanopticon.Core
         public TonemappingMode tonemappingMode = TonemappingMode.ACES;
 
         [Header("Bloom")]
-        [Range(0f, 10f)] public float bloomIntensity = 1.6f;
-        [Range(0f, 2f)] public float bloomThreshold = 0.85f;
+        [Range(0f, 10f)] public float bloomIntensity = 1.25f;
+        [Range(0f, 2f)] public float bloomThreshold = 1.1f;
         [Range(0f, 1f)] public float bloomScatter = 0.65f;
         public bool bloomHighQualityFiltering = true;
 
@@ -86,9 +86,9 @@ namespace OrbitalPanopticon.Core
         public bool autoCompensateDistortionScale = true;
 
         [Header("Color Adjustments")]
-        [Range(-100f, 100f)] public float contrast = 12f;
-        [Range(-5f, 5f)] public float postExposure = 0.15f;
-        [Range(-100f, 100f)] public float saturation = 8f;
+        [Range(-100f, 100f)] public float contrast = 22f;
+        [Range(-5f, 5f)] public float postExposure = -0.15f;
+        [Range(-100f, 100f)] public float saturation = 12f;
         public Color colorFilter = Color.white;
 
         [Header("Optional Cinematic Overrides")]
@@ -110,17 +110,34 @@ namespace OrbitalPanopticon.Core
             MarkDirty();
 
             // Notify active scene controllers in Edit Mode and Play Mode
-            if (SpaceSkyboxController.Instance != null)
+            var postControllers = UnityEngine.Object.FindObjectsByType<PostProcessingToolkitController>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (var post in postControllers)
             {
-                SpaceSkyboxController.Instance.LoadFromConfig();
+                if (post != null && (post.visualConfig == this || post.visualConfig == null))
+                {
+                    if (post.visualConfig == null) post.visualConfig = this;
+                    post.LoadFromConfig();
+                }
             }
-            if (VHSCameraController.Instance != null)
+
+            var skyControllers = UnityEngine.Object.FindObjectsByType<SpaceSkyboxController>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (var sky in skyControllers)
             {
-                VHSCameraController.Instance.LoadFromConfig();
+                if (sky != null && (sky.visualConfig == this || sky.visualConfig == null))
+                {
+                    if (sky.visualConfig == null) sky.visualConfig = this;
+                    sky.LoadFromConfig();
+                }
             }
-            if (PostProcessingToolkitController.Instance != null)
+
+            var vhsControllers = UnityEngine.Object.FindObjectsByType<VHSCameraController>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            foreach (var vhs in vhsControllers)
             {
-                PostProcessingToolkitController.Instance.LoadFromConfig();
+                if (vhs != null && (vhs.visualConfig == this || vhs.visualConfig == null))
+                {
+                    if (vhs.visualConfig == null) vhs.visualConfig = this;
+                    vhs.LoadFromConfig();
+                }
             }
         }
     }

@@ -6,26 +6,15 @@ using TMPro;
 namespace OrbitalPanopticon.Core
 {
     /// <summary>
-    /// Helper component attached to Text components to track original base font size and character spacing,
-    /// preventing cumulative exponential scaling when font scale multipliers are re-applied.
-    /// </summary>
-    [ExecuteAlways]
-    [DisallowMultipleComponent]
-    public class GlobalFontTracker : MonoBehaviour
-    {
-        [HideInInspector] public float originalFontSize = -1f;
-        [HideInInspector] public float originalCharacterSpacing = 0f;
-        [HideInInspector] public bool isInitialized = false;
-    }
-
-    /// <summary>
     /// Centralized manager and runtime applier for project-wide typography.
     /// Updates all TextMeshPro and Legacy UI Text elements across active scenes, UI panels, and dynamic popups.
     /// </summary>
-    [ExecuteAlways]
     public class GlobalFontApplier : MonoBehaviour
     {
         public static GlobalFontApplier Instance { get; private set; }
+
+        private static readonly Dictionary<TMP_Text, (float size, float spacing)> _tmpBaseValues = new();
+        private static readonly Dictionary<UnityEngine.UI.Text, float> _legacyBaseValues = new();
 
         [Header("Configuration")]
         [SerializeField] private GlobalFontConfigSO fontConfig;
@@ -51,26 +40,18 @@ namespace OrbitalPanopticon.Core
 
         private void Awake()
         {
+            if (!Application.isPlaying) return;
+
             if (Instance == null)
             {
                 Instance = this;
-                if (Application.isPlaying)
-                {
-                    transform.SetParent(null);
-                    DontDestroyOnLoad(gameObject);
-                }
+                transform.SetParent(null);
+                DontDestroyOnLoad(gameObject);
             }
             else if (Instance != this)
             {
-                if (Application.isPlaying)
-                {
-                    Destroy(gameObject);
-                    return;
-                }
-                else
-                {
-                    Instance = this;
-                }
+                Destroy(gameObject);
+                return;
             }
 
             EnsureConfigLoaded();
@@ -79,6 +60,8 @@ namespace OrbitalPanopticon.Core
 
         private void OnEnable()
         {
+            if (!Application.isPlaying) return;
+
             if (Instance == null)
             {
                 Instance = this;
@@ -136,6 +119,9 @@ namespace OrbitalPanopticon.Core
         [ContextMenu("Apply Global Font Now")]
         public void ApplyGlobalFontToEverything()
         {
+#if UNITY_EDITOR
+            if (UnityEditor.BuildPipeline.isBuildingPlayer || UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode) return;
+#endif
             EnsureConfigLoaded();
             if (fontConfig == null) return;
 
@@ -161,19 +147,10 @@ namespace OrbitalPanopticon.Core
         {
             if (tmp == null || fontConfig == null) return;
 
-            GlobalFontTracker tracker = tmp.GetComponent<GlobalFontTracker>();
-            if (tracker == null)
+            if (!_tmpBaseValues.TryGetValue(tmp, out var baseVal) || baseVal.size <= 0f)
             {
-                tracker = tmp.gameObject.AddComponent<GlobalFontTracker>();
-                tracker.originalFontSize = tmp.fontSize;
-                tracker.originalCharacterSpacing = tmp.characterSpacing;
-                tracker.isInitialized = true;
-            }
-            else if (!tracker.isInitialized || tracker.originalFontSize <= 0f)
-            {
-                tracker.originalFontSize = tmp.fontSize;
-                tracker.originalCharacterSpacing = tmp.characterSpacing;
-                tracker.isInitialized = true;
+                baseVal = (tmp.fontSize, tmp.characterSpacing);
+                _tmpBaseValues[tmp] = baseVal;
             }
 
             // Assign master font
@@ -183,21 +160,13 @@ namespace OrbitalPanopticon.Core
             }
 
             // Apply scale multiplier
-            if (fontConfig.globalFontScaleMultiplier > 0.01f && tracker.originalFontSize > 0f)
+            if (fontConfig.globalFontScaleMultiplier > 0.01f && baseVal.size > 0f)
             {
-                tmp.fontSize = tracker.originalFontSize * fontConfig.globalFontScaleMultiplier;
+                tmp.fontSize = baseVal.size * fontConfig.globalFontScaleMultiplier;
             }
 
             // Apply character spacing offset
-            tmp.characterSpacing = tracker.originalCharacterSpacing + fontConfig.globalCharacterSpacing;
-
-#if UNITY_EDITOR
-            if (!Application.isPlaying)
-            {
-                UnityEditor.EditorUtility.SetDirty(tmp);
-                if (tracker != null) UnityEditor.EditorUtility.SetDirty(tracker);
-            }
-#endif
+            tmp.characterSpacing = baseVal.spacing + fontConfig.globalCharacterSpacing;
         }
 
         /// <summary>
@@ -207,17 +176,10 @@ namespace OrbitalPanopticon.Core
         {
             if (txt == null || fontConfig == null) return;
 
-            GlobalFontTracker tracker = txt.GetComponent<GlobalFontTracker>();
-            if (tracker == null)
+            if (!_legacyBaseValues.TryGetValue(txt, out float baseSize) || baseSize <= 0f)
             {
-                tracker = txt.gameObject.AddComponent<GlobalFontTracker>();
-                tracker.originalFontSize = txt.fontSize;
-                tracker.isInitialized = true;
-            }
-            else if (!tracker.isInitialized || tracker.originalFontSize <= 0f)
-            {
-                tracker.originalFontSize = txt.fontSize;
-                tracker.isInitialized = true;
+                baseSize = txt.fontSize;
+                _legacyBaseValues[txt] = baseSize;
             }
 
             // Assign master legacy font
@@ -227,18 +189,10 @@ namespace OrbitalPanopticon.Core
             }
 
             // Apply scale multiplier
-            if (fontConfig.globalFontScaleMultiplier > 0.01f && tracker.originalFontSize > 0f)
+            if (fontConfig.globalFontScaleMultiplier > 0.01f && baseSize > 0f)
             {
-                txt.fontSize = Mathf.RoundToInt(tracker.originalFontSize * fontConfig.globalFontScaleMultiplier);
+                txt.fontSize = Mathf.RoundToInt(baseSize * fontConfig.globalFontScaleMultiplier);
             }
-
-#if UNITY_EDITOR
-            if (!Application.isPlaying)
-            {
-                UnityEditor.EditorUtility.SetDirty(txt);
-                if (tracker != null) UnityEditor.EditorUtility.SetDirty(tracker);
-            }
-#endif
         }
 
         /// <summary>

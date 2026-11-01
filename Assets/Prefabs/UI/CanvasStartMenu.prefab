@@ -496,7 +496,6 @@ GameObject:
   m_Component:
   - component: {fileID: 3224547191430327843}
   - component: {fileID: 3024775623625012223}
-  - component: {fileID: 622964942814298449}
   m_Layer: 5
   m_Name: Slider Music
   m_TagString: Untagged
@@ -577,20 +576,6 @@ MonoBehaviour:
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &622964942814298449
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2977517512757990045}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 313ee30c12be5b240bc11108c8037b49, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: '::'
-  busPath: bus:/
-  slider: {fileID: 0}
 --- !u!1 &3928633805217391637
 GameObject:
   m_ObjectHideFlags: 0
@@ -602,7 +587,6 @@ GameObject:
   - component: {fileID: 3810050433553592897}
   - component: {fileID: 5777084979821781106}
   - component: {fileID: 9220021655083231133}
-  - component: {fileID: 5051490682975960706}
   m_Layer: 5
   m_Name: SettingsMenu
   m_TagString: Untagged
@@ -669,20 +653,6 @@ MonoBehaviour:
     y: 0
     width: 1
     height: 1
---- !u!114 &5051490682975960706
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3928633805217391637}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f914eec41cf150d47a4c069ebdca5f05, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UIPopWindow
-  animationDuration: 0.3
-  ease: 27
 --- !u!1 &4544431824912468763
 GameObject:
   m_ObjectHideFlags: 0
@@ -1181,7 +1151,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7728839758835525624}
-  - component: {fileID: 7323848190256384824}
   m_Layer: 5
   m_Name: GameObject
   m_TagString: Untagged
@@ -1211,20 +1180,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 1920, y: 1080}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &7323848190256384824
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5260897880516818883}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: eeb47f9c32d41214e9a1af6e2961cdf4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UIMenuParallax
-  maxOffset: 20
-  smoothTime: 0.3
 --- !u!1 &5833068574176453751
 GameObject:
   m_ObjectHideFlags: 0
@@ -1237,8 +1192,6 @@ GameObject:
   - component: {fileID: 8592022743569663525}
   - component: {fileID: 1570068311853190101}
   - component: {fileID: 3552827084990560330}
-  - component: {fileID: 4086474992433799802}
-  - component: {fileID: 283148495736600529}
   m_Layer: 5
   m_Name: StartButton
   m_TagString: Untagged
@@ -1348,7 +1301,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 5051490682975960706}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: UIPopWindow, Assembly-CSharp
         m_MethodName: StartNextScene
         m_Mode: 1
@@ -1360,47 +1313,6 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
---- !u!114 &4086474992433799802
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5833068574176453751}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: afb557c638a09b04690eda53272860ae, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UIButtonTween
-  hoverScale: 1.1
-  animationDuration: 0.2
---- !u!114 &283148495736600529
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5833068574176453751}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3d2606ca58c679b4999f4cd63b2c4ecc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::FMODButtonSound
-  clickSoundEvent:
-    Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
-  hoverSoundEvent:
-    Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
-  use3DSound: 0
 --- !u!1 &6337803908705103004
 GameObject:
   m_ObjectHideFlags: 0
@@ -1702,7 +1614,6 @@ GameObject:
   - component: {fileID: 2860588727274910141}
   - component: {fileID: 6892857159868992597}
   - component: {fileID: 1454137362797216219}
-  - component: {fileID: 4169054107956222613}
   m_Layer: 5
   m_Name: Button
   m_TagString: Untagged
@@ -1812,7 +1723,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 5051490682975960706}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: UIPopWindow, Assembly-CSharp
         m_MethodName: Hide
         m_Mode: 1
@@ -1824,33 +1735,6 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
---- !u!114 &4169054107956222613
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7202065312115588807}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3d2606ca58c679b4999f4cd63b2c4ecc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: '::'
-  clickSoundEvent:
-    Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
-  hoverSoundEvent:
-    Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
-  use3DSound: 0
 --- !u!1 &7202537244362078113
 GameObject:
   m_ObjectHideFlags: 0
@@ -2203,8 +2087,6 @@ GameObject:
   - component: {fileID: 784565441647818330}
   - component: {fileID: 4565240389340064591}
   - component: {fileID: 6386816725703896913}
-  - component: {fileID: 5568546378650469017}
-  - component: {fileID: 4786765619460464323}
   m_Layer: 5
   m_Name: SettingsButton (1)
   m_TagString: Untagged
@@ -2314,7 +2196,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 5051490682975960706}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: UIPopWindow, Assembly-CSharp
         m_MethodName: Show
         m_Mode: 1
@@ -2326,47 +2208,6 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
---- !u!114 &5568546378650469017
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8594350131237827361}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: afb557c638a09b04690eda53272860ae, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::UIButtonTween
-  hoverScale: 1.1
-  animationDuration: 0.2
---- !u!114 &4786765619460464323
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8594350131237827361}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3d2606ca58c679b4999f4cd63b2c4ecc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::FMODButtonSound
-  clickSoundEvent:
-    Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
-  hoverSoundEvent:
-    Guid:
-      Data1: 0
-      Data2: 0
-      Data3: 0
-      Data4: 0
-    Path: 
-  use3DSound: 0
 --- !u!1 &9194046537604499773
 GameObject:
   m_ObjectHideFlags: 0
@@ -2377,7 +2218,6 @@ GameObject:
   m_Component:
   - component: {fileID: 3520425041099766107}
   - component: {fileID: 69272368921604504}
-  - component: {fileID: 6241634839834966200}
   m_Layer: 5
   m_Name: Slider Sounds
   m_TagString: Untagged
@@ -2470,17 +2310,3 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
---- !u!114 &6241634839834966200
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9194046537604499773}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 313ee30c12be5b240bc11108c8037b49, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: '::'
-  busPath: bus:/
-  slider: {fileID: 0}

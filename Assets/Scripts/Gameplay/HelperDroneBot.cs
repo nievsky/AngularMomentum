@@ -67,6 +67,8 @@ namespace OrbitalPanopticon.Gameplay
                 Transform nozzle = visualRoot.Find("TetherNozzle");
                 tetherNozzle = nozzle != null ? nozzle : visualRoot;
             }
+
+            ConfigureVisualModel();
         }
 
         private void Update()
@@ -376,5 +378,163 @@ namespace OrbitalPanopticon.Gameplay
         {
             ReleaseTargetScrap();
         }
+
+        public void ConfigureVisualModel()
+        {
+            if (visualRoot == null)
+            {
+                visualRoot = transform.Find("VisualRoot");
+            }
+            if (visualRoot == null)
+            {
+                visualRoot = transform;
+            }
+
+            float scaleMult = 1.0f;
+            Vector3 rotOffset = Vector3.zero;
+            GameObject modelPrefab = ScrapAssetCatalogSO.GetCustomHelperRobotModel(out scaleMult, out rotOffset);
+
+            Transform customModel = visualRoot.Find("CustomHelperModel");
+
+            if (modelPrefab != null)
+            {
+                // 1) Clear or disable all default primitive placeholder meshes inside VisualRoot
+                for (int i = 0; i < visualRoot.childCount; i++)
+                {
+                    Transform child = visualRoot.GetChild(i);
+                    if (child != null && child.name != "CustomHelperModel" && child.name != "TetherNozzle")
+                    {
+                        child.gameObject.SetActive(false);
+                    }
+                }
+
+                // 2) Instantiate or reuse customHelperRobotModelPrefab as child inside VisualRoot
+                GameObject modelObj = null;
+                if (customModel != null)
+                {
+                    modelObj = customModel.gameObject;
+                    modelObj.SetActive(true);
+                }
+                else
+                {
+                    modelObj = Instantiate(modelPrefab, visualRoot);
+                    modelObj.name = "CustomHelperModel";
+                }
+
+                // Apply local rotation (preserving prefab rotation and adding rotation offset)
+                modelObj.transform.localPosition = Vector3.zero;
+                modelObj.transform.localRotation = modelPrefab.transform.localRotation * Quaternion.Euler(rotOffset);
+
+                // 3) Calculate combined Renderer.bounds and normalize localScale to 1.8f * helperRobotScaleMultiplier
+                Renderer[] renderers = modelObj.GetComponentsInChildren<Renderer>(true);
+                float targetDiameter = 1.8f * (scaleMult <= 0.001f ? 1.0f : scaleMult);
+
+                if (renderers != null && renderers.Length > 0)
+                {
+                    Bounds combinedBounds = renderers[0].bounds;
+                    for (int i = 1; i < renderers.Length; i++)
+                    {
+                        combinedBounds.Encapsulate(renderers[i].bounds);
+                    }
+
+                    float maxDim = Mathf.Max(combinedBounds.size.x, combinedBounds.size.y, combinedBounds.size.z);
+                    if (maxDim > 0.01f)
+                    {
+                        float normalizedScale = targetDiameter / maxDim;
+                        modelObj.transform.localScale = Vector3.one * (modelObj.transform.localScale.x * normalizedScale);
+                    }
+                }
+
+                // 4) Strip any extra Collider or Rigidbody components inside child model
+                Collider[] childCols = modelObj.GetComponentsInChildren<Collider>(true);
+                for (int i = 0; i < childCols.Length; i++)
+                {
+                    if (Application.isPlaying) Destroy(childCols[i]);
+                    else DestroyImmediate(childCols[i]);
+                }
+                Rigidbody[] childRbs = modelObj.GetComponentsInChildren<Rigidbody>(true);
+                for (int i = 0; i < childRbs.Length; i++)
+                {
+                    if (Application.isPlaying) Destroy(childRbs[i]);
+                    else DestroyImmediate(childRbs[i]);
+                }
+
+                // 5) Upgrade materials with S_ScrapSpaceLit.shader
+                Shader scrapShader = Shader.Find("OrbitalPanopticon/ScrapSpaceLit");
+                if (scrapShader != null && renderers != null)
+                {
+                    foreach (Renderer r in renderers)
+                    {
+                        if (r == null || r is ParticleSystemRenderer || r is TrailRenderer || r is LineRenderer) continue;
+                        Material[] mats = Application.isPlaying ? r.materials : r.sharedMaterials;
+                        for (int m = 0; m < mats.Length; m++)
+                        {
+                            Material mat = mats[m];
+                            if (mat == null) continue;
+                            Texture baseMap = mat.HasProperty("_BaseMap") ? mat.GetTexture("_BaseMap") : (mat.HasProperty("_MainTex") ? mat.GetTexture("_MainTex") : null);
+                            Color baseColor = mat.HasProperty("_BaseColor") ? mat.GetColor("_BaseColor") : (mat.HasProperty("_Color") ? mat.GetColor("_Color") : Color.white);
+                            Texture bumpMap = mat.HasProperty("_BumpMap") ? mat.GetTexture("_BumpMap") : null;
+                            Texture specMap = mat.HasProperty("_SpecGlossMap") ? mat.GetTexture("_SpecGlossMap") : (mat.HasProperty("_MetallicGlossMap") ? mat.GetTexture("_MetallicGlossMap") : null);
+                            Texture emissiveMap = mat.HasProperty("_EmissionMap") ? mat.GetTexture("_EmissionMap") : null;
+                            Color emissiveColor = mat.HasProperty("_EmissionColor") ? mat.GetColor("_EmissionColor") : Color.black;
+
+                            mat.shader = scrapShader;
+                            if (baseMap != null) { mat.SetTexture("_BaseMap", baseMap); mat.SetTexture("_MainTex", baseMap); }
+                            mat.SetColor("_BaseColor", baseColor);
+                            mat.SetColor("_Color", baseColor);
+                            if (bumpMap != null) mat.SetTexture("_BumpMap", bumpMap);
+                            if (specMap != null) mat.SetTexture("_SpecGlossMap", specMap);
+                            if (emissiveMap != null) mat.SetTexture("_EmissionMap", emissiveMap);
+                            mat.SetColor("_EmissionColor", emissiveColor);
+
+                            mat.SetFloat("_MinLighting", 0.12f);
+                            mat.SetFloat("_MaxLighting", 0.85f);
+                            mat.SetColor("_SilhouetteColor", new Color(0.65f, 0.82f, 0.95f, 1.0f));
+                            mat.SetColor("_RimColor", new Color(0.65f, 0.82f, 0.95f, 1.0f));
+                            mat.SetFloat("_RimPower", 5.0f);
+                            mat.SetFloat("_SilhouetteIntensity", 0.35f);
+                            mat.SetFloat("_RimIntensity", 0.35f);
+                            mat.SetFloat("_PulseSpeed", 2.2f);
+                            mat.SetFloat("_Alpha", 1.0f);
+                        }
+                    }
+                }
+
+                // 6) Play default idle animation if present
+                Animator anim = modelObj.GetComponentInChildren<Animator>();
+                if (anim != null)
+                {
+                    anim.enabled = true;
+                }
+
+                // Position TetherOriginPoint / tetherNozzle at front of model's bounds
+                Transform nozzle = visualRoot.Find("TetherNozzle");
+                if (nozzle == null)
+                {
+                    GameObject nozzleGo = new GameObject("TetherNozzle");
+                    nozzle = nozzleGo.transform;
+                    nozzle.SetParent(visualRoot, false);
+                }
+                nozzle.localPosition = Vector3.forward * (targetDiameter * 0.55f);
+                tetherNozzle = nozzle;
+            }
+            else
+            {
+                // Fallback to default primitive bot inside VisualRoot
+                if (customModel != null)
+                {
+                    customModel.gameObject.SetActive(false);
+                }
+                for (int i = 0; i < visualRoot.childCount; i++)
+                {
+                    Transform child = visualRoot.GetChild(i);
+                    if (child != null && child.name != "CustomHelperModel")
+                    {
+                        child.gameObject.SetActive(true);
+                    }
+                }
+            }
+        }
+
     }
 }

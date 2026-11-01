@@ -11,18 +11,20 @@ namespace OrbitalPanopticon.Editor
     {
         private const string LensingMatPath = "Assets/_Project/Materials/M_OuterWildsBlackHole.mat";
         private const string AccretionMatPath = "Assets/_Project/Materials/M_AccretionDisk.mat";
+        private const string BlackCoreMatPath = "Assets/_Project/Materials/M_EventHorizonBlackCore.mat";
 
         [MenuItem("Tools/Setup Outer Wilds Black Hole Materials & Scenes")]
         public static void SetupAll()
         {
             Material lensingMat = CreateOrUpdateLensingMaterial();
             Material accretionMat = CreateOrUpdateAccretionMaterial();
+            Material blackCoreMat = CreateOrUpdateBlackCoreMaterial();
 
             string currentScene = EditorSceneManager.GetActiveScene().path;
 
-            SetupScene("Assets/_Project/Scenes/GameplayScene.unity", lensingMat, accretionMat);
-            SetupScene("Assets/_Project/Scenes/MainMenuScene.unity", lensingMat, accretionMat);
-            SetupScene("Assets/OutdoorsScene.unity", lensingMat, accretionMat);
+            SetupScene("Assets/_Project/Scenes/GameplayScene.unity", lensingMat, accretionMat, blackCoreMat);
+            SetupScene("Assets/_Project/Scenes/MainMenuScene.unity", lensingMat, accretionMat, blackCoreMat);
+            SetupScene("Assets/OutdoorsScene.unity", lensingMat, accretionMat, blackCoreMat);
 
             if (!string.IsNullOrEmpty(currentScene) && File.Exists(currentScene))
             {
@@ -31,7 +33,7 @@ namespace OrbitalPanopticon.Editor
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            Debug.Log("<color=#00FFCC>[SetupOuterWildsBlackHole] Successfully configured Outer Wilds Gravitational Lensing and Accretion Disk across all scenes!</color>");
+            Debug.Log("<color=#00FFCC>[SetupOuterWildsBlackHole] Successfully configured Outer Wilds Gravitational Lensing, Black Core, and Accretion Disk across all scenes!</color>");
         }
 
         public static Material CreateOrUpdateLensingMaterial()
@@ -62,6 +64,32 @@ namespace OrbitalPanopticon.Editor
             mat.SetFloat("_PhotonRingSharpness", 90.0f);
             mat.SetFloat("_PhotonRingIntensity", 1.6f);
             mat.SetFloat("_EdgeFadeSoftness", 0.1f);
+
+            EditorUtility.SetDirty(mat);
+            return mat;
+        }
+
+        public static Material CreateOrUpdateBlackCoreMaterial()
+        {
+            Shader shader = Shader.Find("OrbitalPanopticon/EventHorizonBlackCore");
+            if (shader == null)
+            {
+                Debug.LogError("[SetupOuterWildsBlackHole] Shader 'OrbitalPanopticon/EventHorizonBlackCore' not found!");
+                return null;
+            }
+
+            Material mat = AssetDatabase.LoadAssetAtPath<Material>(BlackCoreMatPath);
+            if (mat == null)
+            {
+                mat = new Material(shader);
+                mat.renderQueue = 2950;
+                AssetDatabase.CreateAsset(mat, BlackCoreMatPath);
+            }
+            else
+            {
+                mat.shader = shader;
+                mat.renderQueue = 2950;
+            }
 
             EditorUtility.SetDirty(mat);
             return mat;
@@ -101,7 +129,7 @@ namespace OrbitalPanopticon.Editor
             return mat;
         }
 
-        private static void SetupScene(string scenePath, Material lensingMat, Material accretionMat)
+        private static void SetupScene(string scenePath, Material lensingMat, Material accretionMat, Material blackCoreMat)
         {
             if (!File.Exists(scenePath)) return;
 
@@ -129,21 +157,21 @@ namespace OrbitalPanopticon.Editor
                 Transform visualRoot = bhSystem.transform.Find("VisualRoot");
                 if (visualRoot == null) visualRoot = bhSystem.transform;
 
-                // Remove any legacy EventHorizonOpaqueCore mesh (Issue #1 fix)
-                Transform ehCore = visualRoot.Find("EventHorizonOpaqueCore");
-                if (ehCore != null)
-                {
-                    Object.DestroyImmediate(ehCore.gameObject);
-                }
-
-                // Remove legacy 3D sphere so Black Hole renders on camera-facing billboard quad
+                // Remove legacy 3D sphere so Black Hole uses dedicated components
                 Transform oldSphere = visualRoot.Find("BlackHoleSphere");
                 if (oldSphere != null)
                 {
                     Object.DestroyImmediate(oldSphere.gameObject);
                 }
 
-                // Configure Camera-Facing Billboard Quad (BlackHoleLensQuad)
+                // Remove legacy opaque core
+                Transform ehCore = visualRoot.Find("EventHorizonOpaqueCore");
+                if (ehCore != null)
+                {
+                    Object.DestroyImmediate(ehCore.gameObject);
+                }
+
+                // A) Configure Camera-Facing Billboard Quad (BlackHoleLensQuad) at Queue 2900
                 Transform quadT = visualRoot.Find("BlackHoleLensQuad");
                 if (quadT == null)
                 {
@@ -178,7 +206,42 @@ namespace OrbitalPanopticon.Editor
                     EditorUtility.SetDirty(quadT);
                 }
 
-                // Configure AccretionDiskVisual
+                // B) Configure 3D Depth-Writing Event Horizon Core Sphere at Queue 2950
+                Transform coreSphereT = visualRoot.Find("EventHorizonBlackCoreSphere");
+                if (coreSphereT == null)
+                {
+                    GameObject sphereGo = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                    sphereGo.name = "EventHorizonBlackCoreSphere";
+                    var col = sphereGo.GetComponent<Collider>();
+                    if (col != null) Object.DestroyImmediate(col);
+
+                    coreSphereT = sphereGo.transform;
+                    coreSphereT.SetParent(visualRoot, false);
+                }
+
+                if (coreSphereT != null)
+                {
+                    coreSphereT.localPosition = Vector3.zero;
+                    coreSphereT.localRotation = Quaternion.identity;
+                    // Scale matches exactly quad.localScale (2.8) * _CoreRadius (0.35) = 0.98f
+                    coreSphereT.localScale = Vector3.one * 0.98f;
+
+                    var col = coreSphereT.GetComponent<Collider>();
+                    if (col != null) Object.DestroyImmediate(col);
+
+                    var mr = coreSphereT.GetComponent<MeshRenderer>();
+                    if (mr != null && blackCoreMat != null)
+                    {
+                        mr.sharedMaterial = blackCoreMat;
+                        mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                        mr.receiveShadows = false;
+                        EditorUtility.SetDirty(mr);
+                    }
+                    coreSphereT.gameObject.SetActive(true);
+                    EditorUtility.SetDirty(coreSphereT.gameObject);
+                }
+
+                // C) Configure AccretionDiskVisual
                 Transform diskT = visualRoot.Find("AccretionDiskVisual");
                 if (diskT == null)
                 {

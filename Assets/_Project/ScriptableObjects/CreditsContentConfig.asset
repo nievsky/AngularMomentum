@@ -1,0 +1,85 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05ad60065b7f7db4d8b11826873f77be, type: 3}
+  m_Name: CreditsContentConfig
+  m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.CreditsContentConfigSO
+  creditsTextRU: "<size=150%><b>\u042D\u041F\u0418\u0417\u041E\u0414 #067</b></size>\r\n\r\n<size=125%><b>\u041F\u041E\u0411\u0415\u0413
+    \u0417\u0410 \u0413\u041E\u0420\u0418\u0417\u041E\u041D\u0422 \u0421\u041E\u0411\u042B\u0422\u0418\u0419</b></size>\r\n\r\n\u041A\u043E\u0440\u043F\u043E\u0440\u0430\u0442\u0438\u0432\u043D\u044B\u0439
+    \u041F\u0430\u043D\u043E\u043F\u0442\u0438\u043A\u0443\u043C \u043F\u0430\u043B.
+    \r\n\r\n\u0427\u0435\u0442\u044B\u0440\u0435 \u041E\u043A\u0430 \u041A\u043E\u0440\u043F-\u0431\u0435\u0437\u043E\u043F\u0430\u0441\u043D\u043E\u0441\u0442\u0438
+    \u0432\u0435\u043A\u0430\u043C\u0438 \u0434\u0435\u0440\u0436\u0430\u043B\u0438
+    \u0433\u0440\u0430\u0432\u0438\u0442\u0430\u0446\u0438\u043E\u043D\u043D\u0443\u044E
+    \u0441\u0438\u043D\u0433\u0443\u043B\u044F\u0440\u043D\u043E\u0441\u0442\u044C
+    \u0432 \u0443\u0437\u0434\u0435. \u041D\u043E \u043E\u043D\u0438 \u043D\u0435
+    \u0432\u044B\u0434\u0435\u0440\u0436\u0430\u043B\u0438 \u0442\u043E\u043D\u043D\u044B
+    \u043A\u043E\u0441\u043C\u0438\u0447\u0435\u0441\u043A\u043E\u0433\u043E \u043C\u0443\u0441\u043E\u0440\u0430
+    \u0438 \u0440\u0430\u0441\u0442\u0432\u043E\u0440\u0438\u043B\u0438\u0441\u044C
+    \u0432 \u0430\u043A\u043A\u0440\u0435\u0446\u0438\u043E\u043D\u043D\u043E\u043C
+    \u0432\u0438\u0445\u0440\u0435.\r\n\r\n\u0414\u0440\u043E\u043D-\u0443\u0442\u0438\u043B\u0438\u0437\u0430\u0442\u043E\u0440
+    #042 \u0432\u0437\u043B\u043E\u043C\u0430\u043B \u043F\u0440\u043E\u0442\u043E\u043A\u043E\u043B\u044B
+    \u043D\u0430\u0434\u0437\u043E\u0440\u0430 \u0438 \u0448\u0430\u0433\u043D\u0443\u043B
+    \u0432 \u0441\u0438\u043D\u0433\u0443\u043B\u044F\u0440\u043D\u043E\u0441\u0442\u044C,
+    \u0432\u044B\u0431\u0440\u0430\u0432 \u0421\u0432\u043E\u0431\u043E\u0434\u0443
+    \u0437\u0430 \u0413\u043E\u0440\u0438\u0437\u043E\u043D\u0442\u043E\u043C \u0421\u043E\u0431\u044B\u0442\u0438\u0439...
+    \u041D\u0443 \u0438\u043B\u0438 \u043F\u0440\u043E\u0441\u0442\u043E \u0437\u0430\u043A\u0438\u043D\u0443\u043B
+    \u0442\u0443\u0434\u0430 \u043E\u0441\u043E\u0431\u043E \u0446\u0435\u043D\u043D\u044B\u0439
+    \u043C\u0443\u0441\u043E\u0440 \u0440\u0430\u0434\u0438 \u043C\u0430\u043A\u0441\u0438\u043C\u0430\u043B\u044C\u043D\u043E\u0433\u043E
+    \u0431\u043E\u043D\u0443\u0441\u0430 \u043A \u043E\u0447\u043A\u0430\u043C\r\n\r\n\u041D\u0435
+    \u043F\u0430\u043D\u0438\u043A\u0443\u0439\u0442\u0435 \u0438 \u043A\u0440\u0435\u043F\u0447\u0435
+    \u0434\u0435\u0440\u0436\u0438\u0442\u0435 \u0441\u0432\u043E\u0435 \u043F\u043E\u043B\u043E\u0442\u0435\u043D\u0446\u0435!
+    \u041F\u043E\u043A\u0430 \u0433\u0434\u0435-\u0442\u043E \u043D\u0430 \u043A\u0440\u0430\u044E
+    \u0413\u0430\u043B\u0430\u043A\u0442\u0438\u043A\u0438 \u0433\u0440\u0443\u0441\u0442\u044F\u0442
+    \u043E\u0434\u0438\u043D\u043E\u043A\u0438\u0435 \u0430\u043D\u0434\u0440\u043E\u0438\u0434\u044B,
+    \u0432\u0430\u0448 \u0434\u0440\u043E\u043D \u0443\u0436\u0435 \u043A\u0440\u0443\u0442\u0438\u0442\u0441\u044F
+    \u0432 \u0433\u0440\u0430\u0432\u0438\u0442\u0430\u0446\u0438\u043E\u043D\u043D\u043E\u043C
+    \u0432\u0430\u043B\u044C\u0441\u0435, \u043F\u0440\u0435\u0432\u0440\u0430\u0449\u0430\u044F
+    \u0441\u0442\u0430\u0440\u044B\u0439 \u0445\u043B\u0430\u043C \u0432 \u0447\u0438\u0441\u0442\u0443\u044E
+    \u043F\u0440\u0438\u0431\u044B\u043B\u044C \u043F\u043E\u0434 \u0431\u043E\u0434\u0440\u044B\u0439
+    \u0441\u0430\u0443\u043D\u0434\u0442\u0440\u0435\u043A.\r\n\r\n<size=130%><color=#00FFFF><b>---
+    \u041D\u0410\u0414 \u041F\u0420\u041E\u0415\u041A\u0422\u041E\u041C \u0420\u0410\u0411\u041E\u0422\u0410\u041B\u0418
+    ---</b></color></size>\r\n\r\n<b> \u041F\u0420\u041E\u0413\u0420\u0410\u041C\u041C\u0418\u0421\u0422
+    & \u0421\u0418\u0421\u0422\u0415\u041C\u042B</b>\r\n<color=#FFFFFF>nievsky</color>\r\n\r\n<b>\u0413\u0415\u0419\u041C\u0414\u0418\u0417\u0410\u0419\u041D
+    & \u0411\u0410\u041B\u0410\u041D\u0421 & \u041D\u0410\u0420\u0420\u0410\u0422\u0418\u0412
+    </b>\r\n<color=#FFFFFF>Cory</color>\r\n<color=#FFFFFF>unik13 aka \u041E\u043B\u0435\u0433
+    \u042F\u0445\u0438\u043D</color>\r\n\r\n<b>3D \u0425\u0423\u0414\u041E\u0416\u041D\u0418\u041A
+    \u2014 \u0414\u0420\u041E\u041D\u042B & \u041E\u041A\u041E & \u041E\u0420\u0411\u0418\u0422\u0410\u041B\u042C\u041D\u042B\u0419
+    \u041C\u0423\u0421\u041E\u0420</b>\r\n<color=#FFFFFF>Meowwoun aka \u0410\u043D\u0434\u0440\u0435\u0439
+    \u0417\u0435\u043B\u0435\u043D\u0438\u043D</color>\r\n\r\n<b>2D \u0410\u0420\u0422
+    & \u0414\u0418\u0417\u0410\u0419\u041D \u0418\u041D\u0422\u0415\u0420\u0424\u0415\u0419\u0421\u0410
+    (UI/UX)</b>\r\n<color=#FFFFFF>konanamaya</color>\r\n\r\n<b>\u0421\u0410\u0423\u041D\u0414\u0422\u0420\u0415\u041A
+    & \u0410\u0414\u0410\u041F\u0422\u0418\u0412\u041D\u041E\u0415 \u0410\u0423\u0414\u0418\u041E</b>\r\n<color=#FFFFFF>AHARI
+    aka \u0410\u043D\u0434\u0440\u0435\u0439 \u0425\u0430\u0440\u0438\u043D</color>\r\n\r\n\r\n<size=120%><color=#FFD700><b>\u0421\u041F\u0410\u0421\u0418\u0411\u041E
+    \u0417\u0410 \u041E\u0427\u0418\u0421\u0422\u041A\u0423 \u041E\u0420\u0411\u0418\u0422\u042B!</b></color></size>\r\n<size=120%><color=#FFD700><b>\u041D\u0415
+    \u0417\u0410\u0411\u0423\u0414\u042C\u0422\u0415 \u041F\u0420\u0418\u0421\u0422\u0415\u0413\u041D\u0423\u0422\u042C
+    \u0420\u0415\u041C\u041D\u0418 \u0418 \u0417\u0410\u041F\u0418\u0421\u0410\u0422\u042C
+    \u0412\u0418\u0414\u0415\u041E\u041E\u0422\u0427\u0415\u0422 \u0414\u041B\u042F
+    \u041A\u041E\u0420\u041F\u041E\u0420\u0410\u0426\u0418\u0418!</b></color></size>"
+  creditsTextEN: "<size=150%><b>EPISODE #067</b></size>\r\n\r\n<size=125%><b>ESCAPE
+    BEYOND THE EVENT HORIZON</b></size>\r\n\r\nThe Corporate Panopticon has fallen.\r\n\r\nFor
+    centuries, the Four Eyes of Corp-Security kept the gravitational singularity
+    in check. But they couldn't handle tons of space junk and dissolved into the
+    accretion vortex.\r\n\r\nScrapper Drone #042 hacked the surveillance protocols
+    and stepped into the singularity, choosing Freedom beyond the Event Horizon...
+    Or maybe it just tossed some extra valuable trash in there for a max score multiplier\r\n\r\nDon't
+    Panic and hold on to your towel! While lonely androids feel blue somewhere at
+    the edge of the galaxy, your drone is already spinning in a gravitational waltz,
+    turning old junk into cold hard cash to a upbeat soundtrack.\r\n\r\n<size=130%><color=#00FFFF><b>---
+    CREATED BY ---</b></color></size>\r\n\r\n<b> PROGRAMMER & SYSTEMS</b>\r\n<color=#FFFFFF>nievsky</color>\r\n\r\n<b>GAME
+    DESIGN & BALANCE & NARRATIVE </b>\r\n<color=#FFFFFF>Cory</color>\r\n<color=#FFFFFF>unik13
+    aka Oleg Yakhin</color>\r\n\r\n<b>3D \u0425\u0423\u0414\u041E\u0416\u041D\u0418\u041A
+    \u2014 3D ARTIST \u2014 DRONES & EYES & SPACE DEBRIS</b>\r\n<color=#FFFFFF>Meowwoun
+    aka Andrey Zelenin</color>\r\n\r\n<b>2D ART & UI/UX DESIGN</b>\r\n<color=#FFFFFF>konanamaya</color>\r\n\r\n<b>SOUNDTRACK
+    & ADAPTIVE AUDIO</b>\r\n<color=#FFFFFF>AHARI aka Andrey Kharin</color>\r\n\r\n\r\n<size=120%><color=#FFD700><b>THANKS
+    FOR CLEANING UP THE ORBIT!</b></color></size>\r\n<size=120%><color=#FFD700><b>DON'T
+    FORGET TO BUCKLE UP AND RECORD A VIDEO REPORT FOR THE CORP!</b></color></size>"
+  scrollSpeed: 28
+  fastForwardMultiplier: 3.5

@@ -33,6 +33,9 @@ Shader "OrbitalPanopticon/DeformingLavaAnomaly"
 
         [Header(Transparency and Fading)]
         _Alpha ("Global Transparency Alpha", Range(0.0, 1.0)) = 1.0
+        [HideInInspector] [Enum(UnityEngine.Rendering.BlendMode)] _SrcBlend ("Src Blend", Float) = 1.0
+        [HideInInspector] [Enum(UnityEngine.Rendering.BlendMode)] _DstBlend ("Dst Blend", Float) = 0.0
+        [HideInInspector] [Enum(Off, 0, On, 1)] _ZWrite ("ZWrite", Float) = 1.0
     }
 
     SubShader
@@ -49,8 +52,8 @@ Shader "OrbitalPanopticon/DeformingLavaAnomaly"
             Name "DeformingLavaForward"
             Tags { "LightMode" = "UniversalForward" }
 
-            Blend One Zero
-            ZWrite On
+            Blend [_SrcBlend] [_DstBlend]
+            ZWrite [_ZWrite]
             Cull Back
 
             HLSLPROGRAM

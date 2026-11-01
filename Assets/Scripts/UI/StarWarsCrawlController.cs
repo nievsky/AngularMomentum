@@ -9,6 +9,9 @@ namespace OrbitalPanopticon.UI
     [DisallowMultipleComponent]
     public class StarWarsCrawlController : MonoBehaviour
     {
+        [Header("Credits Configuration")]
+        [SerializeField] private CreditsContentConfigSO creditsConfig;
+
         [Header("Crawl Hierarchy")]
         [SerializeField] private RectTransform creditsTextContainer;
         [SerializeField] private TextMeshProUGUI creditsTextComponent;
@@ -17,11 +20,12 @@ namespace OrbitalPanopticon.UI
         [SerializeField] private TextMeshProUGUI speedHintText;
 
         [Header("Scroll Tuning")]
-        [SerializeField] private float crawlSpeed = 38f;
-        [SerializeField] private float fastSpeedMultiplier = 3.0f;
+        [SerializeField] private float crawlSpeed = 28f;
+        [SerializeField] private float fastSpeedMultiplier = 3.5f;
         [SerializeField] private float initialYOffset = -280f;
         [SerializeField] private float endYThreshold = 3400f;
 
+        public CreditsContentConfigSO CreditsConfig { get => creditsConfig; set => creditsConfig = value; }
         public RectTransform CreditsTextContainer { get => creditsTextContainer; set => creditsTextContainer = value; }
         public float CrawlSpeed { get => crawlSpeed; set => crawlSpeed = value; }
         public float InitialYOffset { get => initialYOffset; set => initialYOffset = value; }
@@ -34,6 +38,16 @@ namespace OrbitalPanopticon.UI
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
             Time.timeScale = 1f;
+
+            if (creditsConfig == null)
+            {
+                creditsConfig = Resources.Load<CreditsContentConfigSO>("CreditsContentConfig");
+            }
+        }
+
+        private void OnEnable()
+        {
+            ApplyLocalization();
         }
 
         private void Start()
@@ -65,7 +79,17 @@ namespace OrbitalPanopticon.UI
 
             if (creditsTextComponent != null)
             {
-                creditsTextComponent.text = LocalizationManager.IsRussian ? GetRussianCrawlText() : GetEnglishCrawlText();
+                bool isRussian = LocalizationManager.IsRussian || LocalizationManager.CurrentLanguage == GameLanguage.RU;
+                string crawlText = "";
+                if (creditsConfig != null)
+                {
+                    crawlText = isRussian ? creditsConfig.creditsTextRU : creditsConfig.creditsTextEN;
+                }
+                if (string.IsNullOrEmpty(crawlText))
+                {
+                    crawlText = isRussian ? GetRussianCrawlText() : GetEnglishCrawlText();
+                }
+                creditsTextComponent.text = crawlText;
             }
 
             if (backToMenuButtonText == null && backToMenuButton != null)
@@ -156,7 +180,9 @@ namespace OrbitalPanopticon.UI
             var mouse = Mouse.current;
             bool isFast = (kb != null && kb.spaceKey.isPressed) || (mouse != null && mouse.leftButton.isPressed);
 
-            float speed = crawlSpeed * (isFast ? fastSpeedMultiplier : 1.0f);
+            float baseSpeed = creditsConfig != null ? creditsConfig.scrollSpeed : crawlSpeed;
+            float fastMult = creditsConfig != null ? creditsConfig.fastForwardMultiplier : fastSpeedMultiplier;
+            float speed = baseSpeed * (isFast ? fastMult : 1.0f);
 
             if (creditsTextContainer != null)
             {

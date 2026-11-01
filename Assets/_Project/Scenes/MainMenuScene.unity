@@ -26,7 +26,7 @@ RenderSettings:
   m_AmbientIntensity: 1
   m_AmbientMode: 0
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 2100000, guid: 93c78314498e4814891f24d1a3aafa09, type: 2}
+  m_SkyboxMaterial: {fileID: 10304, guid: 0000000000000000f000000000000000, type: 0}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -220,17 +220,6 @@ GameObject:
   - component: {fileID: 11652975}
   - component: {fileID: 11652977}
   - component: {fileID: 11652976}
-  - component: {fileID: 11652978}
-  - component: {fileID: 11652979}
-  - component: {fileID: 11652980}
-  - component: {fileID: 11652981}
-  - component: {fileID: 11652982}
-  - component: {fileID: 11652983}
-  - component: {fileID: 11652984}
-  - component: {fileID: 11652985}
-  - component: {fileID: 11652986}
-  - component: {fileID: 11652987}
-  - component: {fileID: 11652988}
   m_Layer: 0
   m_Name: Label
   m_TagString: Untagged
@@ -358,144 +347,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 11652974}
   m_CullTransparentMesh: 1
---- !u!114 &11652978
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 11652974}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 604984745}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GlobalFontTracker
---- !u!114 &11652979
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 11652974}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 264227038}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GlobalFontTracker
---- !u!114 &11652980
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 11652974}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 617001427}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GlobalFontTracker
---- !u!114 &11652981
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 11652974}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 1396755900}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GlobalFontTracker
---- !u!114 &11652982
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 11652974}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 1706434901}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GlobalFontTracker
---- !u!114 &11652983
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 11652974}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 2109968880}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GlobalFontTracker
---- !u!114 &11652984
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 11652974}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 502174695}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GlobalFontTracker
---- !u!114 &11652985
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 11652974}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 299578977}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GlobalFontTracker
---- !u!114 &11652986
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 11652974}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 1371207877}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GlobalFontTracker
---- !u!114 &11652987
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 11652974}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 751878200}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GlobalFontTracker
-  originalFontSize: 12
-  originalCharacterSpacing: 0
-  isInitialized: 1
---- !u!114 &11652988
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 11652974}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 1422073698}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GlobalFontTracker
-  originalFontSize: 12
-  originalCharacterSpacing: 0
-  isInitialized: 1
 --- !u!1 &13632413
 GameObject:
   m_ObjectHideFlags: 0
@@ -1000,21 +851,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!115 &264227038
-MonoScript:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  serializedVersion: 7
-  m_DefaultReferences: {}
-  m_Icon: {fileID: 0}
-  m_Type: 0
-  m_ExecutionOrder: 0
-  m_ClassName: GlobalFontTracker
-  m_Namespace: OrbitalPanopticon.Core
-  m_AssemblyName: Assembly-CSharp
 --- !u!1 &293980038
 GameObject:
   m_ObjectHideFlags: 0
@@ -1026,8 +862,6 @@ GameObject:
   - component: {fileID: 293980039}
   - component: {fileID: 293980041}
   - component: {fileID: 293980040}
-  - component: {fileID: 293980042}
-  - component: {fileID: 293980043}
   m_Layer: 0
   m_Name: Label
   m_TagString: Untagged
@@ -1154,48 +988,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 293980038}
   m_CullTransparentMesh: 1
---- !u!114 &293980042
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 293980038}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 604984745}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GlobalFontTracker
---- !u!114 &293980043
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 293980038}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 264227038}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GlobalFontTracker
-  originalFontSize: 13.5
-  originalCharacterSpacing: 0
-  isInitialized: 1
---- !u!115 &299578977
-MonoScript:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  serializedVersion: 7
-  m_DefaultReferences: {}
-  m_Icon: {fileID: 0}
-  m_Type: 0
-  m_ExecutionOrder: 0
-  m_ClassName: GlobalFontTracker
-  m_Namespace: OrbitalPanopticon.Core
-  m_AssemblyName: Assembly-CSharp
 --- !u!1 &356228844
 GameObject:
   m_ObjectHideFlags: 0
@@ -1246,8 +1038,6 @@ GameObject:
   - component: {fileID: 375280815}
   - component: {fileID: 375280817}
   - component: {fileID: 375280816}
-  - component: {fileID: 375280818}
-  - component: {fileID: 375280819}
   m_Layer: 0
   m_Name: Title
   m_TagString: Untagged
@@ -1374,33 +1164,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 375280814}
   m_CullTransparentMesh: 1
---- !u!114 &375280818
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 375280814}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 604984745}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GlobalFontTracker
---- !u!114 &375280819
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 375280814}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 264227038}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GlobalFontTracker
-  originalFontSize: 20
-  originalCharacterSpacing: 0
-  isInitialized: 1
 --- !u!1 &385629269
 GameObject:
   m_ObjectHideFlags: 0
@@ -1487,8 +1250,6 @@ GameObject:
   - component: {fileID: 436260756}
   - component: {fileID: 436260758}
   - component: {fileID: 436260757}
-  - component: {fileID: 436260759}
-  - component: {fileID: 436260760}
   m_Layer: 0
   m_Name: Label
   m_TagString: Untagged
@@ -1615,48 +1376,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 436260755}
   m_CullTransparentMesh: 1
---- !u!114 &436260759
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 436260755}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 604984745}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GlobalFontTracker
---- !u!114 &436260760
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 436260755}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 264227038}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GlobalFontTracker
-  originalFontSize: 13.5
-  originalCharacterSpacing: 0
-  isInitialized: 1
---- !u!115 &502174695
-MonoScript:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  serializedVersion: 7
-  m_DefaultReferences: {}
-  m_Icon: {fileID: 0}
-  m_Type: 0
-  m_ExecutionOrder: 0
-  m_ClassName: GlobalFontTracker
-  m_Namespace: OrbitalPanopticon.Core
-  m_AssemblyName: Assembly-CSharp
 --- !u!1 &520996785
 GameObject:
   m_ObjectHideFlags: 0
@@ -1789,7 +1508,7 @@ MonoBehaviour:
   m_RendererIndex: -1
   m_VolumeLayerMask:
     serializedVersion: 2
-    m_Bits: 1
+    m_Bits: 4294967295
   m_VolumeTrigger: {fileID: 0}
   m_VolumeFrameworkUpdateModeOption: 2
   m_RenderPostProcessing: 1
@@ -1919,8 +1638,6 @@ GameObject:
   - component: {fileID: 545537986}
   - component: {fileID: 545537988}
   - component: {fileID: 545537987}
-  - component: {fileID: 545537989}
-  - component: {fileID: 545537990}
   m_Layer: 0
   m_Name: Label
   m_TagString: Untagged
@@ -2047,33 +1764,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 545537985}
   m_CullTransparentMesh: 1
---- !u!114 &545537989
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 545537985}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 604984745}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GlobalFontTracker
---- !u!114 &545537990
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 545537985}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 264227038}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GlobalFontTracker
-  originalFontSize: 13.5
-  originalCharacterSpacing: 0
-  isInitialized: 1
 --- !u!1 &597817640
 GameObject:
   m_ObjectHideFlags: 0
@@ -2085,8 +1775,6 @@ GameObject:
   - component: {fileID: 597817641}
   - component: {fileID: 597817642}
   - component: {fileID: 597817643}
-  - component: {fileID: 597817644}
-  - component: {fileID: 597817645}
   m_Layer: 0
   m_Name: Value
   m_TagString: Untagged
@@ -2213,63 +1901,6 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
---- !u!114 &597817644
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 597817640}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 604984745}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GlobalFontTracker
---- !u!114 &597817645
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 597817640}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 264227038}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GlobalFontTracker
-  originalFontSize: 12
-  originalCharacterSpacing: 0
-  isInitialized: 1
---- !u!115 &604984745
-MonoScript:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  serializedVersion: 7
-  m_DefaultReferences: {}
-  m_Icon: {fileID: 0}
-  m_Type: 0
-  m_ExecutionOrder: 0
-  m_ClassName: GlobalFontTracker
-  m_Namespace: OrbitalPanopticon.Core
-  m_AssemblyName: Assembly-CSharp
---- !u!115 &617001427
-MonoScript:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  serializedVersion: 7
-  m_DefaultReferences: {}
-  m_Icon: {fileID: 0}
-  m_Type: 0
-  m_ExecutionOrder: 0
-  m_ClassName: GlobalFontTracker
-  m_Namespace: OrbitalPanopticon.Core
-  m_AssemblyName: Assembly-CSharp
 --- !u!1 &632858606
 GameObject:
   m_ObjectHideFlags: 0
@@ -2394,35 +2025,143 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects:
     - {fileID: 1677119919791490037, guid: 09bd71492c1d0ad4b8283f43d109c1de, type: 3}
-    m_AddedGameObjects:
-    - targetCorrespondingSourceObject: {fileID: 1594941148794604764, guid: 09bd71492c1d0ad4b8283f43d109c1de, type: 3}
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3679411217327739622, guid: 09bd71492c1d0ad4b8283f43d109c1de, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1175661102}
-    - targetCorrespondingSourceObject: {fileID: 1594941148794604764, guid: 09bd71492c1d0ad4b8283f43d109c1de, type: 3}
+      addedObject: {fileID: 700340305}
+    - targetCorrespondingSourceObject: {fileID: 3679411217327739622, guid: 09bd71492c1d0ad4b8283f43d109c1de, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1858790268}
-    m_AddedComponents: []
+      addedObject: {fileID: 700340302}
+    - targetCorrespondingSourceObject: {fileID: 3679411217327739622, guid: 09bd71492c1d0ad4b8283f43d109c1de, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 700340301}
+    - targetCorrespondingSourceObject: {fileID: 3679411217327739622, guid: 09bd71492c1d0ad4b8283f43d109c1de, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 700340300}
+    - targetCorrespondingSourceObject: {fileID: 4272717189252750367, guid: 09bd71492c1d0ad4b8283f43d109c1de, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 700340303}
+    - targetCorrespondingSourceObject: {fileID: 4923899694750621185, guid: 09bd71492c1d0ad4b8283f43d109c1de, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 774129517}
   m_SourcePrefab: {fileID: 100100000, guid: 09bd71492c1d0ad4b8283f43d109c1de, type: 3}
---- !u!4 &700340295 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 1594941148794604764, guid: 09bd71492c1d0ad4b8283f43d109c1de, type: 3}
+--- !u!1 &700340296 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3679411217327739622, guid: 09bd71492c1d0ad4b8283f43d109c1de, type: 3}
   m_PrefabInstance: {fileID: 700340294}
   m_PrefabAsset: {fileID: 0}
---- !u!115 &751878200
-MonoScript:
+--- !u!1 &700340297 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4923899694750621185, guid: 09bd71492c1d0ad4b8283f43d109c1de, type: 3}
+  m_PrefabInstance: {fileID: 700340294}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &700340298 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4272717189252750367, guid: 09bd71492c1d0ad4b8283f43d109c1de, type: 3}
+  m_PrefabInstance: {fileID: 700340294}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &700340300
+MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 700340296}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a03855cad007a124c8a6207d5d38c6bb, type: 3}
   m_Name: 
-  serializedVersion: 7
-  m_DefaultReferences: {}
-  m_Icon: {fileID: 0}
-  m_Type: 0
-  m_ExecutionOrder: 0
-  m_ClassName: GlobalFontTracker
-  m_Namespace: OrbitalPanopticon.Core
-  m_AssemblyName: Assembly-CSharp
+  m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Gameplay.BlackHoleStageManager
+  currentMass: 0
+  currentStageIndex: 0
+  blackHoleGravity: {fileID: 0}
+  visualRoot: {fileID: 0}
+  accretionDiskVisual: {fileID: 0}
+  eventHorizonOpaqueCore: {fileID: 0}
+  eventHorizonCollider: {fileID: 0}
+  gravityWellCollider: {fileID: 0}
+  containmentEyes:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+--- !u!114 &700340301
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 700340296}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 576a24d3a7e91ba4ebdca3efb91ee8d0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Gameplay.BlackHoleMassAndEnergyManager
+--- !u!114 &700340302
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 700340296}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5332aadad66456d4096104db553f44ce, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Physics.BlackHoleGravity
+  centerPoint: {fileID: 0}
+  eventHorizonTrigger: {fileID: 700340303}
+  gravityWellTrigger: {fileID: 774129517}
+  singularityImplosionPrefab: {fileID: 0}
+--- !u!135 &700340303
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 700340298}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Radius: 3.5
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!54 &700340305
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 700340296}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!1 &773512919
 GameObject:
   m_ObjectHideFlags: 0
@@ -2516,6 +2255,27 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 773512919}
   m_CullTransparentMesh: 1
+--- !u!135 &774129517
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 700340297}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Radius: 45
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &775236926
 GameObject:
   m_ObjectHideFlags: 0
@@ -2527,7 +2287,6 @@ GameObject:
   - component: {fileID: 775236927}
   - component: {fileID: 775236928}
   - component: {fileID: 775236929}
-  - component: {fileID: 775236930}
   m_Layer: 0
   m_Name: Value
   m_TagString: Untagged
@@ -2654,21 +2413,6 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
---- !u!114 &775236930
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 775236926}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 604984745}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GlobalFontTracker
-  originalFontSize: 12
-  originalCharacterSpacing: 0
-  isInitialized: 1
 --- !u!1 &827900768
 GameObject:
   m_ObjectHideFlags: 0
@@ -2680,7 +2424,6 @@ GameObject:
   - component: {fileID: 827900769}
   - component: {fileID: 827900771}
   - component: {fileID: 827900770}
-  - component: {fileID: 827900772}
   m_Layer: 0
   m_Name: Label
   m_TagString: Untagged
@@ -2808,21 +2551,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 827900768}
   m_CullTransparentMesh: 1
---- !u!114 &827900772
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 827900768}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 604984745}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GlobalFontTracker
-  originalFontSize: 12
-  originalCharacterSpacing: 0
-  isInitialized: 1
 --- !u!1 &844842207
 GameObject:
   m_ObjectHideFlags: 0
@@ -3599,7 +3327,7 @@ Transform:
   m_LocalScale: {x: 7, y: 7, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 700340295}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!23 &1175661103
 MeshRenderer:
@@ -3669,7 +3397,6 @@ GameObject:
   - component: {fileID: 1287940142}
   - component: {fileID: 1287940144}
   - component: {fileID: 1287940143}
-  - component: {fileID: 1287940145}
   m_Layer: 0
   m_Name: Label
   m_TagString: Untagged
@@ -3796,21 +3523,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1287940141}
   m_CullTransparentMesh: 1
---- !u!114 &1287940145
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1287940141}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 604984745}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GlobalFontTracker
-  originalFontSize: 13.5
-  originalCharacterSpacing: 0
-  isInitialized: 1
 --- !u!1 &1292658927
 GameObject:
   m_ObjectHideFlags: 0
@@ -3897,7 +3609,6 @@ GameObject:
   - component: {fileID: 1349018759}
   - component: {fileID: 1349018761}
   - component: {fileID: 1349018760}
-  - component: {fileID: 1349018762}
   m_Layer: 0
   m_Name: Label
   m_TagString: Untagged
@@ -4024,21 +3735,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1349018758}
   m_CullTransparentMesh: 1
---- !u!114 &1349018762
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1349018758}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 604984745}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GlobalFontTracker
-  originalFontSize: 13.5
-  originalCharacterSpacing: 0
-  isInitialized: 1
 --- !u!1 &1352948221
 GameObject:
   m_ObjectHideFlags: 0
@@ -4199,21 +3895,6 @@ MonoBehaviour:
   clickPunchElasticity: 0.8
   successFlashColor: {r: 0.2, g: 1, b: 0.4, a: 1}
   failureFlashColor: {r: 1, g: 0.2, b: 0.2, a: 1}
---- !u!115 &1371207877
-MonoScript:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  serializedVersion: 7
-  m_DefaultReferences: {}
-  m_Icon: {fileID: 0}
-  m_Type: 0
-  m_ExecutionOrder: 0
-  m_ClassName: GlobalFontTracker
-  m_Namespace: OrbitalPanopticon.Core
-  m_AssemblyName: Assembly-CSharp
 --- !u!1 &1377694109
 GameObject:
   m_ObjectHideFlags: 0
@@ -4405,7 +4086,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d9ebe15f1d4809944b160615905ddbd8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.VHSCameraController
-  visualConfig: {fileID: 11400000, guid: 794122494ef573343bfb4c6983c4f42c, type: 2}
+  visualConfig: {fileID: 11400000, guid: 71bd7eb46f953f6468e849eb389ac05a, type: 2}
   vhsMaterial: {fileID: 2100000, guid: 4673a19abfd370241ab8925ea1d0760b, type: 2}
   enableVHSEffect: 1
   masterBlend: 0.65
@@ -4436,7 +4117,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d8f05e05d3efa334b864f90060157c2b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.PostProcessingToolkitController
-  visualConfig: {fileID: 11400000, guid: 794122494ef573343bfb4c6983c4f42c, type: 2}
+  visualConfig: {fileID: 11400000, guid: 71bd7eb46f953f6468e849eb389ac05a, type: 2}
   postProcessVolume: {fileID: 1379955470}
   tonemappingMode: 2
   bloomIntensity: 1.6
@@ -4474,7 +4155,7 @@ MonoBehaviour:
   priority: 100
   blendDistance: 0
   weight: 1
-  sharedProfile: {fileID: 11400000, guid: df39eed342b223441a4fb8d271b3258a, type: 2}
+  sharedProfile: {fileID: 11400000, guid: 2afc6f4d5fb10ba499d88d557c004dcd, type: 2}
 --- !u!4 &1379955471
 Transform:
   m_ObjectHideFlags: 0
@@ -4490,21 +4171,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!115 &1396755900
-MonoScript:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  serializedVersion: 7
-  m_DefaultReferences: {}
-  m_Icon: {fileID: 0}
-  m_Type: 0
-  m_ExecutionOrder: 0
-  m_ClassName: GlobalFontTracker
-  m_Namespace: OrbitalPanopticon.Core
-  m_AssemblyName: Assembly-CSharp
 --- !u!1 &1420728432
 GameObject:
   m_ObjectHideFlags: 0
@@ -4580,21 +4246,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1420728432}
   m_CullTransparentMesh: 1
---- !u!115 &1422073698
-MonoScript:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  serializedVersion: 7
-  m_DefaultReferences: {}
-  m_Icon: {fileID: 0}
-  m_Type: 0
-  m_ExecutionOrder: 0
-  m_ClassName: GlobalFontTracker
-  m_Namespace: OrbitalPanopticon.Core
-  m_AssemblyName: Assembly-CSharp
 --- !u!1 &1446420427
 GameObject:
   m_ObjectHideFlags: 0
@@ -4606,7 +4257,6 @@ GameObject:
   - component: {fileID: 1446420428}
   - component: {fileID: 1446420430}
   - component: {fileID: 1446420429}
-  - component: {fileID: 1446420431}
   m_Layer: 0
   m_Name: Text_Title
   m_TagString: Untagged
@@ -4733,21 +4383,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1446420427}
   m_CullTransparentMesh: 1
---- !u!114 &1446420431
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1446420427}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 604984745}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GlobalFontTracker
-  originalFontSize: 44
-  originalCharacterSpacing: 0
-  isInitialized: 1
 --- !u!1 &1455722893
 GameObject:
   m_ObjectHideFlags: 0
@@ -4866,7 +4501,6 @@ GameObject:
   - component: {fileID: 1473108165}
   - component: {fileID: 1473108167}
   - component: {fileID: 1473108166}
-  - component: {fileID: 1473108168}
   m_Layer: 0
   m_Name: Text_Subtitle
   m_TagString: Untagged
@@ -4994,21 +4628,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1473108164}
   m_CullTransparentMesh: 1
---- !u!114 &1473108168
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1473108164}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 604984745}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.GlobalFontTracker
-  originalFontSize: 15
-  originalCharacterSpacing: 0
-  isInitialized: 1
 --- !u!1 &1531286210
 GameObject:
   m_ObjectHideFlags: 0
@@ -5169,21 +4788,6 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
---- !u!115 &1706434901
-MonoScript:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  serializedVersion: 7
-  m_DefaultReferences: {}
-  m_Icon: {fileID: 0}
-  m_Type: 0
-  m_ExecutionOrder: 0
-  m_ClassName: GlobalFontTracker
-  m_Namespace: OrbitalPanopticon.Core
-  m_AssemblyName: Assembly-CSharp
 --- !u!1 &1713773381
 GameObject:
   m_ObjectHideFlags: 0
@@ -5213,7 +4817,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ce6fef2dcc45cc94cbff97bd395d1af1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Core.SpaceSkyboxController
-  visualConfig: {fileID: 11400000, guid: 794122494ef573343bfb4c6983c4f42c, type: 2}
+  visualConfig: {fileID: 11400000, guid: 71bd7eb46f953f6468e849eb389ac05a, type: 2}
   skyboxMaterial: {fileID: 2100000, guid: 93c78314498e4814891f24d1a3aafa09, type: 2}
   spaceZenithColor: {r: 0.012, g: 0.018, b: 0.042, a: 1}
   spaceHorizonColor: {r: 0.004, g: 0.007, b: 0.016, a: 1}
@@ -5492,8 +5096,9 @@ Transform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 2.8, y: 2.8, z: 2.8}
   m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 700340295}
+  m_Children:
+  - {fileID: 1858790281}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1858790269
 MonoBehaviour:
@@ -5564,6 +5169,96 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1858790267}
   m_Mesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &1858790280
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1858790281}
+  - component: {fileID: 1858790282}
+  - component: {fileID: 1858790283}
+  m_Layer: 0
+  m_Name: EventHorizonBlackCoreSphere
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1858790281
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1858790280}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 0.35, y: 0.35, z: 0.35}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1858790268}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &1858790282
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1858790280}
+  m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!23 &1858790283
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1858790280}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 5b56f533dad540b5b7f947110607bb79, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &1867502133
 GameObject:
   m_ObjectHideFlags: 0
@@ -5754,28 +5449,12 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2104303194}
   m_CullTransparentMesh: 1
---- !u!115 &2109968880
-MonoScript:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_Name: 
-  serializedVersion: 7
-  m_DefaultReferences: {}
-  m_Icon: {fileID: 0}
-  m_Type: 0
-  m_ExecutionOrder: 0
-  m_ClassName: GlobalFontTracker
-  m_Namespace: OrbitalPanopticon.Core
-  m_AssemblyName: Assembly-CSharp
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 1832346918}
   - {fileID: 520996789}
-  - {fileID: 700340294}
   - {fileID: 232590567}
   - {fileID: 844842210}
   - {fileID: 1455722894}
@@ -5783,3 +5462,6 @@ SceneRoots:
   - {fileID: 1379955471}
   - {fileID: 1713773383}
   - {fileID: 632858608}
+  - {fileID: 700340294}
+  - {fileID: 1175661102}
+  - {fileID: 1858790268}

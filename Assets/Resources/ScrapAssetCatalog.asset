@@ -12,6 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cad1c1c676ed55c43967dccf8fafb792, type: 3}
   m_Name: ScrapAssetCatalog
   m_EditorClassIdentifier: Assembly-CSharp::OrbitalPanopticon.Gameplay.ScrapAssetCatalogSO
+  customHelperRobotModelPrefab: {fileID: 6242607309248339221, guid: 4f3f4be28cdb0d3498c66350b4cf4536, type: 3}
+  helperRobotScaleMultiplier: 1
+  helperRobotRotationOffset: {x: 0, y: 0, z: 0}
   customScrapAssets:
   - modelOrPrefab: {fileID: 1669924941479377223, guid: f9c8e284e3c12c6438ab1671a8ce68f2, type: 3}
     scrapTier: 1

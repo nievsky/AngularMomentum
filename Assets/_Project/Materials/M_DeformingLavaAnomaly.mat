@@ -16,8 +16,9 @@ Material:
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
-  m_CustomRenderQueue: -1
-  stringTagMap: {}
+  m_CustomRenderQueue: 2000
+  stringTagMap:
+    RenderType: Opaque
   disabledShaderPasses: []
   m_LockedProperties: 
   m_SavedProperties:
@@ -35,6 +36,7 @@ Material:
     - _CrustScale: 4.2
     - _DisplacementScale: 3.2
     - _DisplacementStrength: 0.42
+    - _DstBlend: 0
     - _EdgeGlowIntensity: 7.5
     - _FlowSpeed: 0.85
     - _LavaScale: 5.5
@@ -43,6 +45,8 @@ Material:
     - _PulseSpeed: 5.2
     - _RimIntensity: 5.5
     - _RimPower: 2.4
+    - _SrcBlend: 1
+    - _ZWrite: 1
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _CrustColor: {r: 0.05, g: 0.03, b: 0.04, a: 1}

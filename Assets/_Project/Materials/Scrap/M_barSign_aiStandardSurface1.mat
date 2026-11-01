@@ -48,14 +48,19 @@ Material:
     - _Alpha: 1
     - _AmbientFloor: 0.38
     - _BumpScale: 1
+    - _MaxLighting: 0.85
     - _Metallic: 0
-    - _RimIntensity: 0.45
-    - _RimPower: 3
+    - _MinLighting: 0.12
+    - _PulseSpeed: 2.2
+    - _RimIntensity: 0.35
+    - _RimPower: 5
+    - _SilhouetteIntensity: 0.35
     - _Smoothness: 0.5
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
-    - _RimColor: {r: 0.7, g: 0.88, b: 1, a: 1}
+    - _RimColor: {r: 0.65, g: 0.82, b: 0.95, a: 1}
+    - _SilhouetteColor: {r: 0.65, g: 0.82, b: 0.95, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
