@@ -16,8 +16,8 @@ MonoBehaviour:
   spaceHorizonColor: {r: 0.004, g: 0.007, b: 0.016, a: 1}
   spaceNadirColor: {r: 0.001, g: 0.002, b: 0.006, a: 1}
   gradientExponent: 1.35
-  starDensity: 117.1
-  starSize: 0.0182
+  starDensity: 110
+  starSize: 0.016
   starBrightness: 2.2
   starColorVariation: 0.85
   starTwinkleSpeed: 2.2
@@ -38,18 +38,18 @@ MonoBehaviour:
   enableVHSEffect: 1
   masterBlend: 0.65
   overscanScale: 0.9
-  scanlineIntensity: 0.306
+  scanlineIntensity: 0.28
   scanlineCount: 640
   scanlineScrollSpeed: 0.8
   trackingBarIntensity: 0.45
-  trackingBarSpeed: 0.418
+  trackingBarSpeed: 0.18
   trackingBarThickness: 0.08
   horizontalGlitchStrength: 0.035
-  rgbShiftAmount: 0.002
+  rgbShiftAmount: 0.0055
   tapeNoiseIntensity: 0.18
-  screenCurvature: 0.167
-  cornerVignette: 0.276
-  verticalJitter: 0.00189
+  screenCurvature: 0.12
+  cornerVignette: 0.45
+  verticalJitter: 0.003
   cctvTint: {r: 0.95, g: 1.02, b: 0.98, a: 1}
   cctvTintIntensity: 0.15
   tonemappingMode: 2

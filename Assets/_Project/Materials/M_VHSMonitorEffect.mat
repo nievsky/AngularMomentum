@@ -28,12 +28,12 @@ Material:
     - _CCTVTintIntensity: 0.15
     - _CornerVignette: 0.45
     - _HorizontalGlitchStrength: 0.035
-    - _MasterBlend: 0.25
+    - _MasterBlend: 0.068
     - _OverscanScale: 0.9
     - _RGBShiftAmount: 0.0055
-    - _ScanlineCount: 100
+    - _ScanlineCount: 640
     - _ScanlineIntensity: 0.28
-    - _ScanlineScrollSpeed: -0.1
+    - _ScanlineScrollSpeed: 0.8
     - _ScreenCurvature: 0.12
     - _TapeNoiseIntensity: 0.18
     - _TrackingBarIntensity: 0.45

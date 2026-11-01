@@ -147,6 +147,9 @@ namespace OrbitalPanopticon.Core
         {
             if (tmp == null || fontConfig == null) return;
 
+            // Do not override dedicated tutorial typography
+            if (tmp.GetComponentInParent<TutorialSlideshowUI>() != null) return;
+
             if (!_tmpBaseValues.TryGetValue(tmp, out var baseVal) || baseVal.size <= 0f)
             {
                 baseVal = (tmp.fontSize, tmp.characterSpacing);
